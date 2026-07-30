@@ -352,6 +352,12 @@ export async function sendMagicLinkEmail(opts: {
         status: "suppressed",
         error: "address is suppressed",
       });
+      await logAuthAttempt({
+        email: to,
+        personId: opts.personId,
+        outcome: "suppressed",
+        detail: "address is suppressed",
+      });
       return { sent: false, provider: "none", messageId: null, reason: "suppressed" };
     }
 
@@ -372,6 +378,12 @@ export async function sendMagicLinkEmail(opts: {
         status: fallback ? "sent" : "failed",
         error: `${missing} not configured${fallback ? "" : "; built-in mailer refused"}`,
       });
+      await logAuthAttempt({
+        email: to,
+        personId: opts.personId,
+        outcome: fallback ? "fallback_sent" : "send_failed",
+        detail: `${missing} not configured${fallback ? "; sent via the built-in mailer" : "; built-in mailer refused"}`,
+      });
       return { sent: fallback, provider: "supabase", messageId: null, reason: `missing ${missing}` };
     }
 
@@ -387,6 +399,12 @@ export async function sendMagicLinkEmail(opts: {
         providerMessageId: null,
         status: fallback ? "sent" : "failed",
         error: domainCheck.detail,
+      });
+      await logAuthAttempt({
+        email: to,
+        personId: opts.personId,
+        outcome: fallback ? "fallback_sent" : "send_failed",
+        detail: domainCheck.detail,
       });
       return {
         sent: fallback,
@@ -407,6 +425,12 @@ export async function sendMagicLinkEmail(opts: {
         providerMessageId: null,
         status: "failed",
         error: "could not generate a sign-in link",
+      });
+      await logAuthAttempt({
+        email: to,
+        personId: opts.personId,
+        outcome: "send_failed",
+        detail: "could not generate a sign-in link",
       });
       return { sent: false, provider: "resend", messageId: null, reason: "no link" };
     }
@@ -453,6 +477,12 @@ export async function sendMagicLinkEmail(opts: {
         status: "failed",
         error: message,
       });
+      await logAuthAttempt({
+        email: to,
+        personId: opts.personId,
+        outcome: "send_failed",
+        detail: message,
+      });
       return { sent: false, provider: "resend", messageId: null, reason: message };
     }
 
@@ -465,6 +495,7 @@ export async function sendMagicLinkEmail(opts: {
       status: "sent",
       error: null,
     });
+    await logAuthAttempt({ email: to, personId: opts.personId, outcome: "sent", detail: null });
     return { sent: true, provider: "resend", messageId: payload?.id ?? null, reason: null };
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown error";
@@ -482,6 +513,12 @@ export async function sendMagicLinkEmail(opts: {
     } catch {
       /* logging must not mask the original failure */
     }
+    await logAuthAttempt({
+      email: to,
+      personId: opts.personId,
+      outcome: "send_failed",
+      detail: message,
+    });
     return { sent: false, provider: "resend", messageId: null, reason: message };
   }
 }
