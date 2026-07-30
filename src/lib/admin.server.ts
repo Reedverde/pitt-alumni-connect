@@ -1145,8 +1145,28 @@ export type SendRow = {
   provider: string | null;
   provider_message_id: string | null;
   status: string;
+  outcome: string;
+  blocked_reason: string | null;
   error: string | null;
 };
+
+export type SendTotals = { sent: number; blocked: number; failed: number; suppressed: number };
+
+/** Deliveries are counted on outcome, never on status and never on a null
+ *  timestamp. A blocked attempt is not a send. */
+export async function sendTotals(): Promise<SendTotals> {
+  const totals: SendTotals = { sent: 0, blocked: 0, failed: 0, suppressed: 0 };
+  await Promise.all(
+    (Object.keys(totals) as Array<keyof SendTotals>).map(async (outcome) => {
+      const { count } = await supabaseAdmin
+        .from("sends")
+        .select("id", { count: "exact", head: true })
+        .eq("outcome", outcome);
+      totals[outcome] = count ?? 0;
+    }),
+  );
+  return totals;
+}
 
 /** The last fifty outbound messages, so a delivery failure is visible on a
  *  screen rather than buried in a log. */
@@ -1154,7 +1174,7 @@ export async function recentSends(): Promise<SendRow[]> {
   const { data } = await supabaseAdmin
     .from("sends")
     .select(
-      "id, created_at, kind, to_email, provider, provider_message_id, status, error, person_id",
+      "id, created_at, kind, to_email, provider, provider_message_id, status, outcome, blocked_reason, error, person_id",
     )
     .order("created_at", { ascending: false })
     .limit(50);
@@ -1184,6 +1204,8 @@ export async function recentSends(): Promise<SendRow[]> {
     provider: (r.provider as string | null) ?? null,
     provider_message_id: (r.provider_message_id as string | null) ?? null,
     status: (r.status as string | null) ?? "unknown",
+    outcome: (r.outcome as string | null) ?? "sent",
+    blocked_reason: (r.blocked_reason as string | null) ?? null,
     error: (r.error as string | null) ?? null,
   }));
 }
