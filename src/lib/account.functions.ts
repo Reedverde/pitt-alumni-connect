@@ -47,10 +47,19 @@ export const getMyProfile = createServerFn({ method: "GET" })
       .select("id, email, is_primary, verified_at, person_id")
       .order("is_primary", { ascending: false });
 
-    const personId = mine?.[0]?.person_id as string | undefined;
-    if (!personId) return { person: null, emails: [], stints: [], rsvp: null };
+    const { loadCurrentEdition } = await import("./editions.server");
+    const current = await loadCurrentEdition();
+    const edition = {
+      event_year: current.event_year,
+      title: current.title,
+      starts_on: current.starts_on,
+      ends_on: current.ends_on,
+    };
 
-    const [personRes, stintRes, rsvpRes] = await Promise.all([
+    const personId = mine?.[0]?.person_id as string | undefined;
+    if (!personId) return { person: null, emails: [], stints: [], rsvp: null, edition, attended: [] };
+
+    const [personRes, stintRes, rsvpRes, historyRes] = await Promise.all([
       supabase
         .from("people")
         .select(
@@ -63,8 +72,13 @@ export const getMyProfile = createServerFn({ method: "GET" })
         .from("rsvps")
         .select("status")
         .eq("person_id", personId)
-        .eq("event_year", EVENT_YEAR)
+        .eq("event_year", edition.event_year)
         .maybeSingle(),
+      supabase
+        .from("rsvps")
+        .select("event_year, status")
+        .eq("person_id", personId)
+        .eq("status", "going"),
     ]);
 
     return {
@@ -77,6 +91,11 @@ export const getMyProfile = createServerFn({ method: "GET" })
       })),
       stints: (stintRes.data ?? []) as MyProfile["stints"],
       rsvp: ((rsvpRes.data?.status as RsvpStatus | undefined) ?? null),
+      edition,
+      attended: (historyRes.data ?? [])
+        .map((r) => r.event_year as number)
+        .filter((y) => y < edition.event_year)
+        .sort((a, b) => a - b),
     };
   });
 
@@ -185,11 +204,13 @@ export const setMyRsvp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { personId: string; status: RsvpStatus }) => input)
   .handler(async ({ data, context }) => {
+    const { currentEditionYear } = await import("./editions.server");
+    const eventYear = await currentEditionYear();
     const { data: existing } = await context.supabase
       .from("rsvps")
       .select("id")
       .eq("person_id", data.personId)
-      .eq("event_year", EVENT_YEAR)
+      .eq("event_year", eventYear)
       .maybeSingle();
     const { error } = existing
       ? await context.supabase
@@ -198,7 +219,7 @@ export const setMyRsvp = createServerFn({ method: "POST" })
           .eq("id", existing.id as string)
       : await context.supabase
           .from("rsvps")
-          .insert({ person_id: data.personId, event_year: EVENT_YEAR, status: data.status, src: "email" });
+          .insert({ person_id: data.personId, event_year: eventYear, status: data.status, src: "email" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
