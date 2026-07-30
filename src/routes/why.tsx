@@ -67,6 +67,7 @@ function WhyPage() {
                 <PhotoSlot
                   className="sm:col-span-1 sm:row-span-2"
                   label="Founding, 1998"
+                  slotKey="why_founding_1998"
                   index="01"
                   ratio="3 / 4"
                   corners={["tl"]}
@@ -74,11 +75,18 @@ function WhyPage() {
                 <PhotoSlot
                   className="sm:col-span-2"
                   label="Back to back, 2013"
+                  slotKey="why_back_to_back_2013"
                   index="02"
                   ratio="16 / 9"
                   corners={["br"]}
                 />
-                <StatementCard className="sm:col-span-2" index="03" ratio="21 / 9" corners={["tl", "br"]}>
+                <StatementCard
+                  className="sm:col-span-2"
+                  index="03"
+                  ratio="21 / 9"
+                  corners={["tl", "br"]}
+                  slotKey="why_statement_card"
+                >
                   It is grey until you say you are coming.
                 </StatementCard>
               </div>
@@ -123,6 +131,7 @@ function WhyPage() {
               <PhotoSlot
                 className="mt-3"
                 label="The return, 2026"
+                slotKey="why_return_2026"
                 index="04"
                 ratio="4 / 3"
                 corners={["bl"]}

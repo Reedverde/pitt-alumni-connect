@@ -16,6 +16,7 @@ import {
   GapsPanel,
 } from "@/components/admin/Panels";
 import { EditionsPanel } from "@/components/admin/EditionsPanel";
+import { PhotosPanel } from "@/components/admin/PhotosPanel";
 import { Section } from "@/components/admin/ui";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -88,6 +89,7 @@ function AdminPage() {
       <PeopleTable />
       <RosterImport seasonYear={data.seasonYear} onDone={refresh} />
       <MergeTool pairs={data.duplicates} onDone={refresh} />
+      <PhotosPanel />
       <ExportPanel />
 
       <Section eyebrow="Data confidence" title="What we actually know">

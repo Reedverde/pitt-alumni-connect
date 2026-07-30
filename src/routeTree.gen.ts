@@ -17,7 +17,9 @@ import { Route as WhyRouteImport } from './routes/why'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated/me'
 import { Route as EditionsYearRouteImport } from './routes/editions.$year'
+import { Route as ApiPhotosUploadRouteImport } from './routes/api/photos/upload'
 import { Route as ApiPublicCalendarDoticsRouteImport } from './routes/api/public/calendar[.]ics'
+import { Route as ApiPublicPhotoSplatRouteImport } from './routes/api/public/photo/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,9 +60,19 @@ const EditionsYearRoute = EditionsYearRouteImport.update({
   path: '/editions/$year',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPhotosUploadRoute = ApiPhotosUploadRouteImport.update({
+  id: '/api/photos/upload',
+  path: '/api/photos/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCalendarDoticsRoute = ApiPublicCalendarDoticsRouteImport.update({
   id: '/api/public/calendar.ics',
   path: '/api/public/calendar.ics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPhotoSplatRoute = ApiPublicPhotoSplatRouteImport.update({
+  id: '/api/public/photo/$',
+  path: '/api/public/photo/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -72,7 +84,9 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
   '/editions/$year': typeof EditionsYearRoute
+  '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
+  '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -82,7 +96,9 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
   '/editions/$year': typeof EditionsYearRoute
+  '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
+  '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -94,7 +110,9 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/me': typeof AuthenticatedMeRoute
   '/editions/$year': typeof EditionsYearRoute
+  '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
+  '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -106,7 +124,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/me'
     | '/editions/$year'
+    | '/api/photos/upload'
     | '/api/public/calendar.ics'
+    | '/api/public/photo/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -116,7 +136,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/me'
     | '/editions/$year'
+    | '/api/photos/upload'
     | '/api/public/calendar.ics'
+    | '/api/public/photo/$'
   id:
     | '__root__'
     | '/'
@@ -127,7 +149,9 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/me'
     | '/editions/$year'
+    | '/api/photos/upload'
     | '/api/public/calendar.ics'
+    | '/api/public/photo/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -137,7 +161,9 @@ export interface RootRouteChildren {
   WeekendRoute: typeof WeekendRoute
   WhyRoute: typeof WhyRoute
   EditionsYearRoute: typeof EditionsYearRoute
+  ApiPhotosUploadRoute: typeof ApiPhotosUploadRoute
   ApiPublicCalendarDoticsRoute: typeof ApiPublicCalendarDoticsRoute
+  ApiPublicPhotoSplatRoute: typeof ApiPublicPhotoSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -198,11 +224,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EditionsYearRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/photos/upload': {
+      id: '/api/photos/upload'
+      path: '/api/photos/upload'
+      fullPath: '/api/photos/upload'
+      preLoaderRoute: typeof ApiPhotosUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/calendar.ics': {
       id: '/api/public/calendar.ics'
       path: '/api/public/calendar.ics'
       fullPath: '/api/public/calendar.ics'
       preLoaderRoute: typeof ApiPublicCalendarDoticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/photo/$': {
+      id: '/api/public/photo/$'
+      path: '/api/public/photo/$'
+      fullPath: '/api/public/photo/$'
+      preLoaderRoute: typeof ApiPublicPhotoSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -228,7 +268,9 @@ const rootRouteChildren: RootRouteChildren = {
   WeekendRoute: WeekendRoute,
   WhyRoute: WhyRoute,
   EditionsYearRoute: EditionsYearRoute,
+  ApiPhotosUploadRoute: ApiPhotosUploadRoute,
   ApiPublicCalendarDoticsRoute: ApiPublicCalendarDoticsRoute,
+  ApiPublicPhotoSplatRoute: ApiPublicPhotoSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
