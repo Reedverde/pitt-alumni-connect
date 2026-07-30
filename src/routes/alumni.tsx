@@ -207,9 +207,15 @@ function AlumniPage() {
               Yours is grey until you say you are coming.
             </p>
             <div className="mt-8">
-              <Link to="/" style={{ ...primaryButton, display: "inline-block", textDecoration: "none" }}>
-                FIND YOUR NAME
-              </Link>
+              {signedIn ? (
+                <Link to="/me" style={{ ...primaryButton, display: "inline-block", textDecoration: "none" }}>
+                  YOUR RECORD
+                </Link>
+              ) : (
+                <Link to="/" style={{ ...primaryButton, display: "inline-block", textDecoration: "none" }}>
+                  FIND YOUR NAME
+                </Link>
+              )}
             </div>
           </Measure>
         </section>
