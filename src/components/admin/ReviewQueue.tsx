@@ -54,6 +54,12 @@ function MemorialCard({ item, onDone }: { item: QueueItem; onDone: () => void })
         Reported by {item.submitter ?? "a member"} on <When value={item.created_at} />. Nothing here
         changes a record until an admin confirms off site and types the confirming name and date.
       </p>
+      <pre
+        className="mt-3 overflow-x-auto"
+        style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 12, color: "var(--steel-ink)" }}
+      >
+        {JSON.stringify(item.payload, null, 2)}
+      </pre>
 
       <label className="label-caps mt-4 block" style={{ color: "var(--sterling)" }}>
         What was confirmed, and how
@@ -86,18 +92,19 @@ function MemorialCard({ item, onDone }: { item: QueueItem; onDone: () => void })
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" style={secondaryButton} disabled={busy} onClick={() => save(false)}>
-          Save note only
-        </button>
         <button
           type="button"
           style={{ ...secondaryButton, opacity: name.trim() && date ? 1 : 0.4 }}
           disabled={busy || !name.trim() || !date}
           onClick={() => save(true)}
         >
-          Record as confirmed
+          Record off-site confirmation
         </button>
       </div>
+      <p className="mt-2" style={{ fontSize: 12, color: "var(--sterling)" }}>
+        A memorial is never approved or rejected with a button. Until a confirmation is recorded the
+        report stays pending and nothing about it is public.
+      </p>
     </div>
   );
 }
