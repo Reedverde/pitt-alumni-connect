@@ -1,5 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -90,8 +90,8 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
             {rows.map((row) => {
               const edit = editing[row.event_year];
               return (
-                <>
-                <tr key={row.event_year}>
+                <Fragment key={row.event_year}>
+                <tr>
                   <td style={cellStyle}>
                     <Num>{row.event_year}</Num>
                   </td>
@@ -257,7 +257,7 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
                   </td>
                 </tr>
                 {edit && (
-                  <tr key={`${row.event_year}-notes`}>
+                  <tr>
                     <td style={cellStyle} colSpan={9}>
                       <div className="grid gap-3 md:grid-cols-2">
                         <label style={{ fontSize: 13, color: "var(--sterling)" }}>
@@ -293,7 +293,7 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
                     </td>
                   </tr>
                 )}
-                </>
+                </Fragment>
               );
             })}
           </tbody>
