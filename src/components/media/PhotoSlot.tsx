@@ -27,6 +27,8 @@ type PhotoSlotProps = {
   /** Outline colour drawn on top of the photograph, e.g. "var(--pure-white)". */
   outline?: string;
   outlineWidth?: number;
+  /** Hide the caption/scrim overlay: for display photographs like the hero. */
+  bare?: boolean;
   className?: string;
 };
 
