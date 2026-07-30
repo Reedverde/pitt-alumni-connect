@@ -98,7 +98,7 @@ function AdminPage() {
       <MailPanel />
       <AuthAttemptsPanel />
       <HeadcountPanel headcount={data.headcount} />
-      <SendsPanel rows={data.sends} />
+      <SendsPanel rows={data.sends} totals={data.sendTotals} />
 
       <Section eyebrow="Data confidence" title="What we actually know">
         <DivisionsPanel rows={data.divisions} onSaved={refresh} />
