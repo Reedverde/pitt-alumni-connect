@@ -3,7 +3,6 @@ import { createHash } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { nameScore } from "./fuzzy";
 import {
-  EVENT_YEAR,
   RSVP_SOURCES,
   RSVP_STATUSES,
   type PersonMatch,
@@ -95,8 +94,9 @@ async function placement(personIds: string[]) {
 }
 
 async function stateFor(personIds: string[]) {
+  const eventYear = await currentEditionYear();
   const [rsvpRes, identRes] = await Promise.all([
-    supabaseAdmin.from("rsvps").select("person_id, status").eq("event_year", EVENT_YEAR).in("person_id", personIds),
+    supabaseAdmin.from("rsvps").select("person_id, status").eq("event_year", eventYear).in("person_id", personIds),
     supabaseAdmin.from("identities").select("person_id, verified_at").in("person_id", personIds),
   ]);
   const rsvp = new Map<string, string>();
@@ -288,7 +288,7 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
       .from("rsvps")
       .select("status")
       .eq("person_id", person.id)
-      .eq("event_year", EVENT_YEAR)
+      .eq("event_year", eventYear)
       .maybeSingle();
     effectiveStatus = (currentRsvp?.status as RsvpStatus | undefined) ?? "not_this_year";
   } else {
@@ -297,7 +297,7 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
       .from("rsvps")
       .select("id")
       .eq("person_id", person.id)
-      .eq("event_year", EVENT_YEAR)
+      .eq("event_year", eventYear)
       .maybeSingle();
 
     if (existingRsvp) {
@@ -308,7 +308,7 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
     } else {
       await supabaseAdmin
         .from("rsvps")
-        .insert({ person_id: person.id, event_year: EVENT_YEAR, status, src });
+        .insert({ person_id: person.id, event_year: eventYear, status, src });
     }
 
     // Identity: if this email is already on file (for anyone), leave it alone.

@@ -1,5 +1,3 @@
-export const EVENT_YEAR = 2026;
-
 export const RSVP_STATUSES = ["going", "maybe", "not_this_year"] as const;
 export type RsvpStatus = (typeof RSVP_STATUSES)[number];
 
