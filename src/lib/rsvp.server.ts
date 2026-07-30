@@ -189,17 +189,49 @@ export type SubmitInput = {
   origin?: string | null;
 };
 
-/** Sends the sign-in link server-side so the destination address is never
- *  disclosed to the caller. Never throws: the RSVP must not depend on it. */
-async function sendMagicLink(opts: {
+/** The RSVP confirmation. It carries a sign-in link, but it is NOT the sign-in
+ *  magic link: it is triggered by answering, not by asking to sign in, so it is
+ *  refused at the choke point while outbound email is paused.
+ *
+ *  Guarded to one confirmation per person, per edition, per status change. The
+ *  guard row is claimed before the send so two concurrent submissions cannot
+ *  both get through, and released again if the send never left the building. */
+async function sendRsvpConfirmation(opts: {
   to: string;
   personId: string;
   firstName: string | null;
   status: RsvpStatus | null;
   origin: string | null | undefined;
+  eventYear: number;
 }) {
+  const guardStatus = opts.status ?? "claimed";
+  const { error: claimError } = await supabaseAdmin.from("confirmation_sends").insert({
+    person_id: opts.personId,
+    event_year: opts.eventYear,
+    status: guardStatus,
+  });
+  // Unique violation: this person already had a confirmation for this answer in
+  // this edition. Nothing changed, so nothing is sent.
+  if (claimError) return;
+
   const { sendMagicLinkEmail } = await import("./mail.server");
-  await sendMagicLinkEmail({ ...opts, status: opts.status ?? "claimed" });
+  const result = await sendMagicLinkEmail({
+    to: opts.to,
+    personId: opts.personId,
+    firstName: opts.firstName,
+    status: guardStatus,
+    origin: opts.origin,
+    kind: "rsvp_confirmation",
+  });
+
+  if (!result.sent) {
+    await supabaseAdmin
+      .from("confirmation_sends")
+      .delete()
+      .eq("person_id", opts.personId)
+      .eq("event_year", opts.eventYear)
+      .eq("status", guardStatus);
+  }
 }
 
 function normalizedName(first: string, last: string | null) {
@@ -433,7 +465,7 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
     const { logSend } = await import("./mail.server");
     await logSend({
       personId: person.id,
-      kind: "magic_link",
+      kind: "rsvp_confirmation",
       toEmail: magicLinkEmail,
       provider: "none",
       providerMessageId: null,
@@ -441,12 +473,13 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
       error: `held back by the ${verdict.reason}`,
     });
   } else {
-    await sendMagicLink({
+    await sendRsvpConfirmation({
       to: magicLinkEmail,
       personId: person.id,
       firstName: person.first_name,
       status: effectiveStatus,
       origin: input.origin,
+      eventYear,
     });
   }
 
