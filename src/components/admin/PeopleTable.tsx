@@ -1,20 +1,11 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Fragment, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { adminUpdatePerson, getAdminPeople } from "@/lib/admin.functions";
-import type { AdminPerson, PeopleFilter } from "@/lib/admin.server";
+import type { AdminPerson } from "@/lib/admin.server";
 import { Empty, Num, Section, cellStyle, hairline, headStyle, inputStyle, primaryButton, secondaryButton } from "./ui";
-
-const FILTERS: { value: PeopleFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "needs_review", label: "Needs review" },
-  { value: "no_grad_year", label: "No grad year" },
-  { value: "no_stints", label: "No stints" },
-  { value: "is_anchor", label: "Anchors" },
-  { value: "deceased", label: "Memorial" },
-];
 
 const DIVISIONS = ["MENS_A", "MENS_B", "WOMENS_A", "WOMENS_B"];
 
@@ -25,7 +16,6 @@ function Flag({ on, children }: { on: boolean; children: string }) {
     </span>
   );
 }
-
 function EditRow({ person, onSaved }: { person: AdminPerson; onSaved: () => void }) {
   const update = useServerFn(adminUpdatePerson);
   const [form, setForm] = useState({
@@ -156,20 +146,159 @@ function EditRow({ person, onSaved }: { person: AdminPerson; onSaved: () => void
   );
 }
 
+
+type SortKey =
+  | "name" | "played_as" | "grad_year" | "board_year" | "board_division" | "team_label"
+  | "stint_count" | "state" | "is_anchor" | "needs_review" | "show_on_board" | "deceased" | "member_no";
+
+const COLUMNS: { key: SortKey; label: string }[] = [
+  { key: "name", label: "Name" },
+  { key: "played_as", label: "Played as" },
+  { key: "grad_year", label: "Grad" },
+  { key: "board_year", label: "Board yr" },
+  { key: "board_division", label: "Division" },
+  { key: "team_label", label: "Team" },
+  { key: "stint_count", label: "Stints" },
+  { key: "state", label: "State" },
+  { key: "is_anchor", label: "Anchor" },
+  { key: "needs_review", label: "Review" },
+  { key: "show_on_board", label: "Visible" },
+  { key: "deceased", label: "Memorial" },
+  { key: "member_no", label: "Member no" },
+];
+
+type Tri = "any" | "yes" | "no";
+const TRI_FIELDS = [
+  { key: "is_anchor", label: "Anchor" },
+  { key: "needs_review", label: "Review" },
+  { key: "show_on_board", label: "Visible" },
+  { key: "deceased", label: "Memorial" },
+] as const;
+
+const fullName = (p: AdminPerson) => [p.first_name, p.last_name].filter(Boolean).join(" ");
+
+function sortValue(p: AdminPerson, key: SortKey): string | number {
+  switch (key) {
+    case "name": return fullName(p).toLowerCase();
+    case "played_as": return (p.played_as ?? "").toLowerCase();
+    case "grad_year": return p.grad_year ?? -1;
+    case "board_year": return p.board_year ?? -1;
+    case "board_division": return p.board_division ?? "";
+    case "team_label": return p.team_label ?? "";
+    case "stint_count": return p.stint_count;
+    case "state": return p.state;
+    case "member_no": return p.member_no;
+    default: return p[key] ? 1 : 0;
+  }
+}
+
+const headButton = (active: boolean): React.CSSProperties => ({
+  ...headStyle,
+  padding: 0,
+  background: "none",
+  color: active ? "var(--pitt-royal)" : "var(--sterling)",
+  cursor: "pointer",
+});
+
+const EMPTY_FILTERS = {
+  query: "",
+  division: "",
+  team: "",
+  state: "",
+  gradFrom: "",
+  gradTo: "",
+  boardFrom: "",
+  boardTo: "",
+  is_anchor: "any" as Tri,
+  needs_review: "any" as Tri,
+  show_on_board: "any" as Tri,
+  deceased: "any" as Tri,
+};
+
 export function PeopleTable() {
   const queryClient = useQueryClient();
   const fetchPeople = useServerFn(getAdminPeople);
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<PeopleFilter>("all");
-  const [division, setDivision] = useState<string | null>(null);
+  const [f, setF] = useState(EMPTY_FILTERS);
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "member_no", dir: "asc" });
   const [openId, setOpenId] = useState<string | null>(null);
 
   const { data = [], isFetching } = useQuery({
-    queryKey: ["admin-people", query, filter, division],
-    queryFn: () => fetchPeople({ data: { query, filter, division } }),
+    queryKey: ["admin-people"],
+    queryFn: () => fetchPeople({}),
   });
 
+  const set = <K extends keyof typeof EMPTY_FILTERS>(key: K, value: (typeof EMPTY_FILTERS)[K]) =>
+    setF((prev) => ({ ...prev, [key]: value }));
+
+  const teams = useMemo(
+    () => Array.from(new Set(data.map((p) => p.team_label).filter(Boolean) as string[])).sort(),
+    [data],
+  );
+  const states = useMemo(
+    () => Array.from(new Set(data.map((p) => p.state))).sort(),
+    [data],
+  );
+
+  const rows = useMemo(() => {
+    const q = f.query.trim().toLowerCase();
+    const inRange = (value: number | null, from: string, to: string) => {
+      if (from === "" && to === "") return true;
+      if (value === null) return false;
+      if (from !== "" && value < Number(from)) return false;
+      if (to !== "" && value > Number(to)) return false;
+      return true;
+    };
+    const tri = (flag: boolean, mode: Tri) => mode === "any" || (mode === "yes") === flag;
+
+    const filtered = data.filter((p) => {
+      if (q) {
+        const hay = [p.first_name, p.last_name ?? "", p.played_as ?? "", String(p.member_no)]
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (f.division && (p.board_division ?? p.seed_division) !== f.division) return false;
+      if (f.team && p.team_label !== f.team) return false;
+      if (f.state && p.state !== f.state) return false;
+      if (!inRange(p.grad_year, f.gradFrom, f.gradTo)) return false;
+      if (!inRange(p.board_year, f.boardFrom, f.boardTo)) return false;
+      for (const t of TRI_FIELDS) if (!tri(Boolean(p[t.key]), f[t.key])) return false;
+      return true;
+    });
+
+    const dir = sort.dir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      const va = sortValue(a, sort.key);
+      const vb = sortValue(b, sort.key);
+      if (va === vb) return a.member_no - b.member_no;
+      return va < vb ? -dir : dir;
+    });
+  }, [data, f, sort]);
+
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin-people"] });
+  const toggleSort = (key: SortKey) =>
+    setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+
+  const triControl = (key: (typeof TRI_FIELDS)[number]["key"], label: string) => (
+    <div key={key} className="flex items-center gap-1">
+      <span className="label-caps" style={{ color: "var(--sterling)" }}>{label}</span>
+      {(["any", "yes", "no"] as Tri[]).map((mode) => (
+        <button
+          key={mode}
+          type="button"
+          onClick={() => set(key, mode)}
+          style={{
+            ...secondaryButton,
+            padding: "5px 8px",
+            fontSize: 11,
+            background: f[key] === mode ? "var(--concrete)" : "transparent",
+          }}
+        >
+          {mode}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <Section
@@ -177,77 +306,68 @@ export function PeopleTable() {
       title="Every record"
       aside={
         <p style={{ fontSize: 12, color: "var(--sterling)" }}>
-          Showing <Num>{data.length}</Num>
+          Showing <Num>{rows.length}</Num> of <Num>{data.length}</Num>
           {isFetching ? " · loading" : ""}
         </p>
       }
     >
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search name or played-as"
-          style={{ ...inputStyle, width: 260 }}
+          value={f.query}
+          onChange={(e) => set("query", e.target.value)}
+          placeholder="Search name, played-as or member no"
+          style={{ ...inputStyle, width: 280 }}
         />
-        {FILTERS.map((f) => (
-          <button
-            key={f.value}
-            type="button"
-            onClick={() => setFilter(f.value)}
-            style={{
-              ...secondaryButton,
-              padding: "7px 11px",
-              fontSize: 11,
-              background: filter === f.value ? "var(--concrete)" : "transparent",
-            }}
-          >
-            {f.label}
-          </button>
-        ))}
-        <select
-          value={division ?? ""}
-          onChange={(e) => setDivision(e.target.value || null)}
-          style={{ ...inputStyle, width: 150 }}
-        >
+        <select value={f.division} onChange={(e) => set("division", e.target.value)} style={{ ...inputStyle, width: 150 }}>
           <option value="">All divisions</option>
-          {DIVISIONS.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
+          {DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
+        <select value={f.team} onChange={(e) => set("team", e.target.value)} style={{ ...inputStyle, width: 170 }}>
+          <option value="">All teams</option>
+          {teams.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <select value={f.state} onChange={(e) => set("state", e.target.value)} style={{ ...inputStyle, width: 150 }}>
+          <option value="">All states</option>
+          {states.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
+        </select>
+        <button type="button" onClick={() => setF(EMPTY_FILTERS)} style={{ ...secondaryButton, padding: "7px 11px", fontSize: 11 }}>
+          Clear all
+        </button>
       </div>
 
-      {data.length === 0 ? (
+      <div className="mb-4 flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-1">
+          <span className="label-caps" style={{ color: "var(--sterling)" }}>Grad</span>
+          <input value={f.gradFrom} onChange={(e) => set("gradFrom", e.target.value)} placeholder="from" inputMode="numeric" style={{ ...inputStyle, width: 74 }} />
+          <input value={f.gradTo} onChange={(e) => set("gradTo", e.target.value)} placeholder="to" inputMode="numeric" style={{ ...inputStyle, width: 74 }} />
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="label-caps" style={{ color: "var(--sterling)" }}>Board yr</span>
+          <input value={f.boardFrom} onChange={(e) => set("boardFrom", e.target.value)} placeholder="from" inputMode="numeric" style={{ ...inputStyle, width: 74 }} />
+          <input value={f.boardTo} onChange={(e) => set("boardTo", e.target.value)} placeholder="to" inputMode="numeric" style={{ ...inputStyle, width: 74 }} />
+        </div>
+        {TRI_FIELDS.map((t) => triControl(t.key, t.label))}
+      </div>
+
+      {rows.length === 0 ? (
         <Empty>No records match.</Empty>
       ) : (
-        <div className="overflow-x-auto" style={{ borderBottom: hairline }}>
+        <div className="overflow-x-auto" style={{ borderBottom: hairline, maxHeight: 640 }}>
           <table className="w-full" style={{ borderCollapse: "collapse", minWidth: 1000 }}>
-            <thead>
+            <thead style={{ position: "sticky", top: 0, zIndex: 1, background: "var(--pure-white)" }}>
               <tr>
-                {[
-                  "Name",
-                  "Played as",
-                  "Grad",
-                  "Board yr",
-                  "Division",
-                  "Team",
-                  "Stints",
-                  "State",
-                  "Anchor",
-                  "Review",
-                  "Visible",
-                  "Memorial",
-                  "Member no",
-                ].map((h) => (
-                  <th key={h} style={headStyle}>
-                    {h}
+                {COLUMNS.map((c) => (
+                  <th key={c.key} style={{ ...headStyle, borderBottom: hairline }}>
+                    <button type="button" onClick={() => toggleSort(c.key)} style={headButton(sort.key === c.key)}>
+                      {c.label}
+                      {sort.key === c.key ? (sort.dir === "asc" ? " ↑" : " ↓") : ""}
+                    </button>
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {data.map((person) => (
+              {rows.map((person) => (
                 <Fragment key={person.id}>
                   <tr>
                     <td style={cellStyle}>
@@ -256,7 +376,7 @@ export function PeopleTable() {
                         onClick={() => setOpenId(openId === person.id ? null : person.id)}
                         style={{ textAlign: "left", color: "var(--pitt-royal)", fontWeight: 600 }}
                       >
-                        {[person.first_name, person.last_name].filter(Boolean).join(" ")}
+                        {fullName(person)}
                       </button>
                     </td>
                     <td style={{ ...cellStyle, color: "var(--sterling)" }}>{person.played_as ?? "—"}</td>
