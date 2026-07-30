@@ -103,6 +103,55 @@ export type Database = {
           },
         ]
       }
+      auth_attempts: {
+        Row: {
+          created_at: string
+          detail: string | null
+          email_attempted: string
+          id: string
+          outcome: string
+          person_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          email_attempted: string
+          id?: string
+          outcome: string
+          person_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          email_attempted?: string
+          id?: string
+          outcome?: string
+          person_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auth_attempts_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auth_attempts_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auth_attempts_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
       divisions: {
         Row: {
           code: string

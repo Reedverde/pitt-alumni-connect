@@ -1396,3 +1396,47 @@ export async function listEditionEvents(eventYear: number) {
     .order("sort_order");
   return data ?? [];
 }
+
+// ------------------------------------------------- sign-in attempts
+
+export type AuthAttemptRow = {
+  id: string;
+  created_at: string | null;
+  email_attempted: string;
+  outcome: string;
+  detail: string | null;
+  name: string | null;
+};
+
+/** Every sign-in link request, including the ones the page deliberately keeps
+ *  quiet about. A broken submit button used to be indistinguishable from a
+ *  working one; this is the screen where it is not. */
+export async function recentAuthAttempts(): Promise<AuthAttemptRow[]> {
+  const { data } = await supabaseAdmin
+    .from("auth_attempts")
+    .select("id, created_at, email_attempted, outcome, detail, person_id")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  const rows = (data ?? []) as Record<string, unknown>[];
+  const ids = [...new Set(rows.map((r) => r.person_id as string).filter(Boolean))];
+  const names = new Map<string, string>();
+  if (ids.length > 0) {
+    const { data: people } = await supabaseAdmin
+      .from("people")
+      .select("id, first_name, last_name")
+      .in("id", ids);
+    for (const p of people ?? []) {
+      names.set(p.id as string, [p.first_name, p.last_name].filter(Boolean).join(" "));
+    }
+  }
+
+  return rows.map((r) => ({
+    id: r.id as string,
+    created_at: (r.created_at as string | null) ?? null,
+    email_attempted: (r.email_attempted as string | null) ?? "",
+    outcome: (r.outcome as string | null) ?? "unknown",
+    detail: (r.detail as string | null) ?? null,
+    name: names.get(r.person_id as string) ?? null,
+  }));
+}

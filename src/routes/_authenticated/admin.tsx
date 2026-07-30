@@ -19,6 +19,7 @@ import { EditionsPanel } from "@/components/admin/EditionsPanel";
 import { PhotosPanel } from "@/components/admin/PhotosPanel";
 import { SendsPanel } from "@/components/admin/SendsPanel";
 import { MailPanel } from "@/components/admin/MailPanel";
+import { AuthAttemptsPanel } from "@/components/admin/AuthAttemptsPanel";
 import { Section } from "@/components/admin/ui";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -94,6 +95,7 @@ function AdminPage() {
       <PhotosPanel />
       <ExportPanel />
       <MailPanel />
+      <AuthAttemptsPanel />
       <SendsPanel rows={data.sends} />
 
       <Section eyebrow="Data confidence" title="What we actually know">

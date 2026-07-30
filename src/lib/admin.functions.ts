@@ -286,3 +286,12 @@ export const adminTestSend = createServerFn({ method: "POST" })
     },
   );
 
+
+export const getAuthAttempts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return [];
+    return mod.recentAuthAttempts();
+  });

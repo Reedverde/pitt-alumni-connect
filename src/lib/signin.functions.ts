@@ -1,13 +1,30 @@
 import { createServerFn } from "@tanstack/react-start";
 
 /** Sign-in link request from /auth. Routed through our own sender so it is
- *  not subject to the built-in mailer's few-per-hour cap. Always reports the
- *  same result: whether an address is on the list is never disclosed. */
+ *  not subject to the built-in mailer's few-per-hour cap.
+ *
+ *  Two separate concerns, deliberately split:
+ *  - Whether an address is on the list is never disclosed: every branch that
+ *    completes returns the same { ok: true } and the page shows one neutral
+ *    sentence. What actually happened is written to auth_attempts, which only
+ *    an admin can read.
+ *  - A transport or code failure is NOT hidden. It throws, the client catches
+ *    it, and the page shows an error instead of the success notice. */
 export const requestSignInLink = createServerFn({ method: "POST" })
   .inputValidator((input: { email: string; origin?: string | null }) => input)
   .handler(async ({ data }): Promise<{ ok: true }> => {
     const email = String(data?.email ?? "").trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) return { ok: true };
+    const { logAuthAttempt } = await import("./auth-attempts.server");
+
+    if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) {
+      await logAuthAttempt({
+        email,
+        personId: null,
+        outcome: "invalid_format",
+        detail: "address did not parse",
+      });
+      return { ok: true };
+    }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: identity } = await supabaseAdmin
@@ -15,7 +32,16 @@ export const requestSignInLink = createServerFn({ method: "POST" })
       .select("person_id")
       .eq("email", email)
       .maybeSingle();
-    if (!identity) return { ok: true };
+
+    if (!identity) {
+      await logAuthAttempt({
+        email,
+        personId: null,
+        outcome: "no_identity_match",
+        detail: "no identity row for that address",
+      });
+      return { ok: true };
+    }
 
     const personId = identity.person_id as string;
     const { data: person } = await supabaseAdmin
@@ -33,6 +59,8 @@ export const requestSignInLink = createServerFn({ method: "POST" })
       .eq("event_year", eventYear)
       .maybeSingle();
 
+    // sendMagicLinkEmail never throws and writes its own auth_attempts row on
+    // every branch, so exactly one row exists per request either way.
     const { sendMagicLinkEmail } = await import("./mail.server");
     await sendMagicLinkEmail({
       to: email,
