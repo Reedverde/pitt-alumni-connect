@@ -304,6 +304,18 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
         const allEvents = rows.find((r) => r.event_year === eventYear)?.events ?? [];
         const placeholderCount = allEvents.filter((e) => e.is_placeholder).length;
         const shown = placeholdersOnly ? allEvents.filter((e) => e.is_placeholder) : allEvents;
+        // Two events, two places, one of them at a fixed time: worth a look before
+        // anybody has to drive between them. A nudge for organizers, not an alarm.
+        const overlapDays = new Set(
+          [...new Set(allEvents.map((e) => e.day_number ?? 1))].filter((day) => {
+            const onDay = allEvents.filter((e) => (e.day_number ?? 1) === day);
+            const places = new Set(
+              onDay.map((e) => (e.location ?? "").trim().toLowerCase()).filter(Boolean),
+            );
+            return places.size >= 2 && onDay.some((e) => !e.time_tbd);
+          }),
+        );
+        let notedDay: number | null = null;
         return (
         <div className="mt-6" style={{ border: hairline, padding: 16 }}>
           <p className="label-caps mb-3" style={{ color: "var(--sterling)" }}>
@@ -324,8 +336,18 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
             </button>
           </div>
           <div className="mb-6 flex flex-col gap-2">
-            {shown.map((ev) => (
-              <div key={ev.id} className="flex flex-wrap items-center gap-3" style={{ fontSize: 13 }}>
+            {shown.map((ev) => {
+              const day = ev.day_number ?? 1;
+              const showNote = overlapDays.has(day) && notedDay !== day;
+              if (showNote) notedDay = day;
+              return (
+              <div key={ev.id}>
+                {showNote && (
+                  <p style={{ fontSize: 13, color: "var(--steel-ink)", marginBottom: 6 }}>
+                    Two events, two locations. Check for overlap.
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-3" style={{ fontSize: 13 }}>
                 <Num>Day {ev.day_number ?? 1}</Num>
                 <span style={{ color: "var(--sabah-black)" }}>{ev.title}</span>
                 <span className="label-caps" style={{ color: "var(--sterling)" }}>
