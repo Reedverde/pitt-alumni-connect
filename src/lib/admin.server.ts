@@ -168,47 +168,16 @@ function fullName(p: { first_name: string; last_name?: string | null }) {
 
 // ---------------------------------------------------------------- people
 
-export type PeopleFilter =
-  | "all"
-  | "needs_review"
-  | "no_grad_year"
-  | "no_stints"
-  | "is_anchor"
-  | "deceased";
-
-export async function listPeople(opts: {
-  query: string;
-  filter: PeopleFilter;
-  division: string | null;
-}): Promise<AdminPerson[]> {
+/** The admin table sorts and filters client side over the whole set, so this
+ *  returns every record decorated once. 468 rows is nothing to render. */
+export async function listPeople(): Promise<AdminPerson[]> {
   const { data } = await supabaseAdmin
     .from("people")
     .select(PERSON_COLUMNS)
     .order("member_no", { ascending: true })
     .limit(2000);
   const ctx = await loadContext();
-  let rows = (data ?? []) as PersonRow[];
-
-  if (opts.filter === "needs_review") rows = rows.filter((r) => r.needs_review);
-  if (opts.filter === "no_grad_year") rows = rows.filter((r) => r.grad_year === null);
-  if (opts.filter === "no_stints") rows = rows.filter((r) => (ctx.stints.get(r.id) ?? 0) === 0);
-  if (opts.filter === "is_anchor") rows = rows.filter((r) => r.is_anchor);
-  if (opts.filter === "deceased") rows = rows.filter((r) => r.deceased);
-
-  if (opts.division)
-    rows = rows.filter(
-      (r) => (ctx.placement.get(r.id)?.board_division ?? r.seed_division) === opts.division,
-    );
-
-  const q = normalize(opts.query ?? "");
-  if (q)
-    rows = rows.filter(
-      (r) =>
-        normalize(`${fullName(r)} ${r.played_as ?? ""}`).includes(q) ||
-        nameScore(q, fullName(r)) > 0.78,
-    );
-
-  return decorateAll(rows.slice(0, 400), ctx);
+  return decorateAll((data ?? []) as PersonRow[], ctx);
 }
 
 const EDITABLE_FIELDS = [
