@@ -2,14 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
 
-import { getSchedule, type ScheduleEvent } from "@/lib/schedule.functions";
-import { getPastEditions } from "@/lib/editions.functions";
+import { getWeekendPage, type ScheduleEvent } from "@/lib/schedule.functions";
 import {
   dayLabel,
   dayName,
   editionDateRange,
   editionDay,
   editionEyebrow,
+  nextOctoberYear,
+  resolveSeason,
+  todayInNewYork,
   type EditionSummary,
 } from "@/lib/edition-format";
 import { SiteNav } from "@/components/SiteNav";
@@ -21,22 +23,13 @@ import { PhotoSlot } from "@/components/media/PhotoSlot";
 import { NotchedBox } from "@/components/media/NotchedBox";
 import { NOTCH_LG, NOTCH_SM, type NotchCorner } from "@/components/media/notch";
 
-const scheduleQuery = queryOptions({
-  queryKey: ["schedule", "current"],
-  queryFn: () => getSchedule({ data: {} }),
-});
-
-const pastEditionsQuery = queryOptions({
-  queryKey: ["past-editions"],
-  queryFn: () => getPastEditions(),
+const weekendQuery = queryOptions({
+  queryKey: ["weekend-page"],
+  queryFn: () => getWeekendPage(),
 });
 
 export const Route = createFileRoute("/weekend")({
-  loader: ({ context }) =>
-    Promise.all([
-      context.queryClient.ensureQueryData(scheduleQuery),
-      context.queryClient.ensureQueryData(pastEditionsQuery),
-    ]),
+  loader: ({ context }) => context.queryClient.ensureQueryData(weekendQuery),
   head: () => ({
     meta: [
       { title: "Alumni Weekend Schedule — Pitt Club Ultimate" },
