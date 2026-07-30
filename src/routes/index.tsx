@@ -289,6 +289,13 @@ function Hero({
 }) {
   const edition = season.edition;
   const dates = edition ? editionShortDates(edition) : null;
+  const { signedIn, rsvpStatus } = useSessionPerson();
+  const heroQuiet =
+    signedIn && rsvpStatus === "going"
+      ? "You're coming"
+      : signedIn && rsvpStatus === "not_this_year"
+        ? "See you next year"
+        : null;
   return (
     <section style={{ background: "var(--sabah-black)" }}>
       <div
