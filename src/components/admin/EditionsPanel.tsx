@@ -90,6 +90,7 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
             {rows.map((row) => {
               const edit = editing[row.event_year];
               return (
+                <>
                 <tr key={row.event_year}>
                   <td style={cellStyle}>
                     <Num>{row.event_year}</Num>
@@ -255,6 +256,44 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
                     </div>
                   </td>
                 </tr>
+                {edit && (
+                  <tr key={`${row.event_year}-notes`}>
+                    <td style={cellStyle} colSpan={9}>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <label style={{ fontSize: 13, color: "var(--sterling)" }}>
+                          Lodging note
+                          <textarea
+                            style={{ ...inputStyle, minHeight: 84 }}
+                            value={edit.lodging_note}
+                            onChange={(e) =>
+                              setEditing((s) => ({
+                                ...s,
+                                [row.event_year]: { ...edit, lodging_note: e.target.value },
+                              }))
+                            }
+                          />
+                        </label>
+                        <label style={{ fontSize: 13, color: "var(--sterling)" }}>
+                          Travel note
+                          <textarea
+                            style={{ ...inputStyle, minHeight: 84 }}
+                            value={edit.travel_note}
+                            onChange={(e) =>
+                              setEditing((s) => ({
+                                ...s,
+                                [row.event_year]: { ...edit, travel_note: e.target.value },
+                              }))
+                            }
+                          />
+                        </label>
+                      </div>
+                      <p className="mt-2" style={{ fontSize: 13, color: "var(--sterling)" }}>
+                        Plain text. Both show on the weekend page when filled and disappear when empty.
+                      </p>
+                    </td>
+                  </tr>
+                )}
+                </>
               );
             })}
           </tbody>
