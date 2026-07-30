@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type {
   AdminDashboard,
   AdminPerson,
+  MailStatus,
   PeopleFilter,
   RosterLine,
 } from "./admin.server";
