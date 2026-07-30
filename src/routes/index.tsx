@@ -320,8 +320,8 @@ function Hero({
           aria-hidden={false}
           className="pointer-events-none absolute left-1/2 z-10"
           style={{
-            width: "min(150vw, 1460px)",
-            bottom: "-16vw",
+            width: "min(140vw, 1400px)",
+            bottom: "-26vw",
             transform: "translateX(-50%) rotate(38deg)",
             transformOrigin: "50% 100%",
           }}
