@@ -127,3 +127,9 @@ LATER: tournament tracker. Alumni job network built on the open_to_network conse
 - identities policies rewritten: own person or admin for select, insert, update, delete. anon holds column grants on person_id and verified_at only.
 - people column grants tightened for authenticated: no deceased_note, deceased_confirmed_*, is_anchor, seed_id, needs_review, member_no. Updates limited to the seven self editable columns.
 - Data API access revoked for anon and authenticated on sends, suppressions, preapproved_emails, sequences, throttle_events, identities_needing_second_email.
+
+## 2026-07-30 anon identities lockdown
+- Dropped policy "identities public claimed flag only" and revoked all anon grants on public.identities. Anon read of identities now returns 401 / zero rows.
+- board_people, board_year_counts and person_board_placement run with security_invoker = off so the public board keeps working without any anon access to identities. These views expose no email column. This is a deliberate trade against the linter's "security definer view" rule.
+- /me resolves auth.uid() -> identities.auth_user_id -> person_id and filters every query by that id, including for admins. Verified: signed in as an admin, /me returns only Reed Verdesoto and his 3 own addresses while RLS would allow 124.
+- throttle_events stays policy-free: written only by server code using the service role.
