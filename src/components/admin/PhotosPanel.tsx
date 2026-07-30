@@ -8,6 +8,7 @@ import {
   getPhotoLibrary,
   removePhoto,
   updatePhotoAlt,
+  updatePhotoBoardYear,
 } from "@/lib/photos.functions";
 import { SLOT_LABELS, photoUrl } from "@/lib/photo-slots";
 import { Section, hairline, inputStyle, mono, primaryButton, secondaryButton } from "./ui";
@@ -36,6 +37,7 @@ export function PhotosPanel() {
   const queryClient = useQueryClient();
   const fetchLibrary = useServerFn(getPhotoLibrary);
   const saveAlt = useServerFn(updatePhotoAlt);
+  const saveYear = useServerFn(updatePhotoBoardYear);
   const assign = useServerFn(assignPhotoSlot);
   const destroy = useServerFn(removePhoto);
 
@@ -117,6 +119,7 @@ export function PhotosPanel() {
 
   const photos = data.photos;
   const slots = data.slots;
+  const untagged = photos.filter((p) => p.board_year === null).length;
 
   return (
     <Section eyebrow="Photographs" title="Upload and assign">
@@ -181,6 +184,11 @@ export function PhotosPanel() {
       <h3 className="mt-10" style={{ ...mono, fontSize: 12, color: "var(--sterling)" }}>
         LIBRARY ({photos.length})
       </h3>
+      <p style={{ fontSize: 13, color: untagged > 0 ? "var(--pitt-royal)" : "var(--sterling)" }}>
+        {untagged === 0
+          ? "Every photograph has a year."
+          : `${untagged} of ${photos.length} photographs have no year and stay off the board.`}
+      </p>
       <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {photos.map((p) => (
           <div key={p.id} style={{ border: hairline, borderRadius: 7, padding: 8 }}>
@@ -203,6 +211,19 @@ export function PhotosPanel() {
               onBlur={async (e) => {
                 if (e.target.value === (p.alt ?? "")) return;
                 await saveAlt({ data: { photoId: p.id, alt: e.target.value } });
+                refresh();
+              }}
+            />
+            <input
+              type="number"
+              defaultValue={p.board_year ?? ""}
+              placeholder="Board year"
+              style={{ ...inputStyle, marginTop: 6 }}
+              onBlur={async (e) => {
+                const raw = e.target.value.trim();
+                const next = raw === "" ? null : Number(raw);
+                if ((next ?? null) === (p.board_year ?? null)) return;
+                await saveYear({ data: { photoId: p.id, year: next } });
                 refresh();
               }}
             />
