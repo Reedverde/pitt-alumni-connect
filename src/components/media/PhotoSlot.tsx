@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 
 import { NotchedBox } from "./NotchedBox";
 import { photoUrl, usePhotoSlots } from "@/lib/photo-slots";
-import { NOTCH_LG, type NotchCorner } from "./notch";
+import { NOTCH_ALL, NOTCH_LG, type NotchCorner } from "./notch";
 
 type PhotoSlotProps = {
   /** What photograph belongs in this seat, e.g. "SIDELINE, 2013 NATIONALS". */
@@ -11,7 +11,7 @@ type PhotoSlotProps = {
   index?: string;
   /** Aspect ratio as width/height, e.g. "16 / 9" or "3 / 4". */
   ratio?: string;
-  /** Which corners are cut. Never all four. */
+  /** Which corners are cut. Photographs default to all four. */
   corners?: NotchCorner[];
   notch?: number;
   /** Reads photo_slots for this key. Empty slot keeps the dashed state. */
@@ -45,7 +45,7 @@ export function PhotoSlot({
   label,
   index = "01",
   ratio = "16 / 9",
-  corners = ["tl"],
+  corners = NOTCH_ALL,
   notch = NOTCH_LG,
   slotKey,
   src,
@@ -137,7 +137,7 @@ export function StatementCard({
   children,
   index = "00",
   ratio = "1 / 1",
-  corners = ["br"],
+  corners = NOTCH_ALL,
   slotKey,
   className,
 }: {

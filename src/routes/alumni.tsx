@@ -138,7 +138,6 @@ function AlumniPage() {
             className="md:col-span-7"
             index="03"
             ratio="21 / 9"
-            corners={["tl", "bl"]}
             slotKey="why_statement_card"
           >
             THE ROSTER JUST GETS LONGER
