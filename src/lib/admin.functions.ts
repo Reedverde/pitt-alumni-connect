@@ -270,6 +270,19 @@ export const adminMailStatus = createServerFn({ method: "GET" })
     return mod.mailConfigStatus();
   });
 
+export const adminSetOutboundEmailMode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { mode: "transactional_only" | "all" }) => input)
+  .handler(
+    async ({ data, context }): Promise<{ ok: boolean; mode: string; detail: string }> => {
+      const mod = await import("./admin.server");
+      const actor = await mod.adminActor(context.supabase);
+      if (!actor) return { ok: false, mode: "transactional_only", detail: "Not permitted." };
+      const mode = data.mode === "all" ? "all" : "transactional_only";
+      return mod.setOutboundEmailMode(actor, mode);
+    },
+  );
+
 export const adminTestSend = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { email: string }) => input)

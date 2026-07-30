@@ -16,6 +16,93 @@ import { logAuthAttempt } from "./auth-attempts.server";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
+/** The only kind of message allowed out while outbound email is paused. The
+ *  allow list is by message kind, not by calling function: a test send or a
+ *  party-size link is not a sign-in link even though it shares the code path. */
+const TRANSACTIONAL_KINDS = new Set(["magic_link"]);
+
+export type OutboundEmailMode = "transactional_only" | "all";
+
+/** Read of the single switch. Fails closed: if the setting cannot be read we
+ *  behave as though everything except sign-in links is paused. */
+export async function outboundEmailMode(): Promise<OutboundEmailMode> {
+  try {
+    const { data } = await supabaseAdmin
+      .from("app_settings")
+      .select("value")
+      .eq("key", "outbound_email_mode")
+      .maybeSingle();
+    return (data as { value?: string } | null)?.value === "all" ? "all" : "transactional_only";
+  } catch {
+    return "transactional_only";
+  }
+}
+
+export function outboundEmailModeSentence(mode: OutboundEmailMode) {
+  return mode === "all"
+    ? "Outbound email: on. Every message type can be sent."
+    : "Outbound email: paused. Only sign-in links are being sent.";
+}
+
+type DeliverInput = {
+  kind: string;
+  to: string;
+  personId: string | null;
+  subject: string;
+  text: string;
+  html: string;
+};
+
+/** THE CHOKE POINT. Nothing else in this codebase may call the Resend send
+ *  endpoint. Every message is checked against the outbound email mode here,
+ *  and a refusal writes a blocked row before returning. */
+async function resendDeliver(
+  input: DeliverInput,
+): Promise<{ ok: boolean; messageId: string | null; error: string | null; blocked?: true }> {
+  const { apiKey, fromAddress, fromName, replyTo } = mailConfig();
+  const mode = await outboundEmailMode();
+
+  if (mode !== "all" && !TRANSACTIONAL_KINDS.has(input.kind)) {
+    const reason = `outbound email is paused (transactional_only); "${input.kind}" is not a sign-in link`;
+    await logSend({
+      personId: input.personId,
+      kind: input.kind,
+      toEmail: input.to,
+      provider: "none",
+      providerMessageId: null,
+      status: "blocked",
+      error: reason,
+    });
+    console.warn(`[mail] blocked: ${reason}`);
+    return { ok: false, messageId: null, error: reason, blocked: true };
+  }
+
+  const headers = unsubscribeHeaders(input.to);
+  const res = await fetch(RESEND_ENDPOINT, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: `${fromName} <${fromAddress}>`,
+      to: [input.to],
+      subject: input.subject,
+      text: input.text,
+      html: input.html,
+      ...(replyTo ? { reply_to: replyTo } : {}),
+      ...(Object.keys(headers).length ? { headers } : {}),
+    }),
+  });
+
+  const payload = (await res.json().catch(() => null)) as { id?: string; message?: string } | null;
+  if (!res.ok) {
+    return {
+      ok: false,
+      messageId: null,
+      error: `Resend refused [${res.status}]: ${payload?.message ?? "unknown error"}`,
+    };
+  }
+  return { ok: true, messageId: payload?.id ?? null, error: null };
+}
+
 /** Sender identity is configuration, never code. The domain moves when the
  *  project's own domain is delegated: that is a secret change, not a deploy. */
 function mailConfig() {
@@ -193,6 +280,7 @@ async function enforceNoTracking(
 export async function mailStatus() {
   const { apiKey, fromAddress, fromName, replyTo } = mailConfig();
   const check = await checkSendingDomain(true);
+  const mode = await outboundEmailMode();
   return {
     fromAddress,
     fromName,
@@ -204,6 +292,8 @@ export async function mailStatus() {
     detail: check.detail,
     clickTracking: check.clickTracking,
     openTracking: check.openTracking,
+    outboundMode: mode,
+    outboundSentence: outboundEmailModeSentence(mode),
   };
 }
 
@@ -360,10 +450,28 @@ export async function sendMagicLinkEmail(opts: {
   kind?: string;
 }): Promise<MagicLinkResult> {
   const to = opts.to.trim().toLowerCase();
-  const { apiKey, fromAddress, fromName, replyTo } = mailConfig();
+  const { apiKey, fromAddress } = mailConfig();
   const kind = opts.kind ?? "magic_link";
 
   try {
+    // The built-in mailer below is a second way out of the building, so the
+    // same one switch is consulted before any of it runs. The decision itself
+    // lives in outboundEmailMode(); this is not a second policy.
+    if (!TRANSACTIONAL_KINDS.has(kind) && (await outboundEmailMode()) !== "all") {
+      const reason = `outbound email is paused (transactional_only); "${kind}" is not a sign-in link`;
+      await logSend({
+        personId: opts.personId,
+        kind,
+        toEmail: to,
+        provider: "none",
+        providerMessageId: null,
+        status: "blocked",
+        error: reason,
+      });
+      await logAuthAttempt({ email: to, personId: opts.personId, outcome: "blocked", detail: reason });
+      return { sent: false, provider: "none", messageId: null, reason };
+    }
+
     if (await isSuppressed(to)) {
       await logSend({
         personId: opts.personId,
@@ -467,45 +575,37 @@ export async function sendMagicLinkEmail(opts: {
       dates,
     });
 
-    const headers = unsubscribeHeaders(to);
-
-    const res = await fetch(RESEND_ENDPOINT, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: `${fromName} <${fromAddress}>`,
-        to: [to],
-        subject: "Confirm your spot, Pitt Club Ultimate",
-        text,
-        html,
-        ...(replyTo ? { reply_to: replyTo } : {}),
-        ...(Object.keys(headers).length ? { headers } : {}),
-      }),
+    const delivery = await resendDeliver({
+      kind,
+      to,
+      personId: opts.personId,
+      subject: "Confirm your spot, Pitt Club Ultimate",
+      text,
+      html,
     });
 
-    const payload = (await res.json().catch(() => null)) as
-      | { id?: string; message?: string }
-      | null;
-
-    if (!res.ok) {
-      const message = `Resend refused [${res.status}]: ${payload?.message ?? "unknown error"}`;
+    if (!delivery.ok) {
+      const message = delivery.error ?? "the send did not go out";
       console.error(`[mail] ${message}`);
-      await logSend({
-        personId: opts.personId,
-        kind,
-        toEmail: to,
-        provider: "resend",
-        providerMessageId: null,
-        status: "failed",
-        error: message,
-      });
+      // resendDeliver already logged a blocked row; only log real failures here.
+      if (!delivery.blocked) {
+        await logSend({
+          personId: opts.personId,
+          kind,
+          toEmail: to,
+          provider: "resend",
+          providerMessageId: null,
+          status: "failed",
+          error: message,
+        });
+      }
       await logAuthAttempt({
         email: to,
         personId: opts.personId,
-        outcome: "send_failed",
+        outcome: delivery.blocked ? "blocked" : "send_failed",
         detail: message,
       });
-      return { sent: false, provider: "resend", messageId: null, reason: message };
+      return { sent: false, provider: delivery.blocked ? "none" : "resend", messageId: null, reason: message };
     }
 
     await logSend({
@@ -513,12 +613,12 @@ export async function sendMagicLinkEmail(opts: {
       kind,
       toEmail: to,
       provider: "resend",
-      providerMessageId: payload?.id ?? null,
+      providerMessageId: delivery.messageId,
       status: "sent",
       error: null,
     });
     await logAuthAttempt({ email: to, personId: opts.personId, outcome: "sent", detail: null });
-    return { sent: true, provider: "resend", messageId: payload?.id ?? null, reason: null };
+    return { sent: true, provider: "resend", messageId: delivery.messageId, reason: null };
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown error";
     console.error(`[mail] send threw: ${message}`);
@@ -556,7 +656,7 @@ export async function sendPlainEmail(opts: {
   html: string;
 }): Promise<MagicLinkResult> {
   const to = opts.to.trim().toLowerCase();
-  const { apiKey, fromAddress, fromName, replyTo } = mailConfig();
+  const { apiKey, fromAddress } = mailConfig();
 
   try {
     if (await isSuppressed(to)) {
@@ -600,36 +700,34 @@ export async function sendPlainEmail(opts: {
       return { sent: false, provider: "none", messageId: null, reason: domainCheck.detail };
     }
 
-    const headers = unsubscribeHeaders(to);
-
-    const res = await fetch(RESEND_ENDPOINT, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: `${fromName} <${fromAddress}>`,
-        to: [to],
-        subject: opts.subject,
-        text: opts.text,
-        html: opts.html,
-        ...(replyTo ? { reply_to: replyTo } : {}),
-        ...(Object.keys(headers).length ? { headers } : {}),
-      }),
+    const delivery = await resendDeliver({
+      kind: opts.kind,
+      to,
+      personId: opts.personId,
+      subject: opts.subject,
+      text: opts.text,
+      html: opts.html,
     });
 
-    const payload = (await res.json().catch(() => null)) as { id?: string; message?: string } | null;
-
-    if (!res.ok) {
-      const message = `Resend refused [${res.status}]: ${payload?.message ?? "unknown error"}`;
-      await logSend({
-        personId: opts.personId,
-        kind: opts.kind,
-        toEmail: to,
-        provider: "resend",
-        providerMessageId: null,
-        status: "failed",
-        error: message,
-      });
-      return { sent: false, provider: "resend", messageId: null, reason: message };
+    if (!delivery.ok) {
+      const message = delivery.error ?? "the send did not go out";
+      if (!delivery.blocked) {
+        await logSend({
+          personId: opts.personId,
+          kind: opts.kind,
+          toEmail: to,
+          provider: "resend",
+          providerMessageId: null,
+          status: "failed",
+          error: message,
+        });
+      }
+      return {
+        sent: false,
+        provider: delivery.blocked ? "none" : "resend",
+        messageId: null,
+        reason: message,
+      };
     }
 
     await logSend({
@@ -637,11 +735,11 @@ export async function sendPlainEmail(opts: {
       kind: opts.kind,
       toEmail: to,
       provider: "resend",
-      providerMessageId: payload?.id ?? null,
+      providerMessageId: delivery.messageId,
       status: "sent",
       error: null,
     });
-    return { sent: true, provider: "resend", messageId: payload?.id ?? null, reason: null };
+    return { sent: true, provider: "resend", messageId: delivery.messageId, reason: null };
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown error";
     console.error(`[mail] plain send threw: ${message}`);
