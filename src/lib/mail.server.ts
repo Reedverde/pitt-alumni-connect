@@ -280,6 +280,7 @@ async function enforceNoTracking(
 export async function mailStatus() {
   const { apiKey, fromAddress, fromName, replyTo } = mailConfig();
   const check = await checkSendingDomain(true);
+  const mode = await outboundEmailMode();
   return {
     fromAddress,
     fromName,
@@ -291,6 +292,8 @@ export async function mailStatus() {
     detail: check.detail,
     clickTracking: check.clickTracking,
     openTracking: check.openTracking,
+    outboundMode: mode,
+    outboundSentence: outboundEmailModeSentence(mode),
   };
 }
 
