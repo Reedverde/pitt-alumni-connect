@@ -471,3 +471,64 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
     },
   };
 }
+
+/** The person skipped the question during the claim and answered it on the
+ *  confirmation screen instead. Accepts only the pair (person, email) that the
+ *  claim just created, and only while that identity is still unverified. */
+export async function answerAfterClaimServer(
+  input: { personId: string; email: string; status: RsvpStatus },
+  ip: string,
+): Promise<{ ok: true }> {
+  if (!RSVP_STATUSES.includes(input.status)) throw new Error("Something went wrong. Try again.");
+  if (!isValidEmail(input.email)) throw new Error("Something went wrong. Try again.");
+  const email = input.email.trim().toLowerCase();
+  const ipHash = hashIp(ip);
+
+  const verdict = await evaluateRsvpThrottle(ipHash, email);
+  if (verdict.level === "hard") throw new Error("Something went wrong. Try again later.");
+  await recordThrottleEvent("rsvp_ip", ipHash);
+
+  const { data: identity } = await supabaseAdmin
+    .from("identities")
+    .select("id, person_id, verified_at")
+    .eq("email", email)
+    .eq("person_id", input.personId)
+    .maybeSingle();
+  // Silent no-op rather than an error: never disclose which pairs exist.
+  if (!identity || identity.verified_at) return { ok: true };
+
+  const { data: person } = await supabaseAdmin
+    .from("people")
+    .select("id, deceased")
+    .eq("id", input.personId)
+    .maybeSingle();
+  if (!person || person.deceased) return { ok: true };
+
+  const eventYear = await currentEditionYear();
+  const { data: existing } = await supabaseAdmin
+    .from("rsvps")
+    .select("id")
+    .eq("person_id", input.personId)
+    .eq("event_year", eventYear)
+    .maybeSingle();
+
+  if (existing) {
+    await supabaseAdmin
+      .from("rsvps")
+      .update({ status: input.status, responded_at: new Date().toISOString() })
+      .eq("id", existing.id as string);
+  } else {
+    await supabaseAdmin
+      .from("rsvps")
+      .insert({ person_id: input.personId, event_year: eventYear, status: input.status, src: "email" });
+  }
+
+  await supabaseAdmin.from("audit_log").insert({
+    action: "rsvp_answered_after_skip",
+    table_name: "rsvps",
+    record_id: input.personId,
+    after: { status: input.status, ip_hash: ipHash },
+  });
+
+  return { ok: true };
+}
