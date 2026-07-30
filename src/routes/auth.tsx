@@ -66,13 +66,20 @@ function AuthPage() {
     setBusy(true);
     setError(null);
     try {
-      await sendSignInLink({
+      const result = await sendSignInLink({
         data: { email: email.trim().toLowerCase(), origin: window.location.origin },
       });
-      // Never reveal whether that address is on the list.
-      setSent(true);
-    } catch {
-      setError("Couldn't send the link. Try again.");
+      // Non-disclosure applies to whether the address is on the list, not to
+      // whether the request worked. Only a confirmed server response shows
+      // the success notice: a broken submit must never look like a sent link.
+      if (result && (result as { ok?: boolean }).ok === true) {
+        setSent(true);
+      } else {
+        setError("Something went wrong on our end. Nothing was sent. Try again.");
+      }
+    } catch (err) {
+      console.error("[auth] sign-in link request failed", err);
+      setError("Couldn't reach the server, so nothing was sent. Check your connection and try again.");
     }
     setBusy(false);
   };
