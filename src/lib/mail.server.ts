@@ -326,9 +326,19 @@ type LogInput = {
   error: string | null;
 };
 
+/** status is the fine grained provider story; outcome is the four way split
+ *  every count must filter on. Derived in one place so they cannot drift. */
+function outcomeFor(status: string): "sent" | "blocked" | "failed" | "suppressed" {
+  if (status === "sent" || status === "delivered") return "sent";
+  if (status === "blocked") return "blocked";
+  if (status === "suppressed" || status === "throttled") return "suppressed";
+  return "failed";
+}
+
 /** Every outbound message lands here, delivered or not, so a failure shows up
  *  on a screen instead of in a log nobody reads. */
 export async function logSend(input: LogInput) {
+  const outcome = outcomeFor(input.status);
   await supabaseAdmin.from("sends").insert({
     person_id: input.personId,
     sequence_id: null,
@@ -338,6 +348,8 @@ export async function logSend(input: LogInput) {
     provider_message_id: input.providerMessageId,
     status: input.status,
     error: input.error,
+    outcome,
+    blocked_reason: outcome === "sent" ? null : input.error,
     sent_at: input.status === "sent" ? new Date().toISOString() : null,
   } as never);
 }
