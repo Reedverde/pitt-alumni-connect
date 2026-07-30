@@ -269,7 +269,7 @@ function Hero({
   return (
     <section style={{ background: "var(--sabah-black)" }}>
       <div
-        className="relative mx-auto w-full max-w-[1320px] px-5 pt-10 pb-[46vw] md:pt-14 md:pb-[24vw]"
+        className="relative mx-auto w-full max-w-[1320px] px-5 pt-10 pb-[56vw] md:pt-14 md:pb-[30vw]"
         style={{ overflow: "hidden" }}
       >
         <p className="flex items-center" style={{ color: "var(--pure-white)" }}>
@@ -318,7 +318,7 @@ function Hero({
             centred in the hero and cropped by it. */}
         <div
           aria-hidden={false}
-          className="pointer-events-none absolute left-1/2 z-10 bottom-[-16%] w-[96%] max-w-[440px] md:bottom-[-20%] md:w-[42%] md:max-w-[540px]"
+          className="pointer-events-none absolute left-1/2 z-10 bottom-[-22%] w-[125%] max-w-none md:bottom-[-24%] md:w-[86%] md:max-w-[1180px]"
           style={{ transform: "translateX(-50%) rotate(38deg)", transformOrigin: "50% 100%" }}
         >
           <PhotoSlot
