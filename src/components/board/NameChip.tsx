@@ -36,21 +36,35 @@ function dotColor(state: BoardPerson["state"]) {
   }
 }
 
-export function NameChip({ person, dimmed }: { person: BoardPerson; dimmed: boolean }) {
+export function NameChip({
+  person,
+  dimmed,
+  onClick,
+}: {
+  person: BoardPerson;
+  dimmed: boolean;
+  onClick?: (person: BoardPerson) => void;
+}) {
   const name = [person.first_name, person.last_name].filter(Boolean).join(" ");
   const display = person.played_as ? `${name} "${person.played_as}"` : name;
   const teamPart = person.team_label ? `, ${person.team_label}` : "";
   const isUnclaimed = person.state === "unclaimed";
+  const clickable = Boolean(onClick) && person.state !== "memorial";
 
   return (
-    <span
-      tabIndex={0}
-      aria-label={`${display}${teamPart}, ${person.board_year}, ${STATE_WORDS[person.state]}`}
+    <button
+      type="button"
+      disabled={!clickable}
+      onClick={clickable ? () => onClick?.(person) : undefined}
+      aria-label={`${display}${teamPart}, ${person.board_year}, ${STATE_WORDS[person.state]}${
+        clickable ? (isUnclaimed ? ". Claim this name" : ". Update this answer") : ""
+      }`}
       className="group inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full transition-[opacity,border-color] duration-150"
       style={{
         ...chipStyle(person.state),
         padding: "7px 13px",
         opacity: dimmed ? 0.25 : 1,
+        cursor: clickable ? "pointer" : "default",
       }}
     >
       {person.state !== "memorial" && (
@@ -76,6 +90,6 @@ export function NameChip({ person, dimmed }: { person: BoardPerson; dimmed: bool
           +
         </span>
       )}
-    </span>
+    </button>
   );
 }

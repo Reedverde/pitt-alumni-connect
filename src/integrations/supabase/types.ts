@@ -488,6 +488,7 @@ export type Database = {
       sequences: {
         Row: {
           active: boolean
+          anchors_only: boolean
           audience_states: string[]
           id: string
           key: string
@@ -495,6 +496,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          anchors_only?: boolean
           audience_states: string[]
           id?: string
           key: string
@@ -502,6 +504,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          anchors_only?: boolean
           audience_states?: string[]
           id?: string
           key?: string
