@@ -6,6 +6,7 @@ import {
   adminAddEditionEvent,
   adminCreateEdition,
   adminDefaultEditionDates,
+  adminDeleteEditionEvent,
   adminSetEditionCurrent,
   adminSetEditionPublished,
   adminUpdateEdition,
@@ -21,6 +22,7 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
   const publish = useServerFn(adminSetEditionPublished);
   const setCurrent = useServerFn(adminSetEditionCurrent);
   const addEvent = useServerFn(adminAddEditionEvent);
+  const deleteEvent = useServerFn(adminDeleteEditionEvent);
   const defaults = useServerFn(adminDefaultEditionDates);
 
   const [busy, setBusy] = useState(false);
@@ -256,6 +258,47 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
 
       {eventYear !== null && (
         <div className="mt-6" style={{ border: hairline, padding: 16 }}>
+          <p className="label-caps mb-3" style={{ color: "var(--sterling)" }}>
+            Events · {eventYear}
+          </p>
+          <div className="mb-6 flex flex-col gap-2">
+            {(rows.find((r) => r.event_year === eventYear)?.events ?? []).map((ev) => (
+              <div key={ev.id} className="flex flex-wrap items-center gap-3" style={{ fontSize: 13 }}>
+                <Num>Day {ev.day_number ?? 1}</Num>
+                <span style={{ color: "var(--sabah-black)" }}>{ev.title}</span>
+                <span className="label-caps" style={{ color: "var(--sterling)" }}>
+                  {ev.division ?? "Whole program"}
+                  {ev.time_tbd ? " · TBD" : ""}
+                </span>
+                {ev.is_placeholder && (
+                  <span
+                    className="label-caps"
+                    style={{
+                      border: "1px solid var(--pitt-royal)",
+                      color: "var(--pitt-royal)",
+                      padding: "2px 6px",
+                    }}
+                  >
+                    Placeholder · edit or delete when real plans exist
+                  </span>
+                )}
+                <button
+                  type="button"
+                  style={secondaryButton}
+                  disabled={busy}
+                  onClick={() => {
+                    if (!window.confirm(`Delete "${ev.title}"?`)) return;
+                    void run(() => deleteEvent({ data: { id: ev.id } }), "Event deleted.");
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+            {(rows.find((r) => r.event_year === eventYear)?.events ?? []).length === 0 && (
+              <p style={{ fontSize: 13, color: "var(--sterling)" }}>Nothing scheduled yet.</p>
+            )}
+          </div>
           <p className="label-caps mb-3" style={{ color: "var(--sterling)" }}>
             New event · {eventYear}
           </p>
