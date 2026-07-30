@@ -1146,6 +1146,8 @@ export type MailStatus = {
   domain: string | null;
   verified: boolean;
   detail: string;
+  clickTracking: boolean | null;
+  openTracking: boolean | null;
 };
 
 export async function mailConfigStatus(): Promise<MailStatus> {
