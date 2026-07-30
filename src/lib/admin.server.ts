@@ -836,6 +836,31 @@ export async function updateTeamName(
   return { ok: true };
 }
 
+export type DivisionRow = {
+  code: string;
+  label: string | null;
+  sort_order: number | null;
+  visible: boolean;
+};
+
+export async function setDivisionVisible(actor: string | null, input: { code: string; visible: boolean }) {
+  const { data: before } = await supabaseAdmin
+    .from("divisions")
+    .select("code, label, visible")
+    .eq("code", input.code)
+    .maybeSingle();
+  if (!before) throw new Error("No such division.");
+  const { error } = await supabaseAdmin
+    .from("divisions")
+    .update({ visible: input.visible })
+    .eq("code", input.code);
+  if (error) throw new Error(error.message);
+  await audit(actor, "admin_division_visibility", "divisions", input.code, before, {
+    visible: input.visible,
+  });
+  return { ok: true };
+}
+
 export type DigestCohort = {
   admin: string;
   from: number;
@@ -996,6 +1021,7 @@ export type AdminDashboard = {
   isAdmin: true;
   queue: QueueItem[];
   teamNames: TeamNameRow[];
+  divisions: DivisionRow[];
   gaps: DataGaps;
   digest: DigestCohort[];
   drip: DripData;
@@ -1004,13 +1030,14 @@ export type AdminDashboard = {
 };
 
 export async function dashboard(): Promise<AdminDashboard> {
-  const [queue, teamRes, gaps, digest, drip, duplicates] = await Promise.all([
+  const [queue, teamRes, divisionRes, gaps, digest, drip, duplicates] = await Promise.all([
     reviewQueue(),
     supabaseAdmin
       .from("team_names")
       .select("id, division, name, start_year, end_year, confidence")
       .order("division")
       .order("start_year"),
+    supabaseAdmin.from("divisions").select("code, label, sort_order, visible").order("sort_order"),
     dataGaps(),
     organizerDigest(),
     dripData(),
@@ -1020,6 +1047,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     isAdmin: true,
     queue,
     teamNames: (teamRes.data ?? []) as TeamNameRow[],
+    divisions: (divisionRes.data ?? []) as DivisionRow[],
     gaps,
     digest,
     drip,
