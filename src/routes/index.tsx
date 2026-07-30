@@ -89,18 +89,21 @@ function BoardPage() {
 
   // Season and countdown both come from the editions rows, never a literal date.
   const season = resolveSeason(data.edition, data.nextEdition);
-  const inSeason = season.edition !== null;
+  // A countdown exists whenever an edition is coming. Gold is stricter: it only
+  // means "coming to the edition the RSVP counts are keyed to", which is the current one.
+  const countdownLive = season.edition !== null;
+  const goldLive = season.edition?.event_year === data.edition.event_year;
 
   // Gold means a person is coming to the edition that is live now. Off season
   // there is no such edition, so a past "going" renders as claimed.
   const people = useMemo(
     () =>
-      inSeason
+      goldLive
         ? data.people
         : data.people.map((p) =>
             p.state === "going" || p.state === "maybe" ? { ...p, state: "claimed" as const } : p,
           ),
-    [data.people, inSeason],
+    [data.people, goldLive],
   );
 
   const anchorPeople = useMemo(
@@ -132,14 +135,15 @@ function BoardPage() {
         going={data.totals.going}
         total={data.totals.total}
         clock={clock}
-        inSeason={inSeason}
+        goldLive={goldLive}
+        countdownLive={countdownLive}
       />
 
       <main className="mx-auto w-full max-w-[1320px] px-5 pb-24">
         <header className="pt-10 pb-8 md:pt-14">
           <SlashEyebrow>
-            {inSeason
-              ? editionEyebrow(season.edition!)
+            {season.edition
+              ? editionEyebrow(season.edition)
               : `Alumni Weekend · Next: first weekend of October, ${nextOctoberYear()}`}
           </SlashEyebrow>
           <h1 className="display-64 mt-3" style={{ color: "var(--sabah-black)" }}>
@@ -147,7 +151,7 @@ function BoardPage() {
           </h1>
           <p className="mt-4 max-w-[560px] text-left" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
             Every Pitt Club Ultimate alum we know of, on one wall, by year.{" "}
-            {inSeason ? "Gold means they are coming." : "Claim your name any time of year."}
+            {goldLive ? "Gold means they are coming." : "Claim your name any time of year."}
           </p>
         </header>
 
@@ -189,26 +193,27 @@ function CounterBar({
   going,
   total,
   clock,
-  inSeason,
+  goldLive,
+  countdownLive,
 }: {
   claimed: number;
   going: number;
   total: number;
   clock: { value: string; label: string };
-  inSeason: boolean;
+  goldLive: boolean;
+  countdownLive: boolean;
 }) {
   // Off season there is nothing to be going to, so the bar drops going and the
   // countdown entirely and shows a figure that is useful all year instead.
-  const figures = inSeason
-    ? [
-        { value: String(claimed), label: "Claimed", color: "var(--pitt-royal)", dot: false },
-        { value: String(going), label: "Going", color: "var(--sabah-black)", dot: true },
-        { value: clock.value, label: clock.label, color: "var(--steel-ink)", dot: false },
-      ]
-    : [
-        { value: String(claimed), label: "Claimed", color: "var(--pitt-royal)", dot: false },
-        { value: String(total), label: "On the board", color: "var(--steel-ink)", dot: false },
-      ];
+  const figures = [
+    { value: String(claimed), label: "Claimed", color: "var(--pitt-royal)", dot: false },
+    ...(goldLive
+      ? [{ value: String(going), label: "Going", color: "var(--sabah-black)", dot: true }]
+      : []),
+    ...(countdownLive
+      ? [{ value: clock.value, label: clock.label, color: "var(--steel-ink)", dot: false }]
+      : [{ value: String(total), label: "On the board", color: "var(--steel-ink)", dot: false }]),
+  ];
   return (
     <div
       className="sticky top-14 z-20 relative isolate overflow-hidden"
@@ -233,22 +238,18 @@ function CounterBar({
       <div className="relative mx-auto flex h-14 max-w-[1320px] items-center px-5 md:hidden" style={{ fontSize: 13 }}>
         <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--pitt-royal)" }}>{claimed} claimed</span>
         <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
-        {inSeason ? (
+        {goldLive && (
           <>
             <span className="inline-flex items-center gap-1.5" style={{ fontFamily: '"Space Mono", monospace', color: "var(--sabah-black)" }}>
               <GoldDot />
               {going} going
             </span>
             <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
-            <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}>
-              {clock.value} {clock.label.toLowerCase()}
-            </span>
           </>
-        ) : (
-          <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}>
-            {total} on the board
-          </span>
         )}
+        <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}>
+          {countdownLive ? `${clock.value} ${clock.label.toLowerCase()}` : `${total} on the board`}
+        </span>
       </div>
     </div>
   );
