@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as WeekendRouteImport } from './routes/weekend'
+import { Route as WhyRouteImport } from './routes/why'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated/me'
 import { Route as ApiPublicCalendarDoticsRouteImport } from './routes/api/public/calendar[.]ics'
@@ -28,6 +30,16 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WeekendRoute = WeekendRouteImport.update({
+  id: '/weekend',
+  path: '/weekend',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WhyRoute = WhyRouteImport.update({
+  id: '/why',
+  path: '/why',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -49,6 +61,8 @@ const ApiPublicCalendarDoticsRoute = ApiPublicCalendarDoticsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/weekend': typeof WeekendRoute
+  '/why': typeof WhyRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
@@ -56,6 +70,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/weekend': typeof WeekendRoute
+  '/why': typeof WhyRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
@@ -65,20 +81,38 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/weekend': typeof WeekendRoute
+  '/why': typeof WhyRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/me': typeof AuthenticatedMeRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/admin' | '/me' | '/api/public/calendar.ics'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/weekend'
+    | '/why'
+    | '/admin'
+    | '/me'
+    | '/api/public/calendar.ics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/admin' | '/me' | '/api/public/calendar.ics'
+  to:
+    | '/'
+    | '/auth'
+    | '/weekend'
+    | '/why'
+    | '/admin'
+    | '/me'
+    | '/api/public/calendar.ics'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/weekend'
+    | '/why'
     | '/_authenticated/admin'
     | '/_authenticated/me'
     | '/api/public/calendar.ics'
@@ -88,6 +122,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  WeekendRoute: typeof WeekendRoute
+  WhyRoute: typeof WhyRoute
   ApiPublicCalendarDoticsRoute: typeof ApiPublicCalendarDoticsRoute
 }
 
@@ -112,6 +148,20 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/weekend': {
+      id: '/weekend'
+      path: '/weekend'
+      fullPath: '/weekend'
+      preLoaderRoute: typeof WeekendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/why': {
+      id: '/why'
+      path: '/why'
+      fullPath: '/why'
+      preLoaderRoute: typeof WhyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -155,6 +205,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  WeekendRoute: WeekendRoute,
+  WhyRoute: WhyRoute,
   ApiPublicCalendarDoticsRoute: ApiPublicCalendarDoticsRoute,
 }
 export const routeTree = rootRouteImport
