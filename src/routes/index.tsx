@@ -318,8 +318,13 @@ function Hero({
             centred in the hero and cropped by it. */}
         <div
           aria-hidden={false}
-          className="pointer-events-none absolute left-1/2 z-10 bottom-[-22%] w-[125%] max-w-none md:bottom-[-24%] md:w-[86%] md:max-w-[1180px]"
-          style={{ transform: "translateX(-50%) rotate(38deg)", transformOrigin: "50% 100%" }}
+          className="pointer-events-none absolute left-1/2 z-10"
+          style={{
+            width: "min(125vw, 1180px)",
+            bottom: "-10vw",
+            transform: "translateX(-50%) rotate(38deg)",
+            transformOrigin: "50% 100%",
+          }}
         >
           <PhotoSlot
             ratio="4 / 3"
