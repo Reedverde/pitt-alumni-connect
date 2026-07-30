@@ -322,7 +322,7 @@ function Hero({
           style={{
             width: "min(140vw, 1400px)",
             bottom: "-50vw",
-            transform: "translateX(-50%) rotate(38deg)",
+            transform: "translateX(-57%) rotate(38deg)",
             transformOrigin: "50% 100%",
           }}
         >
