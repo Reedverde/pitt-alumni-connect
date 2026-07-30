@@ -205,3 +205,8 @@ Archived sends are never replayed. T-60 is a personal pre-send from Nick written
 Instead there is one catch-up template, composed from current state at the moment it sends: where the weekend stands read live from events, lodging_note and travel_note as they read that day, how many people from the person's own years have said yes, and their claim link. After it lands the person enters the sequence at their real T-minus and gets the next scheduled send like everyone else.
 
 Guardrails: it counts against the one email per person per 10 days global cap, and it is suppressed entirely if the person's status is already not_this_year. Dormant like everything else while outbound_email_mode is transactional_only.
+
+## Duplicate name rulings, 2026-07-30
+Five near-duplicate pairs were reviewed against the esnultimate.org alumni page and confirmed by Reed as separate people. Nothing was merged. Ryan Moore appears twice on that page as an exact string, so the two Ryan Moore records stay split. The other four pairs appear on the page under both spellings in separate tenure buckets with separate year ranges. No pair shares an email address.
+Rulings are stored in `duplicate_rulings` so they survive future imports. Keep separate is permanent, Clear stores nothing and the pair returns on the next scan.
+Two docs are now wrong and go on the reconcile list: BUILD_SPEC.md section 11 and CONTEXT.md section 5 both say the count is 468 and not 469 because dan-goldstein was folded into daniel-goldstein over a shared email address. That fold is not in this database and only Daniel carries an address. CONTEXT.md section 7 lists four duplicate-name pairs as open and owned by Brody. That item is closed.
