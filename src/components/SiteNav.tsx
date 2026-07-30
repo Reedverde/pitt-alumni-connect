@@ -48,6 +48,13 @@ function IdentitySlot() {
 }
 
 export function SiteNav({ onClaim }: { onClaim?: () => void }) {
+  const { signedIn, rsvpStatus } = useSessionPerson();
+  const quiet =
+    signedIn && rsvpStatus === "going"
+      ? "You're coming"
+      : signedIn && rsvpStatus === "not_this_year"
+        ? "See you next year"
+        : null;
   return (
     <nav
       className="sticky top-0 z-30 flex h-14 items-center gap-3 px-5"
@@ -90,7 +97,27 @@ export function SiteNav({ onClaim }: { onClaim?: () => void }) {
 
       <span className="ml-auto flex items-center gap-3">
         <IdentitySlot />
-        {onClaim ? (
+        {signedIn ? (
+          quiet ? (
+            <span
+              style={{
+                fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                fontSize: 13,
+                color: "var(--sterling)",
+              }}
+            >
+              {quiet}
+            </span>
+          ) : onClaim ? (
+            <button type="button" style={{ ...primaryButton, padding: "8px 14px" }} onClick={onClaim}>
+              Say you're coming
+            </button>
+          ) : (
+            <Link to="/me" style={{ ...primaryButton, padding: "8px 14px" }}>
+              Your record
+            </Link>
+          )
+        ) : onClaim ? (
           <button type="button" style={{ ...primaryButton, padding: "8px 14px" }} onClick={onClaim}>
             Claim your name
           </button>
