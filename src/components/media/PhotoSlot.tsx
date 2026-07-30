@@ -91,6 +91,9 @@ export function PhotoSlot({
               flexDirection: "column",
               justifyContent: "space-between",
               color: "var(--pure-white)",
+              // A scrim so the label stays legible over a busy photograph.
+              background:
+                "linear-gradient(180deg, rgba(11,11,12,0.45) 0%, rgba(11,11,12,0) 32%, rgba(11,11,12,0) 68%, rgba(11,11,12,0.45) 100%)",
             }}
           >
             <span style={labelStyle}>{label} →</span>
