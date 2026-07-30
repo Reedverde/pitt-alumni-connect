@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { primaryButton } from "@/components/claim/ui";
 import { useSessionPerson } from "@/lib/useSessionPerson";
 import pittClubUltimateLogo from "@/assets/pitt-club-ultimate-logo.png.asset.json";
 
@@ -47,14 +46,7 @@ function IdentitySlot() {
   );
 }
 
-export function SiteNav({ onClaim }: { onClaim?: () => void }) {
-  const { signedIn, rsvpStatus } = useSessionPerson();
-  const quiet =
-    signedIn && rsvpStatus === "going"
-      ? "You're coming"
-      : signedIn && rsvpStatus === "not_this_year"
-        ? "See you next year"
-        : null;
+export function SiteNav(_props: { onClaim?: () => void }) {
   return (
     <nav
       className="sticky top-0 z-30 flex h-14 items-center gap-3 px-5"
@@ -97,35 +89,6 @@ export function SiteNav({ onClaim }: { onClaim?: () => void }) {
 
       <span className="ml-auto flex items-center gap-3">
         <IdentitySlot />
-        {signedIn ? (
-          quiet ? (
-            <span
-              style={{
-                fontFamily: '"Space Grotesk", system-ui, sans-serif',
-                fontSize: 13,
-                color: "var(--sterling)",
-              }}
-            >
-              {quiet}
-            </span>
-          ) : onClaim ? (
-            <button type="button" style={{ ...primaryButton, padding: "8px 14px" }} onClick={onClaim}>
-              Say you're coming
-            </button>
-          ) : (
-            <Link to="/me" style={{ ...primaryButton, padding: "8px 14px" }}>
-              Your record
-            </Link>
-          )
-        ) : onClaim ? (
-          <button type="button" style={{ ...primaryButton, padding: "8px 14px" }} onClick={onClaim}>
-            Claim your name
-          </button>
-        ) : (
-          <Link to="/" style={{ ...primaryButton, padding: "8px 14px" }}>
-            Claim your name
-          </Link>
-        )}
       </span>
     </nav>
   );
