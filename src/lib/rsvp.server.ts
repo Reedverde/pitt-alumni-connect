@@ -179,8 +179,10 @@ export type SubmitInput = {
   personId?: string | null;
   firstName?: string | null;
   lastName?: string | null;
-  /** null means the person skipped the question. No rsvps row is written. */
-  status: RsvpStatus | null;
+  /** Mandatory. The claim cannot be completed without an answer. */
+  status: RsvpStatus;
+  /** Heads including the person. Ignored unless the status is "going". */
+  partySize?: number | null;
   email: string;
   src?: RsvpSource | null;
   origin?: string | null;
@@ -281,10 +283,10 @@ async function requestNewPerson(args: {
  *  authenticated. Every outcome returns the same shape; existence of an email
  *  or a person is never disclosed. */
 export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<RsvpResult> {
-  // null is a legitimate answer: the person skipped the question.
-  const status: RsvpStatus | null = input.status ?? null;
-  if (status !== null && !RSVP_STATUSES.includes(status))
-    throw new Error("Something went wrong. Try again.");
+  // The answer is mandatory. No status, no record.
+  const status = input.status as RsvpStatus;
+  if (!RSVP_STATUSES.includes(status)) throw new Error("Please pick an answer.");
+  const partySize = normalizePartySize(status, input.partySize ?? 1);
   const src: RsvpSource = RSVP_SOURCES.includes(input.src as RsvpSource)
     ? (input.src as RsvpSource)
     : "email";
@@ -359,25 +361,22 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
     effectiveStatus = (currentRsvp?.status as RsvpStatus | undefined) ?? null;
   } else {
     // RSVP first: the record must save whether or not the email work succeeds.
-    // A skipped answer writes nothing. Absence of a row is the state.
-    if (status !== null) {
-      const { data: existingRsvp } = await supabaseAdmin
-        .from("rsvps")
-        .select("id")
-        .eq("person_id", person.id)
-        .eq("event_year", eventYear)
-        .maybeSingle();
+    const { data: existingRsvp } = await supabaseAdmin
+      .from("rsvps")
+      .select("id")
+      .eq("person_id", person.id)
+      .eq("event_year", eventYear)
+      .maybeSingle();
 
-      if (existingRsvp) {
-        await supabaseAdmin
-          .from("rsvps")
-          .update({ status, src, responded_at: new Date().toISOString() })
-          .eq("id", existingRsvp.id as string);
-      } else {
-        await supabaseAdmin
-          .from("rsvps")
-          .insert({ person_id: person.id, event_year: eventYear, status, src });
-      }
+    if (existingRsvp) {
+      await supabaseAdmin
+        .from("rsvps")
+        .update({ status, src, party_size: partySize, responded_at: new Date().toISOString() })
+        .eq("id", existingRsvp.id as string);
+    } else {
+      await supabaseAdmin
+        .from("rsvps")
+        .insert({ person_id: person.id, event_year: eventYear, status, src, party_size: partySize });
     }
 
     // Identity: if this email is already on file (for anyone), leave it alone.
@@ -408,6 +407,7 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
     record_id: person.id,
     after: {
       status,
+      party_size: partySize,
       src,
       ip_hash: hashIp(ip),
       email_domain: email.split("@")[1] ?? null,
