@@ -1,6 +1,6 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { toast } from "sonner";
 
 import { adminUpdatePerson, getAdminPeople } from "@/lib/admin.functions";
@@ -248,8 +248,8 @@ export function PeopleTable() {
             </thead>
             <tbody>
               {data.map((person) => (
-                <>
-                  <tr key={person.id}>
+                <Fragment key={person.id}>
+                  <tr>
                     <td style={cellStyle}>
                       <button
                         type="button"
@@ -277,7 +277,7 @@ export function PeopleTable() {
                   {openId === person.id ? (
                     <EditRow key={`edit-${person.id}`} person={person} onSaved={refresh} />
                   ) : null}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
