@@ -13,7 +13,7 @@
 | 7 | Performance | Light | Gap: the board renders every chip with no virtualization. 468 people today |
 | 8 | SEO | Standard | In place: full meta, Open Graph and Twitter card in __root.tsx. Gap: no sitemap, and og:image points at a Lovable R2 preview screenshot that will rot |
 | 9 | Analytics | Light | Not started. The only signal today is rsvps.src captured from the query string |
-| 10 | Email & Notifications | Standard | In place: Resend wrapper, sends log, suppressions, HMAC one click unsubscribe, Resend webhook. Gap: sending domain not delegated, all 8 sequences dormant |
+| 10 | Email & Notifications | Standard | In place: Resend wrapper, sends log, suppressions, HMAC one click unsubscribe, Resend webhook, hourly admin digest. Gap: sending domain not delegated, all 8 sequences dormant |
 | 11 | Compliance & Legal | Standard | Gap: no privacy policy or terms on a site holding 468 real names and 120 email addresses |
 | 12 | Discovery & Planning | Standard | In place: CONTEXT.md, BUILD_SPEC.md, DESIGN.md, URL_MANIFEST.md. Gap: they live outside this repo |
 | 13 | Testing | Light | Not started. No Vitest, no Playwright. 005_verify.sql has 29 checks never confirmed PASS in a browser |
@@ -23,10 +23,10 @@
 | 17 | Environment & Secrets | Standard | Partial: Supabase vars set. RESEND_API_KEY, MAIL_FROM_ADDRESS, MAIL_UNSUBSCRIBE_SECRET, PUBLIC_SITE_URL, SUPABASE_SERVICE_ROLE_KEY status unconfirmed |
 | 18 | Responsive & Mobile | Standard | In place: use-mobile hook, mobile type clamps, counter bar collapses to one line. Most alumni are on a phone |
 | 19 | Backup & Recovery | Light | Gap: no export of the people table outside Supabase. Lovable Cloud defaults only |
-| 20 | Rate Limiting | Standard | Gap: RSVP as signup is an unauthenticated write that fires a Resend message with no throttle. Highest risk item in this manifest |
+| 20 | Rate Limiting | Standard | In place: three dimension throttle on `throttle_events`, service role only. Soft trip saves the RSVP and holds the mail, hard trip writes nothing, both return an identical response. Gap: no pruning job, the table grows forever |
 | 21 | Observability | Standard | In place: every outbound message rows into sends whether it delivered or not, with provider, status and error |
 | 22 | Cost of Ownership | Light | Lovable Cloud plus Resend free tier. Near zero at this scale. Exposure is tied to module 20 |
-| 23 | Resource Guardrails | Standard | Gap: no Resend spend cap and no per address send throttle. Drip guardrails are specified but not built |
+| 23 | Resource Guardrails | Standard | In place: global cap of 200 soft and 600 hard sends per hour. The admin digest counts against the same bucket so it cannot pump volume. Gap: no Resend account level spend cap |
 | 24 | Change Impact Protocol | Light | Not started |
 
 ## PURPOSE
@@ -40,6 +40,8 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 - Auth: Supabase magic link first, Google second and never required. The link IS the account
 - State: TanStack Query v5 plus TanStack Start server functions. No global store
 - Server functions: account, admin, board, editions, photos, rsvp, schedule, signin, mail, ics
+- Throttle: `src/lib/throttle.server.ts`. Three dimension counter over `throttle_events`
+- Admin notice: `src/lib/admin-notify.server.ts`. Self throttling hourly digest, one per admin
 - API routes: /api/photos/upload, /api/public/calendar.ics, /api/public/photo/$, /api/public/resend-webhook, /api/public/unsubscribe
 
 ## BUILD STATUS
@@ -55,7 +57,9 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 - Peer verification within plus or minus 3 years: built, never exercised against real data
 - Real 468 person seed import: not run. Sample rows still live
 - Drip sequences: seeded dormant, awaiting a verified sending domain
-- Rate limiting, privacy policy, analytics, automated tests: not started
+- RSVP rate limiting: built. Three dimensions, soft and hard tiers
+- Unmatched names as review requests with an hourly admin digest: built
+- Privacy policy, analytics, automated tests: not started
 
 ## KEY DECISIONS
 
@@ -71,15 +75,18 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 - Send to a friend queues names for admin review and sends nothing automatically, because an unmoderated send form is an open relay
 - The site works with no DNS delegation. Only email sending depends on the domain
 - Mass sends go through the existing Google Group, which already has deliverability history. The app sends transactional only
+- A soft rate limit holds the mail but still saves the RSVP, because blocking the write would break invariant one for anyone behind shared campus or mobile wifi
+- The admin alert is an hourly digest and never per request, because three admins times one junk submission is three outbound messages, which would turn the alert into the amplifier
 
 ## KNOWN ISSUES
 
 - High: the database still holds roughly 50 sample- prefixed rows. The real 468 person import has not run
-- High: RSVP as signup is an unauthenticated write that triggers a Resend message with no rate limit. A script could burn the sending reputation before the anchor send goes out
 - Medium: og:image in __root.tsx points at a Lovable R2 preview screenshot URL that is tied to a preview build and will rot
 - Medium: no privacy policy on a site holding 468 real names and 120 email addresses
+- Medium: `throttle_events` has no pruning job. It grows forever and the count queries slow as it fills. Needs a pg_cron delete of rows older than 48 hours
 - Low: the board renders every chip with no virtualization
 - Low: 005_verify.sql has 29 checks and has never been confirmed PASS in a browser
+- Accepted risk: an alum whose seeded name is misspelled now hits the review queue instead of getting a magic link. Three admins are the bottleneck, and it gets worse the week of the event
 - Accepted risk: two team_names spans are marked assumed. The men's B changeover year and the women's A early span. Each is a one row update when the answer arrives
 
 ## ENV / SECRETS
@@ -101,7 +108,7 @@ Server side, status unconfirmed:
 
 ## ROADMAP
 
-NOW: rate limit the RSVP endpoint and cap Resend spend. Delete the sample rows and run the real 468 person import. Run 005_verify.sql and confirm all 29 checks PASS. Replace the og:image with a stable hosted asset. Publish a privacy policy and link it in the footer.
+NOW: delete the sample rows and run the real 468 person import. Run 005_verify.sql and confirm all 29 checks PASS. Add a pg_cron job pruning `throttle_events` older than 48 hours. Replace the og:image with a stable hosted asset. Publish a privacy policy and link it in the footer.
 
 NEXT: activate the eight drip sequences once the sending domain verifies. Import the 2026 roster of 48 names. Import the two women's division rosters. Discord, GroupMe and Facebook syndication with src tracking. Analytics on claim and RSVP conversion. Virtualize the board.
 
@@ -109,7 +116,7 @@ LATER: tournament tracker. Alumni job network built on the open_to_network conse
 
 ## MASTER OS
 
-- Retrofitted: 2026-07-30
+- Retrofitted: 2026-07-30. Last synced 2026-07-30 after the rate limiting and review request work
 - Hub card: pitt-alumni-connect in project 45df6587-f345-46bd-bccc-3c2fa55467a7
 - Hub article file: src/data/pitt-alumni-connect-articles.ts
 - Lovable project ID: da83b43b-b24b-4b80-b9ec-619b1b431cbb
