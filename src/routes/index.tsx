@@ -271,7 +271,7 @@ function Hero({
             </h1>
           )}
           <p className="mt-4 max-w-[560px]" style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 20, color: "var(--steel-ink)" }}>
-            Pittsburgh and Oakland. Three days. Four programs.
+            Pittsburgh and Oakland. Three days. Everybody who ever played.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <button type="button" style={primaryButton} onClick={onClaim}>
@@ -297,14 +297,17 @@ function Hero({
 function WhyTeaser() {
   return (
     <section className="pt-14">
-      <SlashEyebrow>Why now</SlashEyebrow>
+      <SlashEyebrow>Always</SlashEyebrow>
       <p className="mt-4 max-w-[560px]" style={{ fontSize: 20, color: "var(--sabah-black)" }}>
-        Pitt went to Nationals every year from 2005 through 2024. In 2025 it did not. Alumni turned
-        up after the miss, not after the titles.
+        You do not stop being Pitt Ultimate when you graduate. The roster just gets longer.
+      </p>
+      <p className="mt-3 max-w-[560px]" style={{ fontSize: 20, color: "var(--sabah-black)" }}>
+        Three days to find your year, find the people hiring, and find the ones who were freshmen
+        when you were seniors.
       </p>
       <div className="mt-6">
-        <Link to="/why" style={ghostButton}>
-          Read the story
+        <Link to="/alumni" style={ghostButton}>
+          More on this
         </Link>
       </div>
     </section>

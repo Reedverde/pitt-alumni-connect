@@ -36,8 +36,8 @@ export function SiteFooter() {
           <Link to="/weekend" className="label-caps" style={{ color: "var(--steel-ink)", textDecoration: "none" }}>
             Weekend
           </Link>
-          <Link to="/why" className="label-caps" style={{ color: "var(--steel-ink)", textDecoration: "none" }}>
-            Story
+          <Link to="/alumni" className="label-caps" style={{ color: "var(--steel-ink)", textDecoration: "none" }}>
+            Alumni
           </Link>
           <a
             href="https://engage.pitt.edu/"

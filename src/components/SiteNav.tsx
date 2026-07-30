@@ -42,8 +42,8 @@ export function SiteNav({ onClaim }: { onClaim?: () => void }) {
         <Link to="/weekend" className="label-caps" style={linkStyle} activeProps={{ style: activeStyle }}>
           Weekend
         </Link>
-        <Link to="/why" className="label-caps" style={linkStyle} activeProps={{ style: activeStyle }}>
-          Why
+        <Link to="/alumni" className="label-caps" style={linkStyle} activeProps={{ style: activeStyle }}>
+          Alumni
         </Link>
       </span>
 
