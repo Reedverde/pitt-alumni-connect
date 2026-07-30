@@ -18,6 +18,9 @@ export type PersonMatch = {
 
 export type RsvpResult = {
   ok: boolean;
+  /** "recorded" means the answer is saved against a real record. "review_requested"
+   *  means the name went to the organizers and no record exists yet. */
+  outcome: "recorded" | "review_requested";
   person: {
     first_name: string;
     last_name: string | null;

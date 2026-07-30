@@ -54,7 +54,7 @@ type LogInput = {
 
 /** Every outbound message lands here, delivered or not, so a failure shows up
  *  on a screen instead of in a log nobody reads. */
-async function logSend(input: LogInput) {
+export async function logSend(input: LogInput) {
   await supabaseAdmin.from("sends").insert({
     person_id: input.personId,
     sequence_id: null,
