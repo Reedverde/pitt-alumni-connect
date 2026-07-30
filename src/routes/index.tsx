@@ -274,11 +274,6 @@ function Hero({
           <p className="mt-4 max-w-[560px]" style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 20, color: "var(--steel-ink)" }}>
             Pittsburgh and Oakland. Three days. Four programs.
           </p>
-          {edition && (
-            <p className="mt-2 label-caps" style={{ color: "var(--sterling)" }}>
-              {editionDateRange(edition)}
-            </p>
-          )}
           <div className="mt-6 flex flex-wrap gap-3">
             <button type="button" style={primaryButton} onClick={onClaim}>
               Say you're coming
