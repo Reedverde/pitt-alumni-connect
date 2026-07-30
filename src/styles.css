@@ -83,6 +83,8 @@
 
 :root {
   --radius: 0.625rem;
+  --notch-sm: 16px;
+  --notch-lg: 28px;
   --sabah-black: #0B0B0C;
   --pitt-royal: #003594;
   --pitt-gold: #FFB81C;
