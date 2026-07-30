@@ -1081,24 +1081,59 @@ export async function dashboard(): Promise<AdminDashboard> {
 
 // ---------------------------------------------------------------- editions
 
-export type EditionRow = Edition & { going: number; event_count: number };
+export type EditionEventRow = {
+  id: string;
+  title: string;
+  day_number: number | null;
+  division: string | null;
+  time_tbd: boolean;
+  is_placeholder: boolean;
+};
+
+export type EditionRow = Edition & {
+  going: number;
+  event_count: number;
+  events: EditionEventRow[];
+};
 
 export async function listEditions(): Promise<EditionRow[]> {
   const [editions, counts, eventsRes] = await Promise.all([
     loadEditions(),
     goingCounts(),
-    supabaseAdmin.from("events").select("event_year"),
+    supabaseAdmin
+      .from("events")
+      .select("id, event_year, title, day_number, division, time_tbd, is_placeholder")
+      .order("day_number")
+      .order("sort_order"),
   ]);
-  const eventCounts = new Map<number, number>();
+  const byYear = new Map<number, EditionEventRow[]>();
   for (const row of eventsRes.data ?? []) {
     const y = row.event_year as number;
-    eventCounts.set(y, (eventCounts.get(y) ?? 0) + 1);
+    const list = byYear.get(y) ?? [];
+    list.push({
+      id: row.id as string,
+      title: row.title as string,
+      day_number: (row.day_number as number | null) ?? null,
+      division: (row.division as string | null) ?? null,
+      time_tbd: Boolean(row.time_tbd),
+      is_placeholder: Boolean((row as { is_placeholder?: boolean }).is_placeholder),
+    });
+    byYear.set(y, list);
   }
   return editions.map((e) => ({
     ...e,
     going: counts.get(e.event_year) ?? 0,
-    event_count: eventCounts.get(e.event_year) ?? 0,
+    event_count: byYear.get(e.event_year)?.length ?? 0,
+    events: byYear.get(e.event_year) ?? [],
   }));
+}
+
+/** Placeholder lane events are meant to be replaced, so deleting one is routine. */
+export async function deleteEditionEvent(actor: string | null, id: string) {
+  const { error } = await supabaseAdmin.from("events").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  await audit(actor, "edition.delete_event", "events", id, null, null);
+  return { ok: true };
 }
 
 export function defaultEditionDates(eventYear: number) {
