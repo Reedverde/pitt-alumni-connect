@@ -148,3 +148,13 @@ export const adminUpdateTeamName = createServerFn({ method: "POST" })
     if (!actor) return { ok: false };
     return mod.updateTeamName(actor, data);
   });
+
+export const adminSetDivisionVisible = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { code: string; visible: boolean }) => input)
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return { ok: false };
+    return mod.setDivisionVisible(actor, data);
+  });
