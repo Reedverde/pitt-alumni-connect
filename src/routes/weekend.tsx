@@ -6,6 +6,7 @@ import { getSchedule, type ScheduleEvent } from "@/lib/schedule.functions";
 import { SiteNav } from "@/components/SiteNav";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
+import { PhotoSlot } from "@/components/media/PhotoSlot";
 
 const scheduleQuery = queryOptions({
   queryKey: ["schedule", 2026],
@@ -115,6 +116,11 @@ function WeekendPage() {
               Add the whole weekend
             </a>
           </div>
+          <PhotoSlot
+            className="mt-6"
+            ratio="3 / 1"
+            label="Group shot, past alumni weekend"
+          />
         </header>
 
         <section

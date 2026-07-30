@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { SiteNav } from "@/components/SiteNav";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
+import { PhotoSlot } from "@/components/media/PhotoSlot";
 import { primaryButton } from "@/components/claim/ui";
 
 export const Route = createFileRoute("/why")({
@@ -54,6 +55,7 @@ function WhyPage() {
               <span style={mono}>2024</span>, missed in <span style={mono}>2025</span> for the first
               time since <span style={mono}>2004</span>, and returned in <span style={mono}>2026</span>.
             </p>
+            <PhotoSlot className="mt-6" label="Team photo, 1998 — the first roster" />
           </section>
 
           <section className="mt-10">
@@ -66,6 +68,7 @@ function WhyPage() {
               asks nothing of you. A team on the way back up does, and that is a better reason to be
               here.
             </p>
+            <PhotoSlot className="mt-6" label="Sideline, 2012–2013 Nationals — back to back" />
           </section>
 
           <section className="mt-10">
@@ -99,6 +102,7 @@ function WhyPage() {
             <p className="mt-4" style={body}>
               All four sit under one umbrella here, at the same width, on the same wall.
             </p>
+            <PhotoSlot className="mt-6" label="Return to Nationals, 2026" />
           </section>
 
           <section className="mt-12">
