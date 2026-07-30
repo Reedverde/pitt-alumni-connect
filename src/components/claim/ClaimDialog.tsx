@@ -472,7 +472,7 @@ export function ClaimDialog({
                     Back
                   </button>
                   <button type="submit" style={{ ...primaryButton, opacity: busy ? 0.6 : 1 }} disabled={busy}>
-                    {busy ? "Saving…" : "Save my answer"}
+                    {busy ? "Saving…" : skipped ? "Save my record" : "Save my answer"}
                   </button>
                 </div>
               </form>
