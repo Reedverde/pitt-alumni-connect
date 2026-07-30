@@ -329,3 +329,20 @@ export const getStaleQueue = createServerFn({ method: "GET" })
     const { staleSuggestions } = await import("./account.server");
     return staleSuggestions();
   });
+/**
+ * Nav identity only. Returns the signed-in person's first name and id so the
+ * nav can render "Reed" instead of "Sign in". Selects nothing else: no email
+ * column, no other person's row.
+ */
+export const getNavIdentity = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ personId: string | null; firstName: string | null }> => {
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId) return { personId: null, firstName: null };
+    const { data } = await context.supabase
+      .from("people")
+      .select("first_name")
+      .eq("id", personId)
+      .maybeSingle();
+    return { personId, firstName: data?.first_name ?? null };
+  });

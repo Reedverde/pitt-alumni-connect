@@ -1,10 +1,51 @@
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 
 import { primaryButton } from "@/components/claim/ui";
+import { useSessionPerson } from "@/lib/useSessionPerson";
 import pittClubUltimateLogo from "@/assets/pitt-club-ultimate-logo.png.asset.json";
 
 const linkStyle = { color: "var(--sterling)" } as const;
 const activeStyle = { color: "var(--pitt-royal)" } as const;
+
+/**
+ * Plain text, never a button, never gold. Gold means attending and nothing
+ * else, so the sign-in affordance carries no visual weight at all.
+ */
+function IdentitySlot() {
+  const { signedIn, firstName } = useSessionPerson();
+  const [hover, setHover] = useState(false);
+  const style = {
+    fontFamily: '"Space Grotesk", system-ui, sans-serif',
+    fontSize: 13,
+    fontWeight: 500,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.08em",
+    color: hover ? "var(--steel-ink)" : "var(--sterling)",
+    background: "transparent",
+    border: "none",
+    padding: 0,
+  };
+  const handlers = {
+    onMouseEnter: () => setHover(true),
+    onMouseLeave: () => setHover(false),
+    onFocus: () => setHover(true),
+    onBlur: () => setHover(false),
+  };
+
+  if (signedIn) {
+    return (
+      <Link to="/me" style={style} {...handlers}>
+        {firstName ?? "My record"}
+      </Link>
+    );
+  }
+  return (
+    <Link to="/auth" style={style} {...handlers}>
+      Sign in
+    </Link>
+  );
+}
 
 export function SiteNav({ onClaim }: { onClaim?: () => void }) {
   return (
@@ -48,9 +89,7 @@ export function SiteNav({ onClaim }: { onClaim?: () => void }) {
       </span>
 
       <span className="ml-auto flex items-center gap-3">
-        <Link to="/auth" className="label-caps hidden sm:inline" style={linkStyle}>
-          Sign in
-        </Link>
+        <IdentitySlot />
         {onClaim ? (
           <button type="button" style={{ ...primaryButton, padding: "8px 14px" }} onClick={onClaim}>
             Claim your name
