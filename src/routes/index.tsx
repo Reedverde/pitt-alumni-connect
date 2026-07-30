@@ -161,9 +161,9 @@ function SiteNav() {
 
 function CounterBar({ claimed, going, daysOut }: { claimed: number; going: number; daysOut: number }) {
   const figures = [
-    { value: claimed, label: "Claimed", color: "var(--pitt-royal)" },
-    { value: going, label: "Going", color: "var(--pitt-gold)" },
-    { value: daysOut, label: "Days out", color: "var(--steel-ink)" },
+    { value: claimed, label: "Claimed", color: "var(--pitt-royal)", dot: false },
+    { value: going, label: "Going", color: "var(--sabah-black)", dot: true },
+    { value: daysOut, label: "Days out", color: "var(--steel-ink)", dot: false },
   ];
   return (
     <div
@@ -173,8 +173,11 @@ function CounterBar({ claimed, going, daysOut }: { claimed: number; going: numbe
       <div className="mx-auto hidden h-14 max-w-[1320px] items-center gap-10 px-5 md:flex">
         {figures.map((f) => (
           <div key={f.label} className="flex flex-col justify-center">
-            <span style={{ fontFamily: '"Space Mono", monospace', fontWeight: 700, fontSize: 24, lineHeight: 1, color: f.color }}>
-              {f.value}
+            <span className="flex items-center gap-2">
+              {f.dot && <GoldDot />}
+              <span style={{ fontFamily: '"Space Mono", monospace', fontWeight: 700, fontSize: 24, lineHeight: 1, color: f.color }}>
+                {f.value}
+              </span>
             </span>
             <span className="label-caps mt-1" style={{ color: "var(--sterling)" }}>
               {f.label}
@@ -185,11 +188,24 @@ function CounterBar({ claimed, going, daysOut }: { claimed: number; going: numbe
       <div className="mx-auto flex h-14 max-w-[1320px] items-center px-5 md:hidden" style={{ fontSize: 13 }}>
         <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--pitt-royal)" }}>{claimed} claimed</span>
         <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
-        <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}>{going} going</span>
+        <span className="inline-flex items-center gap-1.5" style={{ fontFamily: '"Space Mono", monospace', color: "var(--sabah-black)" }}>
+          <GoldDot />
+          {going} going
+        </span>
         <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
         <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}>{daysOut} days out</span>
       </div>
     </div>
+  );
+}
+
+function GoldDot() {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-block shrink-0 rounded-full"
+      style={{ width: 10, height: 10, background: "var(--pitt-gold)" }}
+    />
   );
 }
 
