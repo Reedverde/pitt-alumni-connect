@@ -2,10 +2,9 @@ import { createHmac, timingSafeEqual } from "crypto";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
-  FONT_STACK,
-  GOLD,
-  INK,
   emailButton,
+  emailFooter,
+  emailMuted,
   emailParagraph,
   emailPlainUrl,
   emailShell,
