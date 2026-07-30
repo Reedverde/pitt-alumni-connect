@@ -10,7 +10,7 @@ import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
 import { SiteNav } from "@/components/SiteNav";
 import { SidelineLoop } from "@/components/board/SidelineLoop";
-import { countdown, editionEyebrow } from "@/lib/edition-format";
+import { countdown, editionEyebrow, nextOctoberYear, resolveSeason } from "@/lib/edition-format";
 
 const boardQuery = queryOptions({
   queryKey: ["board"],
@@ -87,20 +87,38 @@ function BoardPage() {
     setClaimOpen(true);
   };
 
+  // Season and countdown both come from the editions rows, never a literal date.
+  const season = resolveSeason(data.edition, data.nextEdition);
+  // A countdown exists whenever an edition is coming. Gold is stricter: it only
+  // means "coming to the edition the RSVP counts are keyed to", which is the current one.
+  const countdownLive = season.edition !== null;
+  const goldLive = season.edition?.event_year === data.edition.event_year;
+
+  // Gold means a person is coming to the edition that is live now. Off season
+  // there is no such edition, so a past "going" renders as claimed.
+  const people = useMemo(
+    () =>
+      goldLive
+        ? data.people
+        : data.people.map((p) =>
+            p.state === "going" || p.state === "maybe" ? { ...p, state: "claimed" as const } : p,
+          ),
+    [data.people, goldLive],
+  );
+
   const anchorPeople = useMemo(
-    () => data.people.filter((p) => p.board_year <= 1997),
-    [data.people],
+    () => people.filter((p) => p.board_year <= 1997),
+    [people],
   );
   const groups = useMemo(
-    () => buildYearGroups(data.people.filter((p) => p.board_year > 1997)),
-    [data.people],
+    () => buildYearGroups(people.filter((p) => p.board_year > 1997)),
+    [people],
   );
   const orderedGroups = useMemo(
     () => (newestFirst ? [...groups].reverse() : groups),
     [groups, newestFirst],
   );
 
-  // Countdown comes from the current edition row, never a literal date.
   const clock = countdown(data.edition, data.nextEdition);
 
   const toggle = (code: string) =>
@@ -112,16 +130,28 @@ function BoardPage() {
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
       <SiteNav onClaim={() => openClaim()} />
-      <CounterBar claimed={data.totals.claimed} going={data.totals.going} clock={clock} />
+      <CounterBar
+        claimed={data.totals.claimed}
+        going={data.totals.going}
+        total={data.totals.total}
+        clock={clock}
+        goldLive={goldLive}
+        countdownLive={countdownLive}
+      />
 
       <main className="mx-auto w-full max-w-[1320px] px-5 pb-24">
         <header className="pt-10 pb-8 md:pt-14">
-          <SlashEyebrow>{editionEyebrow(data.edition)}</SlashEyebrow>
+          <SlashEyebrow>
+            {season.edition
+              ? editionEyebrow(season.edition)
+              : `Alumni Weekend · Next: first weekend of October, ${nextOctoberYear()}`}
+          </SlashEyebrow>
           <h1 className="display-64 mt-3" style={{ color: "var(--sabah-black)" }}>
             FIND YOUR YEAR
           </h1>
           <p className="mt-4 max-w-[560px] text-left" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
-            Every Pitt Club Ultimate alum we know of, on one wall, by year. Gold means they are coming.
+            Every Pitt Club Ultimate alum we know of, on one wall, by year.{" "}
+            {goldLive ? "Gold means they are coming." : "Claim your name any time of year."}
           </p>
         </header>
 
@@ -161,16 +191,28 @@ function BoardPage() {
 function CounterBar({
   claimed,
   going,
+  total,
   clock,
+  goldLive,
+  countdownLive,
 }: {
   claimed: number;
   going: number;
+  total: number;
   clock: { value: string; label: string };
+  goldLive: boolean;
+  countdownLive: boolean;
 }) {
+  // Off season there is nothing to be going to, so the bar drops going and the
+  // countdown entirely and shows a figure that is useful all year instead.
   const figures = [
     { value: String(claimed), label: "Claimed", color: "var(--pitt-royal)", dot: false },
-    { value: String(going), label: "Going", color: "var(--sabah-black)", dot: true },
-    { value: clock.value, label: clock.label, color: "var(--steel-ink)", dot: false },
+    ...(goldLive
+      ? [{ value: String(going), label: "Going", color: "var(--sabah-black)", dot: true }]
+      : []),
+    ...(countdownLive
+      ? [{ value: clock.value, label: clock.label, color: "var(--steel-ink)", dot: false }]
+      : [{ value: String(total), label: "On the board", color: "var(--steel-ink)", dot: false }]),
   ];
   return (
     <div
@@ -196,13 +238,17 @@ function CounterBar({
       <div className="relative mx-auto flex h-14 max-w-[1320px] items-center px-5 md:hidden" style={{ fontSize: 13 }}>
         <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--pitt-royal)" }}>{claimed} claimed</span>
         <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
-        <span className="inline-flex items-center gap-1.5" style={{ fontFamily: '"Space Mono", monospace', color: "var(--sabah-black)" }}>
-          <GoldDot />
-          {going} going
-        </span>
-        <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
+        {goldLive && (
+          <>
+            <span className="inline-flex items-center gap-1.5" style={{ fontFamily: '"Space Mono", monospace', color: "var(--sabah-black)" }}>
+              <GoldDot />
+              {going} going
+            </span>
+            <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
+          </>
+        )}
         <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}>
-          {clock.value} {clock.label.toLowerCase()}
+          {countdownLive ? `${clock.value} ${clock.label.toLowerCase()}` : `${total} on the board`}
         </span>
       </div>
     </div>

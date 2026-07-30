@@ -4,6 +4,8 @@ export type EditionSummary = {
   title: string;
   starts_on: string;
   ends_on: string;
+  /** Absent means "assume published"; the loaders always set it. */
+  published?: boolean;
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -63,4 +65,65 @@ export function countdown(
     return { value: String(nd), label: `Days to ${next.event_year}` };
   }
   return { value: "—", label: "Next date TBD" };
+}
+
+/** Today as YYYY-MM-DD in the timezone the weekend actually happens in. */
+export function todayInNewYork(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(now);
+}
+
+export type SeasonPhase = "upcoming" | "in_progress" | "off_season";
+
+export type Season = {
+  phase: SeasonPhase;
+  /** The edition the site is currently about. Null only in the off season. */
+  edition: EditionSummary | null;
+  /** 1-based day of the edition we are in, when in progress. */
+  todayDayNumber: number | null;
+  today: string;
+};
+
+const dayMs = 86400000;
+
+function utc(iso: string): number {
+  const [y, m, d] = iso.split("-").map(Number);
+  return Date.UTC(y, m - 1, d);
+}
+
+/** Which of the three states the site is in, driven entirely by the editions rows. */
+export function resolveSeason(
+  current: EditionSummary | null,
+  next: EditionSummary | null,
+  today: string = todayInNewYork(),
+): Season {
+  const live = (e: EditionSummary | null) =>
+    e && e.published !== false && e.ends_on >= today ? e : null;
+  const edition = live(current) ?? live(next);
+  if (!edition) return { phase: "off_season", edition: null, todayDayNumber: null, today };
+  if (today < edition.starts_on) return { phase: "upcoming", edition, todayDayNumber: null, today };
+  return {
+    phase: "in_progress",
+    edition,
+    todayDayNumber: Math.round((utc(today) - utc(edition.starts_on)) / dayMs) + 1,
+    today,
+  };
+}
+
+/** The year of the next first-October-weekend after today. Used for off-season copy. */
+export function nextOctoberYear(today: string = todayInNewYork()): number {
+  const [y, m] = today.split("-").map(Number);
+  return m < 10 ? y : y + 1;
+}
+
+const LONG_MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+/** "October 2 to 4, 2026" — the phrasing the story page uses. */
+export function editionLongRange(edition: EditionSummary): string {
+  const [ay, am, ad] = edition.starts_on.split("-").map(Number);
+  const [by, bm, bd] = edition.ends_on.split("-").map(Number);
+  if (am === bm && ay === by) return `${LONG_MONTHS[am - 1]} ${ad} to ${bd}, ${by}`;
+  return `${LONG_MONTHS[am - 1]} ${ad} to ${LONG_MONTHS[bm - 1]} ${bd}, ${by}`;
 }
