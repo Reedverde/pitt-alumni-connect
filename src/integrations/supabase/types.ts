@@ -795,7 +795,7 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
-          submitted_by: string
+          submitted_by: string | null
           type: string
         }
         Insert: {
@@ -806,7 +806,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
-          submitted_by: string
+          submitted_by?: string | null
           type: string
         }
         Update: {
@@ -817,7 +817,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
-          submitted_by?: string
+          submitted_by?: string | null
           type?: string
         }
         Relationships: [
@@ -938,6 +938,27 @@ export type Database = {
             referencedColumns: ["code"]
           },
         ]
+      }
+      throttle_events: {
+        Row: {
+          bucket: string
+          created_at: string
+          id: string
+          kind: string
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          id?: string
+          kind: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          id?: string
+          kind?: string
+        }
+        Relationships: []
       }
       verifications: {
         Row: {
