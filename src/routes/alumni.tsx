@@ -172,8 +172,7 @@ function AlumniPage() {
               Friday is always a social night.
             </h2>
             <p className="mt-4" style={body}>
-              Some years it is a bar crawl. This year Pitt is away at Virginia Tech, so it is a
-              screen, a room, and everybody in it.
+              This year it is a crawl through Oakland and the Pitt away game on a screen.
             </p>
             <p className="mt-4" style={body}>
               Saturday is the cookout, with the field and the playground right there. Sunday is a

@@ -1088,6 +1088,7 @@ export type EditionEventRow = {
   division: string | null;
   time_tbd: boolean;
   is_placeholder: boolean;
+  location: string | null;
 };
 
 export type EditionRow = Edition & {
@@ -1102,7 +1103,7 @@ export async function listEditions(): Promise<EditionRow[]> {
     goingCounts(),
     supabaseAdmin
       .from("events")
-      .select("id, event_year, title, day_number, division, time_tbd, is_placeholder")
+      .select("id, event_year, title, day_number, division, time_tbd, is_placeholder, location")
       .order("day_number")
       .order("sort_order"),
   ]);
@@ -1117,6 +1118,7 @@ export async function listEditions(): Promise<EditionRow[]> {
       division: (row.division as string | null) ?? null,
       time_tbd: Boolean(row.time_tbd),
       is_placeholder: Boolean((row as { is_placeholder?: boolean }).is_placeholder),
+      location: (row.location as string | null) ?? null,
     });
     byYear.set(y, list);
   }
