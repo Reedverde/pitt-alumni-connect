@@ -313,7 +313,7 @@ function Hero({
         {/* The photograph sits over the last line of type, tilted off the grid. */}
         <div
           aria-hidden={false}
-          className="pointer-events-none relative z-10 mx-auto -mt-6 w-[86%] max-w-[560px] md:absolute md:right-5 md:bottom-10 md:mt-0 md:w-[42%]"
+          className="pointer-events-none relative z-10 mx-auto mt-6 w-[86%] max-w-[560px] md:absolute md:right-5 md:bottom-10 md:mt-0 md:w-[42%]"
           style={{ transform: "rotate(-4deg)" }}
         >
           <PhotoSlot
