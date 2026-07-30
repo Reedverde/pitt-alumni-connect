@@ -198,6 +198,84 @@ async function sendMagicLink(opts: {
   await sendMagicLinkEmail(opts);
 }
 
+function normalizedName(first: string, last: string | null) {
+  return [first, last ?? ""].join(" ").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/** An unmatched name never creates a people row. It becomes a pending request
+ *  the organizers review. No RSVP, no identity, no sign-in link yet. */
+async function requestNewPerson(args: {
+  firstName: string;
+  lastName: string | null;
+  email: string;
+  status: RsvpStatus;
+  src: RsvpSource;
+  ipHash: string;
+  origin: string | null | undefined;
+}): Promise<RsvpResult> {
+  const { data: preapproved } = await supabaseAdmin
+    .from("preapproved_emails")
+    .select("email")
+    .eq("email", args.email)
+    .maybeSingle();
+
+  const payload = {
+    first_name: args.firstName,
+    last_name: args.lastName,
+    email: args.email,
+    requested_status: args.status,
+    src: args.src,
+    ip_hash: args.ipHash,
+    ...(preapproved ? { preapproved: true } : {}),
+  };
+
+  const { data: existing } = await supabaseAdmin
+    .from("suggestions")
+    .select("id, payload")
+    .eq("type", "new_person")
+    .eq("status", "pending")
+    .eq("payload->>email", args.email)
+    .limit(50);
+
+  const key = normalizedName(args.firstName, args.lastName);
+  const dupe = (existing ?? []).find((row) => {
+    const p = (row.payload ?? {}) as Record<string, unknown>;
+    return (
+      normalizedName(
+        typeof p.first_name === "string" ? p.first_name : "",
+        typeof p.last_name === "string" ? p.last_name : null,
+      ) === key
+    );
+  });
+
+  if (dupe) {
+    await supabaseAdmin.from("suggestions").update({ payload }).eq("id", dupe.id as string);
+  } else {
+    await supabaseAdmin
+      .from("suggestions")
+      .insert({ type: "new_person", status: "pending", submitted_by: null, payload });
+  }
+
+  await supabaseAdmin.from("audit_log").insert({
+    action: "rsvp_new_person_request",
+    table_name: "suggestions",
+    record_id: null,
+    after: {
+      status: args.status,
+      src: args.src,
+      ip_hash: args.ipHash,
+      email_domain: args.email.split("@")[1] ?? null,
+      preapproved: Boolean(preapproved),
+      deduplicated: Boolean(dupe),
+    },
+  });
+
+  const { notifyAdminsOfPendingSuggestions } = await import("./admin-notify.server");
+  await notifyAdminsOfPendingSuggestions(args.origin);
+
+  return { ok: true, outcome: "review_requested", person: null };
+}
+
 /** Public write endpoint: creates or updates the RSVP before the person has
  *  authenticated. Every outcome returns the same shape; existence of an email
  *  or a person is never disclosed. */
@@ -210,7 +288,16 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
   if (!isValidEmail(input.email)) throw new Error("That email doesn't look right.");
   const email = input.email.trim().toLowerCase();
 
-  if (await overRateLimit(ip)) throw new Error("Something went wrong. Try again later.");
+  const ipHash = hashIp(ip);
+  const verdict = await evaluateRsvpThrottle(ipHash, email);
+  if (verdict.level === "hard") throw new Error("Something went wrong. Try again later.");
+
+  // Every accepted submission counts on all three dimensions.
+  await Promise.all([
+    recordThrottleEvent("rsvp_ip", ipHash),
+    recordThrottleEvent("rsvp_email", email),
+    recordThrottleEvent("rsvp_global", "all"),
+  ]);
 
   const eventYear = await currentEditionYear();
 
@@ -229,21 +316,15 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
     const firstName = cleanName(input.firstName);
     const lastName = cleanName(input.lastName) || null;
     if (!firstName) throw new Error("Please enter your name.");
-
-    const { data: created, error } = await supabaseAdmin
-      .from("people")
-      .insert({
-        first_name: firstName,
-        last_name: lastName,
-        needs_review: true,
-        // Unverified: stays off the public board until the magic link is clicked.
-        show_on_board: false,
-        seed_id: `${SELF_ADDED_SEED_PREFIX}${crypto.randomUUID()}`,
-      })
-      .select("id, first_name, last_name, played_as, grad_year, seed_division, deceased")
-      .single();
-    if (error || !created) throw new Error("Something went wrong. Try again.");
-    person = created as PersonRow;
+    return requestNewPerson({
+      firstName,
+      lastName,
+      email,
+      status,
+      src,
+      ipHash,
+      origin: input.origin,
+    });
   }
 
   // A person whose email is already verified owns their own RSVP. An anonymous
