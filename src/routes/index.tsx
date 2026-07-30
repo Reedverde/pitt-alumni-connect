@@ -321,7 +321,7 @@ function Hero({
           className="pointer-events-none absolute left-1/2 z-10"
           style={{
             width: "min(140vw, 1400px)",
-            bottom: "-26vw",
+            bottom: "-50vw",
             transform: "translateX(-50%) rotate(38deg)",
             transformOrigin: "50% 100%",
           }}
