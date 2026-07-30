@@ -148,6 +148,29 @@ function MePage() {
         </p>
       )}
 
+      {profile.rsvp === null && (
+        <div
+          className="mt-6 p-5"
+          style={{ border: "1px solid var(--chalk)", borderRadius: 7, background: "var(--field-white)" }}
+        >
+          <p style={{ fontSize: 15, color: "var(--steel-ink)" }}>Are you coming in October?</p>
+          <div className="mt-3 grid gap-2 md:grid-cols-3">
+            {(["going", "maybe", "not_this_year"] as RsvpStatus[]).map((s) => (
+              <button
+                key={s}
+                type="button"
+                style={{ ...secondaryButton, width: "100%" }}
+                onClick={() =>
+                  run(() => putRsvp({ data: { personId: person.id, status: s } }), "Answer saved.")
+                }
+              >
+                {STATUS_LABELS[s]}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <Section title={profile.edition?.title ?? "Alumni Weekend"}>
         <div className="grid gap-2 md:grid-cols-3">
           {(["going", "maybe", "not_this_year"] as RsvpStatus[]).map((s) => (
