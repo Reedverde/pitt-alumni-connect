@@ -1047,10 +1047,11 @@ export type AdminDashboard = {
   duplicates: DuplicatePair[];
   seasonYear: number;
   editions: EditionRow[];
+  sends: SendRow[];
 };
 
 export async function dashboard(): Promise<AdminDashboard> {
-  const [queue, teamRes, divisionRes, gaps, digest, drip, duplicates, editions] = await Promise.all([
+  const [queue, teamRes, divisionRes, gaps, digest, drip, duplicates, editions, sends] = await Promise.all([
     reviewQueue(),
     supabaseAdmin
       .from("team_names")
@@ -1063,6 +1064,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     dripData(),
     duplicateCandidates(),
     listEditions(),
+    recentSends(),
   ]);
   return {
     isAdmin: true,
@@ -1074,8 +1076,63 @@ export async function dashboard(): Promise<AdminDashboard> {
     drip,
     duplicates,
     editions,
+    sends,
     seasonYear: CURRENT_SEASON,
   };
+}
+
+// ---------------------------------------------------------------- sends
+
+export type SendRow = {
+  id: string;
+  created_at: string | null;
+  kind: string;
+  to_email: string | null;
+  name: string | null;
+  provider: string | null;
+  provider_message_id: string | null;
+  status: string;
+  error: string | null;
+};
+
+/** The last fifty outbound messages, so a delivery failure is visible on a
+ *  screen rather than buried in a log. */
+export async function recentSends(): Promise<SendRow[]> {
+  const { data } = await supabaseAdmin
+    .from("sends")
+    .select(
+      "id, created_at, kind, to_email, provider, provider_message_id, status, error, person_id",
+    )
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  const rows = (data ?? []) as Record<string, unknown>[];
+  const ids = [...new Set(rows.map((r) => r.person_id as string).filter(Boolean))];
+  const names = new Map<string, string>();
+  if (ids.length > 0) {
+    const { data: people } = await supabaseAdmin
+      .from("people")
+      .select("id, first_name, last_name")
+      .in("id", ids);
+    for (const p of people ?? []) {
+      names.set(
+        p.id as string,
+        [p.first_name, p.last_name].filter(Boolean).join(" "),
+      );
+    }
+  }
+
+  return rows.map((r) => ({
+    id: r.id as string,
+    created_at: (r.created_at as string | null) ?? null,
+    kind: (r.kind as string | null) ?? "transactional",
+    to_email: (r.to_email as string | null) ?? null,
+    name: names.get(r.person_id as string) ?? null,
+    provider: (r.provider as string | null) ?? null,
+    provider_message_id: (r.provider_message_id as string | null) ?? null,
+    status: (r.status as string | null) ?? "unknown",
+    error: (r.error as string | null) ?? null,
+  }));
 }
 
 

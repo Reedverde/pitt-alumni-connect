@@ -17,6 +17,7 @@ import {
 } from "@/components/admin/Panels";
 import { EditionsPanel } from "@/components/admin/EditionsPanel";
 import { PhotosPanel } from "@/components/admin/PhotosPanel";
+import { SendsPanel } from "@/components/admin/SendsPanel";
 import { Section } from "@/components/admin/ui";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -91,6 +92,7 @@ function AdminPage() {
       <MergeTool pairs={data.duplicates} onDone={refresh} />
       <PhotosPanel />
       <ExportPanel />
+      <SendsPanel rows={data.sends} />
 
       <Section eyebrow="Data confidence" title="What we actually know">
         <DivisionsPanel rows={data.divisions} onSaved={refresh} />
