@@ -58,6 +58,10 @@ export const Route = createFileRoute("/api/public/resend-webhook")({
             .from("sends")
             .update({
               status: type.replace("email.", ""),
+              ...(type === "email.bounced" || type === "email.complained"
+                ? { outcome: "failed" }
+                : {}),
+              ...(type === "email.delivered" ? { outcome: "sent" } : {}),
               ...(type === "email.bounced" ? { bounced: true } : {}),
               ...(type === "email.complained" ? { complained: true } : {}),
               ...(type === "email.bounced"
