@@ -377,8 +377,10 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
                 >
                   Delete
                 </button>
+                </div>
               </div>
-            ))}
+              );
+            })}
             {shown.length === 0 && (
               <p style={{ fontSize: 13, color: "var(--sterling)" }}>Nothing scheduled yet.</p>
             )}
