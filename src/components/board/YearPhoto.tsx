@@ -1,15 +1,13 @@
 import { NotchedBox } from "@/components/media/NotchedBox";
-import { NOTCH_SM, type NotchCorner } from "@/components/media/notch";
+import { NOTCH_ALL, NOTCH_SM, type NotchCorner } from "@/components/media/notch";
 import type { BoardPhoto } from "@/lib/board.functions";
 import { photoUrl } from "@/lib/photo-slots";
 
 const DUOTONE = "grayscale(1) contrast(0.95) sepia(0.3) hue-rotate(185deg) saturate(2.4)";
 
-/** Cut corners alternate down the page so the rail reads composed, not stamped. */
-const CORNER_CYCLE: NotchCorner[][] = [["tl"], ["br"], ["tl", "br"]];
-
-export function cornersForRow(index: number) {
-  return CORNER_CYCLE[index % CORNER_CYCLE.length];
+/** Every photograph on the site is cut on all four corners. */
+export function cornersForRow(_index: number): NotchCorner[] {
+  return NOTCH_ALL;
 }
 
 const img = {

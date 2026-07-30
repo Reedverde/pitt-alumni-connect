@@ -9,6 +9,9 @@ export type NotchCorner = "tl" | "tr" | "bl" | "br";
 export const NOTCH_SM = 16;
 export const NOTCH_LG = 28;
 
+/** Photographs are cut on all four corners: the frame reads as an octagon. */
+export const NOTCH_ALL: NotchCorner[] = ["tl", "tr", "br", "bl"];
+
 /** Points, in pixels, walking the notched outline clockwise from top-left. */
 export function notchPoints(w: number, h: number, n: number, corners: NotchCorner[]) {
   const has = (c: NotchCorner) => corners.includes(c);
