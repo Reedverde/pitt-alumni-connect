@@ -46,7 +46,7 @@ export function NameChip({ person, dimmed }: { person: BoardPerson; dimmed: bool
     <span
       tabIndex={0}
       aria-label={`${display}${teamPart}, ${person.board_year}, ${STATE_WORDS[person.state]}`}
-      className="group inline-flex items-center gap-2 rounded-full transition-[opacity,border-color] duration-150"
+      className="group inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full transition-[opacity,border-color] duration-150"
       style={{
         ...chipStyle(person.state),
         padding: "7px 13px",

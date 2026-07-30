@@ -276,7 +276,7 @@ function AnchorRow({ people }: { people: BoardPerson[] }) {
           </div>
         </div>
       </div>
-      <div className="flex flex-1 flex-wrap gap-2">
+      <div className="flex flex-1 flex-wrap content-start items-start gap-2">
         {sorted.map((person) => (
           <NameChip key={person.id} person={person} dimmed={false} />
         ))}
@@ -304,7 +304,7 @@ function YearRow({ group, isDimmed }: { group: YearGroup; isDimmed: (p: BoardPer
           </div>
         </div>
       </div>
-      <div className="flex flex-1 flex-wrap gap-2">
+      <div className="flex flex-1 flex-wrap content-start items-start gap-2">
         {group.people.map((person) => (
           <NameChip key={person.id} person={person} dimmed={isDimmed(person)} />
         ))}
