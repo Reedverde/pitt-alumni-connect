@@ -1285,6 +1285,10 @@ export type Database = {
         Returns: boolean
       }
       set_current_edition: { Args: { _event_year: number }; Returns: undefined }
+      signin_token_state: {
+        Args: { _token: string; _user_id: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

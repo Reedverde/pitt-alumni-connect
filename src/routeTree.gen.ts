@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as WeekendRouteImport } from './routes/weekend'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated/me'
+import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as EditionsYearRouteImport } from './routes/editions.$year'
 import { Route as ApiPhotosUploadRouteImport } from './routes/api/photos/upload'
 import { Route as ApiPublicCalendarDoticsRouteImport } from './routes/api/public/calendar[.]ics'
@@ -57,6 +58,11 @@ const AuthenticatedMeRoute = AuthenticatedMeRouteImport.update({
   id: '/me',
   path: '/me',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth_/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const EditionsYearRoute = EditionsYearRouteImport.update({
   id: '/editions/$year',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/weekend': typeof WeekendRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/editions/$year': typeof EditionsYearRoute
   '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/weekend': typeof WeekendRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/editions/$year': typeof EditionsYearRoute
   '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/weekend': typeof WeekendRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/me': typeof AuthenticatedMeRoute
+  '/auth_/callback': typeof AuthCallbackRoute
   '/editions/$year': typeof EditionsYearRoute
   '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/weekend'
     | '/admin'
     | '/me'
+    | '/auth/callback'
     | '/editions/$year'
     | '/api/photos/upload'
     | '/api/public/calendar.ics'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/weekend'
     | '/admin'
     | '/me'
+    | '/auth/callback'
     | '/editions/$year'
     | '/api/photos/upload'
     | '/api/public/calendar.ics'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/weekend'
     | '/_authenticated/admin'
     | '/_authenticated/me'
+    | '/auth_/callback'
     | '/editions/$year'
     | '/api/photos/upload'
     | '/api/public/calendar.ics'
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   AlumniRoute: typeof AlumniRoute
   AuthRoute: typeof AuthRoute
   WeekendRoute: typeof WeekendRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   EditionsYearRoute: typeof EditionsYearRoute
   ApiPhotosUploadRoute: typeof ApiPhotosUploadRoute
   ApiPublicCalendarDoticsRoute: typeof ApiPublicCalendarDoticsRoute
@@ -255,6 +268,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/me'
       preLoaderRoute: typeof AuthenticatedMeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/auth_/callback': {
+      id: '/auth_/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/editions/$year': {
       id: '/editions/$year'
@@ -327,6 +347,7 @@ const rootRouteChildren: RootRouteChildren = {
   AlumniRoute: AlumniRoute,
   AuthRoute: AuthRoute,
   WeekendRoute: WeekendRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   EditionsYearRoute: EditionsYearRoute,
   ApiPhotosUploadRoute: ApiPhotosUploadRoute,
   ApiPublicCalendarDoticsRoute: ApiPublicCalendarDoticsRoute,

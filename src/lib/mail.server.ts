@@ -354,7 +354,13 @@ export async function logSend(input: LogInput) {
 }
 
 /** Asks the auth admin API for a one-time sign-in link so we can carry it in
- *  our own message. The service role key stays on the server. */
+ *  our own message. The service role key stays on the server.
+ *
+ *  We deliberately do NOT mail the provider's own /auth/v1/verify URL. That URL
+ *  consumes the token the instant it is opened and then hands the browser a
+ *  session, which is unrecoverable if the browser already holds a session for
+ *  somebody else. Mailing the unconsumed token to our own callback lets that
+ *  page ask a question first and only spend the token once the person says so. */
 async function generateMagicLink(email: string, origin: string | null): Promise<string | null> {
   const url = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -383,6 +389,16 @@ async function generateMagicLink(email: string, origin: string | null): Promise<
   if (!out.ok || !out.json) return null;
 
   const props = (out.json.properties ?? out.json) as Record<string, unknown>;
+  const hashed = (props.hashed_token ?? out.json.hashed_token) as string | undefined;
+  const kind = (props.verification_type ?? out.json.verification_type) as string | undefined;
+
+  if (typeof hashed === "string" && hashed.length > 0 && origin) {
+    const type = kind === "signup" ? "signup" : "magiclink";
+    return `${origin}/auth/callback?token_hash=${encodeURIComponent(hashed)}&type=${type}`;
+  }
+
+  // Only if the admin API stops returning the raw token: a working link beats
+  // a missing one, even without the interstitial.
   const link = (props.action_link ?? out.json.action_link) as string | undefined;
   return typeof link === "string" ? link : null;
 }
