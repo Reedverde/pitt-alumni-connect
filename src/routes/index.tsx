@@ -251,7 +251,7 @@ function BoardPage() {
   );
 }
 
-/** Compact event hero. No gold: nobody is coming in a hero. */
+/** Display hero: the date is the picture. No gold: nobody is coming in a hero. */
 function Hero({
   season,
   clock,
@@ -266,64 +266,82 @@ function Hero({
   const edition = season.edition;
   const dates = edition ? editionShortDates(edition) : null;
   return (
-    <section className="mx-auto w-full max-w-[1320px] px-5 pt-8 pb-8 md:pt-10">
-      <div className="grid items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-        <div>
-          <SlashEyebrow>Alumni Weekend</SlashEyebrow>
-          {dates ? (
-            <>
-              <h1
-                className="display-xl mt-3"
-                style={{
-                  fontFamily: '"Space Mono", monospace',
-                  fontWeight: 700,
-                  fontSize: "clamp(48px, 8vw, 96px)",
-                  color: "var(--sabah-black)",
-                }}
-              >
-                {dates.range}
-              </h1>
-              <p
-                className="mt-2"
-                style={{
-                  fontFamily: '"Space Mono", monospace',
-                  fontWeight: 700,
-                  fontSize: 24,
-                  letterSpacing: "-0.02em",
-                  color: "var(--steel-ink)",
-                }}
-              >
-                {dates.year}
-                {countdownLive && (
-                  <span className="label-caps ml-4" style={{ color: "var(--sterling)" }}>
-                    {clock.value} {clock.label.toLowerCase()}
-                  </span>
-                )}
-              </p>
-            </>
-          ) : (
-            <h1 className="display-48 mt-3" style={{ color: "var(--sabah-black)" }}>
-              THE FIRST WEEKEND OF OCTOBER, {nextOctoberYear()}
-            </h1>
-          )}
-          <p className="mt-4 max-w-[560px]" style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 20, color: "var(--steel-ink)" }}>
+    <section style={{ background: "var(--sabah-black)", overflow: "hidden" }}>
+      <div className="relative mx-auto w-full max-w-[1320px] px-5 pt-10 pb-12 md:pt-14 md:pb-16">
+        <p className="flex items-center" style={{ color: "var(--pure-white)" }}>
+          <span aria-hidden="true" style={{ color: "var(--pitt-gold)", fontSize: 13, fontWeight: 700, marginRight: 12 }}>
+            //
+          </span>
+          <span className="label-caps">Alumni Weekend</span>
+        </p>
+
+        {dates ? (
+          <h1
+            className="mt-5"
+            style={{
+              fontFamily: '"Archivo", sans-serif',
+              fontWeight: 800,
+              fontSize: "clamp(64px, 15vw, 200px)",
+              lineHeight: 0.86,
+              letterSpacing: "-0.045em",
+              color: "var(--pure-white)",
+              textTransform: "uppercase",
+            }}
+          >
+            {dates.range}
+            <br />
+            {dates.year}
+          </h1>
+        ) : (
+          <h1
+            className="mt-5"
+            style={{
+              fontFamily: '"Archivo", sans-serif',
+              fontWeight: 800,
+              fontSize: "clamp(48px, 9vw, 120px)",
+              lineHeight: 0.9,
+              letterSpacing: "-0.04em",
+              color: "var(--pure-white)",
+              textTransform: "uppercase",
+            }}
+          >
+            The first weekend of October, {nextOctoberYear()}
+          </h1>
+        )}
+
+        {/* The photograph sits over the last line of type, tilted off the grid. */}
+        <div
+          aria-hidden={false}
+          className="pointer-events-none relative z-10 mx-auto -mt-6 w-[86%] max-w-[560px] md:absolute md:right-5 md:bottom-10 md:mt-0 md:w-[42%]"
+          style={{ transform: "rotate(-4deg)" }}
+        >
+          <PhotoSlot
+            ratio="4 / 3"
+            index="01"
+            label="Group shot, past alumni weekend"
+            slotKey="weekend_hero"
+            eager
+          />
+        </div>
+
+        <div className="relative z-20 mt-8 md:max-w-[540px]">
+          <p style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 20, color: "var(--concrete)" }}>
             Pittsburgh and Oakland. Three days. Everybody who ever played.
           </p>
+          {countdownLive && (
+            <p className="label-caps mt-3" style={{ color: "var(--sterling)" }}>
+              {clock.value} {clock.label.toLowerCase()}
+            </p>
+          )}
           <div className="mt-6 flex flex-wrap gap-3">
             <button type="button" style={primaryButton} onClick={onClaim}>
               Say you're coming
             </button>
-            <Link to="/weekend" style={ghostButton}>
+            <Link to="/weekend" style={{ ...ghostButton, color: "var(--pure-white)", border: "1px solid var(--steel-ink)" }}>
               See the schedule
             </Link>
           </div>
         </div>
-        <PhotoSlot
-          ratio="16 / 9"
-          index="01"
-          label="Group shot, past alumni weekend"
-          slotKey="weekend_hero"
-        />
       </div>
     </section>
   );
