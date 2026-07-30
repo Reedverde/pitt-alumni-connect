@@ -142,3 +142,9 @@ Shared email chrome lives in `src/lib/email-chrome.ts`: table based header, live
 Single choke point: `resendDeliver()` in `src/lib/mail.server.ts` — the only caller of the Resend send endpoint.
 Allow list is by message kind: `magic_link` only. Everything else (digest, all drips, `t_minus_10_headcount`, admin test, party-size link) is refused there and writes a `sends` row with status `blocked`. The Supabase built-in mailer fallback consults the same `outboundEmailMode()`.
 Admin: Mail configuration panel shows "Outbound email: paused. Only sign-in links are being sent." with a toggle.
+
+## Pause leak fix and send outcomes (2026-07-30, later)
+Leak: `src/lib/rsvp.server.ts:201` called `sendMagicLinkEmail` with no `kind`, and `src/lib/mail.server.ts` defaulted `kind` to `magic_link`, so RSVP confirmations were classified as sign-in links and passed the choke point. `kind` is now required with no default; the RSVP path sends `rsvp_confirmation`, which is refused while paused.
+Repeats: every accepted `submitRsvpServer` call sent unconditionally, including the verified-owner branch that writes nothing. New `confirmation_sends` table (unique person_id + event_year + status) claims a row before the send and releases it only when the send never left, so one confirmation per person per edition per status change.
+`sends.outcome` ('sent' | 'blocked' | 'failed' | 'suppressed') plus `blocked_reason`; every delivery count filters `outcome = 'sent'`.
+Session: sessions are not time boxed (`auth.sessions.not_after` is null), refresh tokens rotate on use and the generated client persists and auto refreshes, so a sliding session outlasts 90 days. Access token JWT stays at the 3600s default; that value is a project auth setting with no tool exposed to change it. Sign out on /me uses `scope: "global"`.
