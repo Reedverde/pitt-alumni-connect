@@ -439,11 +439,13 @@ function EventTile({
           {event.notes}
         </p>
       )}
-      <div className="mt-4">
-        <a href={`/api/public/calendar.ics?year=${eventYear}&event=${event.id}`} style={ghostButton}>
-          Add to calendar
-        </a>
-      </div>
+      {!event.time_tbd && event.starts_at && (
+        <div className="mt-4">
+          <a href={`/api/public/event.ics?year=${eventYear}&id=${event.id}`} style={ghostButton}>
+            Add to calendar
+          </a>
+        </div>
+      )}
     </NotchedBox>
   );
 }
