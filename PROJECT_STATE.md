@@ -109,9 +109,9 @@ Server side, status unconfirmed:
 
 ## ROADMAP
 
-NOW: delete the sample rows and run the real 468 person import. Run 005_verify.sql and confirm all 29 checks PASS. Add a pg_cron job pruning `throttle_events` older than 48 hours. Replace the og:image with a stable hosted asset. Publish a privacy policy and link it in the footer.
+NOW: write the standing access-verification script that runs as anon and as a non-admin and asserts per-role read and write on every table plus what can leave the mail system while paused. Narrow rsvps so party_size is admin only. Confirm or delete the remaining placeholder events. Add a pg_cron job pruning throttle_events older than 48 hours. Replace the og:image with a stable hosted asset. Publish a privacy policy and link it in the footer. Reconcile CONTEXT.md, BUILD_SPEC.md, DESIGN.md and URL_MANIFEST.md, all four now describe a site that does not exist.
 
-NEXT: activate the eight drip sequences once the sending domain verifies. Import the 2026 roster of 48 names. Import the two women's division rosters. Discord, GroupMe and Facebook syndication with src tracking. Analytics on claim and RSVP conversion. Virtualize the board.
+NEXT: activate the eight drip sequences once the sending domain verifies. Import the 2026 roster of 48 names. Discord, GroupMe and Facebook syndication with src tracking. Analytics on claim and RSVP conversion. Virtualize the board. Women's division import, roughly 102 people, only after Christie Lawry and Bailey Moorhead have been contacted.
 
 LATER: tournament tracker. Alumni job network built on the open_to_network consent flag. Edition rollover so the weekend repeats every year without a migration. Per year photo library.
 
