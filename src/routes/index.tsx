@@ -267,8 +267,11 @@ function Hero({
   const edition = season.edition;
   const dates = edition ? editionShortDates(edition) : null;
   return (
-    <section style={{ background: "var(--sabah-black)", overflow: "hidden" }}>
-      <div className="relative mx-auto w-full max-w-[1320px] px-5 pt-10 pb-12 md:pt-14 md:pb-16">
+    <section style={{ background: "var(--sabah-black)" }}>
+      <div
+        className="relative mx-auto w-full max-w-[1320px] px-5 pt-10 pb-[34vw] md:pt-14 md:pb-[22vw]"
+        style={{ overflow: "hidden" }}
+      >
         <p className="flex items-center" style={{ color: "var(--pure-white)" }}>
           <span aria-hidden="true" style={{ color: "var(--pitt-gold)", fontSize: 13, fontWeight: 700, marginRight: 12 }}>
             //
