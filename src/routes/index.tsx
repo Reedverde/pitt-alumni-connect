@@ -67,7 +67,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Every Pitt Club Ultimate alum on one wall, by year. See who is coming to Alumni Weekend.",
+          "Every Pitt Club Ultimate alum on one wall, by year. See who has claimed their name and who is coming to Alumni Weekend.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
