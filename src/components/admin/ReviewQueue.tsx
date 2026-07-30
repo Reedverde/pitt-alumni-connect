@@ -250,6 +250,19 @@ export function ReviewQueue({ queue, onRefresh }: { queue: QueueItem[]; onRefres
 
   return (
     <Section eyebrow="Review queue" title="Waiting on you">
+      <p
+        className="mb-6"
+        style={{
+          display: "inline-block",
+          border: "1px solid var(--steel-ink)",
+          padding: "4px 10px",
+          fontFamily: "var(--font-mono, monospace)",
+          fontSize: 12,
+          color: "var(--sabah-black)",
+        }}
+      >
+        {pending.length} pending
+      </p>
       <div className="grid gap-10">
         <div>
           <h3 className="label-caps mb-2" style={{ color: "var(--sterling)" }}>
