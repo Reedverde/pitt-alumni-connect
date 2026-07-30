@@ -314,8 +314,7 @@ function Hero({
           </h1>
         )}
 
-        {/* The photograph rises out of the bottom edge on a hard diagonal,
-            spanning the full width of the hero. */}
+        {/* The photograph rises out of the bottom edge, spanning the full width of the hero. */}
         <img
           src={heroPeak.url}
           alt="Pitt Ultimate players piled together on the sideline"
@@ -327,8 +326,6 @@ function Hero({
               "drop-shadow(-6px 0 0 var(--pure-white))",
               "drop-shadow(0 6px 0 var(--pure-white))",
             ].join(" "),
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
           }}
         />
       </div>
