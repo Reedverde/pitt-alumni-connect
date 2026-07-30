@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 
 import { NotchedBox } from "./NotchedBox";
+import { photoUrl, usePhotoSlots } from "@/lib/photo-slots";
 import { NOTCH_LG, type NotchCorner } from "./notch";
 
 type PhotoSlotProps = {
@@ -13,10 +14,14 @@ type PhotoSlotProps = {
   /** Which corners are cut. Never all four. */
   corners?: NotchCorner[];
   notch?: number;
+  /** Reads photo_slots for this key. Empty slot keeps the dashed state. */
+  slotKey?: string;
   /** When set, the real photograph renders and the dashed frame disappears. */
   src?: string;
   /** Required alt text whenever src is set. */
   alt?: string;
+  /** The one slot above the fold. Everything else lazy loads. */
+  eager?: boolean;
   className?: string;
 };
 
@@ -42,20 +47,31 @@ export function PhotoSlot({
   ratio = "16 / 9",
   corners = ["tl"],
   notch = NOTCH_LG,
+  slotKey,
   src,
   alt,
+  eager = false,
   className,
 }: PhotoSlotProps) {
-  const frame: CSSProperties = { aspectRatio: ratio, width: "100%" };
+  const { data: slots } = usePhotoSlots();
+  const assigned = slotKey ? (slots?.[slotKey] ?? null) : null;
 
-  if (src) {
+  const frame: CSSProperties = { aspectRatio: ratio, width: "100%" };
+  const resolvedSrc = src ?? (assigned ? photoUrl(assigned.storage_path) : undefined);
+  // Never an empty alt on a content image: the slot label is the fallback.
+  const resolvedAlt = (alt ?? assigned?.alt ?? "").trim() || label;
+
+  if (resolvedSrc) {
     return (
       <figure className={className} style={{ margin: 0 }}>
         <NotchedBox corners={corners} notch={notch} style={frame}>
           <img
-            src={src}
-            alt={alt ?? label}
-            loading="lazy"
+            src={resolvedSrc}
+            alt={resolvedAlt}
+            width={assigned?.width ?? undefined}
+            height={assigned?.height ?? undefined}
+            loading={eager ? "eager" : "lazy"}
+            fetchPriority={eager ? "high" : undefined}
             decoding="async"
             style={{
               position: "absolute",
@@ -119,14 +135,32 @@ export function StatementCard({
   index = "00",
   ratio = "1 / 1",
   corners = ["br"],
+  slotKey,
   className,
 }: {
   children: string;
   index?: string;
   ratio?: string;
   corners?: NotchCorner[];
+  slotKey?: string;
   className?: string;
 }) {
+  const { data: slots } = usePhotoSlots();
+  const assigned = slotKey ? (slots?.[slotKey] ?? null) : null;
+
+  if (assigned) {
+    return (
+      <PhotoSlot
+        className={className}
+        label={children}
+        index={index}
+        ratio={ratio}
+        corners={corners}
+        slotKey={slotKey}
+      />
+    );
+  }
+
   return (
     <NotchedBox
       className={className}
