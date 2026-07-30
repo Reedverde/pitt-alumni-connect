@@ -7,9 +7,12 @@ export type Edition = {
   ends_on: string;
   is_current: boolean;
   published: boolean;
+  lodging_note: string | null;
+  travel_note: string | null;
 };
 
-const EDITION_COLUMNS = "event_year, title, starts_on, ends_on, is_current, published";
+const EDITION_COLUMNS =
+  "event_year, title, starts_on, ends_on, is_current, published, lodging_note, travel_note";
 
 /** The single row with is_current. A database constraint guarantees there is at most one. */
 export async function loadCurrentEdition(): Promise<Edition> {

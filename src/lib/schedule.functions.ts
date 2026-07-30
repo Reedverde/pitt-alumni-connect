@@ -40,6 +40,8 @@ export const getSchedule = createServerFn({ method: "GET" })
         title: edition.title,
         starts_on: edition.starts_on,
         ends_on: edition.ends_on,
+        lodging_note: edition.lodging_note,
+        travel_note: edition.travel_note,
       },
       events,
     };
