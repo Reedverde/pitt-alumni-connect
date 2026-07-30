@@ -1,13 +1,12 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { emailParagraph, emailShell, escapeHtml, ROYAL, FONT_STACK, INK } from "./email-chrome";
 import { sendPlainEmail } from "./mail.server";
 import { globalMailAllowed, recordThrottleEvent } from "./throttle.server";
 
 const DIGEST_KIND = "admin_pending_digest";
 const DIGEST_WINDOW_MS = 60 * 60 * 1000;
 
-function esc(s: string) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
+const esc = escapeHtml;
 
 function nameFromPayload(payload: unknown) {
   const p = (payload ?? {}) as Record<string, unknown>;
@@ -74,12 +73,19 @@ export async function notifyAdminsOfPendingSuggestions(_origin?: string | null) 
       "",
       `Review them: ${link}`,
     ].join("\n");
-    const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#ffffff;font-family:Helvetica,Arial,sans-serif;font-size:16px;line-height:1.5;color:#0B0B0C">
-<p style="margin:0 0 16px">${esc(subject)}</p>
-<ul style="margin:0 0 16px;padding-left:20px">${names.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>
-${rows.length > names.length ? `<p style="margin:0 0 16px">and ${rows.length - names.length} more</p>` : ""}
-<p style="margin:0"><a href="${esc(link)}" style="color:#003594;font-weight:bold">Review them</a></p>
-</body></html>`;
+    const html = emailShell(
+      [
+        emailParagraph(subject),
+        `<ul style="margin:0 0 16px;padding-left:20px;font-family:${FONT_STACK};font-size:16px;line-height:1.55;color:${INK}">${names
+          .map((n) => `<li>${esc(n)}</li>`)
+          .join("")}</ul>`,
+        rows.length > names.length ? emailParagraph(`and ${rows.length - names.length} more`) : "",
+        `<p style="margin:0;font-family:${FONT_STACK};font-size:16px;line-height:1.55"><a href="${esc(
+          link,
+        )}" style="color:${ROYAL};text-decoration:underline">Review them</a></p>`,
+      ].join("\n"),
+      subject,
+    );
 
     for (const recipient of recipients) {
       await sendPlainEmail({
