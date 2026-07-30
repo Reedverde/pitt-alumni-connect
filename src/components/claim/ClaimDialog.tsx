@@ -26,7 +26,7 @@ type Step = "name" | "status" | "email" | "stamp" | "requested";
 
 /** Quiet text link. Never a button, never gold, never equal weight. */
 const quietLink: React.CSSProperties = {
-  fontFamily: "var(--font-body)",
+  fontFamily: "var(--font-sans)",
   fontSize: 13,
   fontWeight: 400,
   color: "var(--sterling)",
