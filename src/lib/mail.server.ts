@@ -40,7 +40,13 @@ function fromDomain(address: string | null) {
   return at > -1 && address ? address.slice(at + 1).toLowerCase() : null;
 }
 
-type DomainCheck = { ok: boolean; domain: string | null; detail: string };
+type DomainCheck = {
+  ok: boolean;
+  domain: string | null;
+  detail: string;
+  clickTracking: boolean | null;
+  openTracking: boolean | null;
+};
 
 let domainCache: { at: number; value: DomainCheck } | null = null;
 
@@ -50,8 +56,9 @@ let domainCache: { at: number; value: DomainCheck } | null = null;
 export async function checkSendingDomain(force = false): Promise<DomainCheck> {
   const { apiKey, fromAddress } = mailConfig();
   const domain = fromDomain(fromAddress);
-  if (!apiKey) return { ok: false, domain, detail: "RESEND_API_KEY is not set." };
-  if (!domain) return { ok: false, domain: null, detail: "MAIL_FROM_ADDRESS is not set." };
+  const blank = { clickTracking: null, openTracking: null };
+  if (!apiKey) return { ok: false, domain, detail: "RESEND_API_KEY is not set.", ...blank };
+  if (!domain) return { ok: false, domain: null, detail: "MAIL_FROM_ADDRESS is not set.", ...blank };
 
   if (!force && domainCache && Date.now() - domainCache.at < 5 * 60 * 1000) {
     return domainCache.value;
@@ -63,13 +70,23 @@ export async function checkSendingDomain(force = false): Promise<DomainCheck> {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
     const payload = (await res.json().catch(() => null)) as
-      | { data?: { name?: string; status?: string }[]; message?: string }
+      | {
+          data?: {
+            id?: string;
+            name?: string;
+            status?: string;
+            click_tracking?: boolean;
+            open_tracking?: boolean;
+          }[];
+          message?: string;
+        }
       | null;
     if (!res.ok) {
       value = {
         ok: false,
         domain,
         detail: `Resend refused the domain list [${res.status}]: ${payload?.message ?? "unknown error"}`,
+        ...blank,
       };
     } else {
       const list = payload?.data ?? [];
@@ -81,11 +98,28 @@ export async function checkSendingDomain(force = false): Promise<DomainCheck> {
           detail: `${domain} is not a domain on this Resend account. Verified: ${
             list.map((d) => d.name).filter(Boolean).join(", ") || "none"
           }.`,
+          ...blank,
         };
       } else if ((match.status ?? "").toLowerCase() !== "verified") {
-        value = { ok: false, domain, detail: `${domain} reads ${match.status ?? "unknown"} in Resend, not verified.` };
+        value = {
+          ok: false,
+          domain,
+          detail: `${domain} reads ${match.status ?? "unknown"} in Resend, not verified.`,
+          clickTracking: match.click_tracking ?? null,
+          openTracking: match.open_tracking ?? null,
+        };
       } else {
-        value = { ok: true, domain, detail: `${domain} verifies in Resend.` };
+        const tracking = await enforceNoTracking(apiKey, match.id ?? null, {
+          click: match.click_tracking ?? null,
+          open: match.open_tracking ?? null,
+        });
+        value = {
+          ok: true,
+          domain,
+          detail: `${domain} verifies in Resend. ${tracking.detail}`,
+          clickTracking: tracking.click,
+          openTracking: tracking.open,
+        };
       }
     }
   } catch (err) {
@@ -93,11 +127,47 @@ export async function checkSendingDomain(force = false): Promise<DomainCheck> {
       ok: false,
       domain,
       detail: `Could not reach Resend: ${err instanceof Error ? err.message : "unknown error"}`,
+      ...blank,
     };
   }
 
   domainCache = { at: Date.now(), value };
   return value;
+}
+
+/** Tracking is turned off at the domain, not left to an account default.
+ *  Resend rewrites tracked links through its own host. Mail scanners pre fetch
+ *  those links, which burns a one time sign in token before the person ever
+ *  clicks, and a rewritten host does not match the site being signed into,
+ *  which is exactly the shape of a phishing message. Open tracking adds a
+ *  pixel that costs spam score and tells us nothing. */
+async function enforceNoTracking(
+  apiKey: string,
+  id: string | null,
+  current: { click: boolean | null; open: boolean | null },
+): Promise<{ click: boolean | null; open: boolean | null; detail: string }> {
+  if (current.click === false && current.open === false) {
+    return { click: false, open: false, detail: "Click and open tracking are off." };
+  }
+  if (!id) {
+    return { ...current, detail: "Could not read the domain id, tracking state unconfirmed." };
+  }
+  try {
+    const res = await fetch(`https://api.resend.com/domains/${id}`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ click_tracking: false, open_tracking: false }),
+    });
+    if (!res.ok) {
+      return { ...current, detail: `Could not turn tracking off [${res.status}].` };
+    }
+    return { click: false, open: false, detail: "Click and open tracking turned off." };
+  } catch (err) {
+    return {
+      ...current,
+      detail: `Could not turn tracking off: ${err instanceof Error ? err.message : "unknown error"}`,
+    };
+  }
 }
 
 /** One line an organizer can read without opening a settings screen. */
@@ -113,6 +183,8 @@ export async function mailStatus() {
     domain: check.domain,
     verified: check.ok,
     detail: check.detail,
+    clickTracking: check.clickTracking,
+    openTracking: check.openTracking,
   };
 }
 

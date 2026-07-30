@@ -48,6 +48,11 @@ export function MailPanel() {
           <span style={{ display: "block", fontSize: 12, color: "var(--sterling)" }}>
             {status.detail}
           </span>
+          <span style={{ display: "block", fontSize: 12, color: "var(--sterling)" }}>
+            Click tracking {status.clickTracking === false ? "off" : status.clickTracking === true ? "ON" : "unknown"}
+            {" · "}
+            open tracking {status.openTracking === false ? "off" : status.openTracking === true ? "ON" : "unknown"}
+          </span>
         </p>
       )}
 

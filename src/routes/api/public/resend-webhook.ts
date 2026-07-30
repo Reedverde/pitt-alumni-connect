@@ -77,6 +77,21 @@ export const Route = createFileRoute("/api/public/resend-webhook")({
               .from("suppressions")
               .upsert({ email, reason }, { onConflict: "email" });
           }
+        } else if (soft) {
+          // Three soft bounces is a dead address wearing a temporary excuse.
+          for (const email of recipients) {
+            const { count } = await supabaseAdmin
+              .from("sends")
+              .select("id", { count: "exact", head: true })
+              .eq("to_email", email)
+              .eq("bounced", true)
+              .eq("bounce_type", "Transient");
+            if ((count ?? 0) >= 3) {
+              await supabaseAdmin
+                .from("suppressions")
+                .upsert({ email, reason: "soft_bounce" }, { onConflict: "email" });
+            }
+          }
         }
 
         return new Response("ok");
