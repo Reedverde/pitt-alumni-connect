@@ -318,7 +318,7 @@ function Hero({
             centred in the hero and cropped by it. */}
         <div
           aria-hidden={false}
-          className="pointer-events-none absolute left-1/2 z-10 bottom-[-16%] w-[96%] max-w-[440px] md:bottom-[-14%] md:w-[54%] md:max-w-[660px]"
+          className="pointer-events-none absolute left-1/2 z-10 bottom-[-16%] w-[96%] max-w-[440px] md:bottom-[-20%] md:w-[42%] md:max-w-[540px]"
           style={{ transform: "translateX(-50%) rotate(38deg)", transformOrigin: "50% 100%" }}
         >
           <PhotoSlot
