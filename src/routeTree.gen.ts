@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as WeekendRouteImport } from './routes/weekend'
-import { Route as WhyRouteImport } from './routes/why'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated/me'
 import { Route as EditionsYearRouteImport } from './routes/editions.$year'
@@ -38,11 +37,6 @@ const AuthRoute = AuthRouteImport.update({
 const WeekendRoute = WeekendRouteImport.update({
   id: '/weekend',
   path: '/weekend',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const WhyRoute = WhyRouteImport.update({
-  id: '/why',
-  path: '/why',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -80,7 +74,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/weekend': typeof WeekendRoute
-  '/why': typeof WhyRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
   '/editions/$year': typeof EditionsYearRoute
@@ -92,7 +85,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/weekend': typeof WeekendRoute
-  '/why': typeof WhyRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
   '/editions/$year': typeof EditionsYearRoute
@@ -106,7 +98,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/weekend': typeof WeekendRoute
-  '/why': typeof WhyRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/me': typeof AuthenticatedMeRoute
   '/editions/$year': typeof EditionsYearRoute
@@ -120,7 +111,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/weekend'
-    | '/why'
     | '/admin'
     | '/me'
     | '/editions/$year'
@@ -132,7 +122,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/weekend'
-    | '/why'
     | '/admin'
     | '/me'
     | '/editions/$year'
@@ -145,7 +134,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/weekend'
-    | '/why'
     | '/_authenticated/admin'
     | '/_authenticated/me'
     | '/editions/$year'
@@ -159,7 +147,6 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   WeekendRoute: typeof WeekendRoute
-  WhyRoute: typeof WhyRoute
   EditionsYearRoute: typeof EditionsYearRoute
   ApiPhotosUploadRoute: typeof ApiPhotosUploadRoute
   ApiPublicCalendarDoticsRoute: typeof ApiPublicCalendarDoticsRoute
@@ -194,13 +181,6 @@ declare module '@tanstack/react-router' {
       path: '/weekend'
       fullPath: '/weekend'
       preLoaderRoute: typeof WeekendRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/why': {
-      id: '/why'
-      path: '/why'
-      fullPath: '/why'
-      preLoaderRoute: typeof WhyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -266,7 +246,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   WeekendRoute: WeekendRoute,
-  WhyRoute: WhyRoute,
   EditionsYearRoute: EditionsYearRoute,
   ApiPhotosUploadRoute: ApiPhotosUploadRoute,
   ApiPublicCalendarDoticsRoute: ApiPublicCalendarDoticsRoute,
@@ -275,3 +254,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
