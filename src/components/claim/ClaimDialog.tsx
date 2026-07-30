@@ -22,7 +22,7 @@ export type ClaimTarget = {
   team_label: string | null;
 };
 
-type Step = "name" | "status" | "email" | "stamp";
+type Step = "name" | "status" | "email" | "stamp" | "requested";
 
 export function ClaimDialog({
   open,
@@ -145,6 +145,10 @@ export function ClaimDialog({
           origin: window.location.origin,
         },
       });
+      if (result.outcome === "review_requested") {
+        setStep("requested");
+        return;
+      }
       setStamp({
         year: result.person?.board_year ?? selected?.board_year ?? null,
         team: result.person?.team_label ?? selected?.team_label ?? null,
@@ -175,7 +179,23 @@ export function ClaimDialog({
         className="w-full max-w-[520px] p-6 md:p-8"
         style={{ background: "var(--pure-white)", border: "1px solid var(--chalk)", borderRadius: 7 }}
       >
-        {step === "stamp" && stamp ? (
+        {step === "requested" ? (
+          <div>
+            <SlashEyebrow>{eyebrow}</SlashEyebrow>
+            <h2 className="display-30 mt-2" style={{ color: "var(--sabah-black)" }}>
+              Sent to the organizers
+            </h2>
+            <p className="mt-4" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
+              We could not find your name on the board yet, so your request went to the organizers
+              for review. You will hear back once it is added.
+            </p>
+            <div className="mt-6">
+              <button type="button" style={primaryButton} onClick={onClose}>
+                Done
+              </button>
+            </div>
+          </div>
+        ) : step === "stamp" && stamp ? (
           <div className="flex flex-col items-center">
             <ClaimStamp
               year={stamp.year}

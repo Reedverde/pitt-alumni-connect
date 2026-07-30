@@ -54,7 +54,7 @@ type LogInput = {
 
 /** Every outbound message lands here, delivered or not, so a failure shows up
  *  on a screen instead of in a log nobody reads. */
-async function logSend(input: LogInput) {
+export async function logSend(input: LogInput) {
   await supabaseAdmin.from("sends").insert({
     person_id: input.personId,
     sequence_id: null,
@@ -291,6 +291,103 @@ export async function sendMagicLinkEmail(opts: {
     } catch {
       /* logging must not mask the original failure */
     }
+    return { sent: false, provider: "resend", messageId: null, reason: message };
+  }
+}
+
+/** A plain transactional message with no sign-in link. Shares the suppression
+ *  check and the send log with the magic link path. Never throws. */
+export async function sendPlainEmail(opts: {
+  to: string;
+  personId: string | null;
+  kind: string;
+  subject: string;
+  text: string;
+  html: string;
+}): Promise<MagicLinkResult> {
+  const to = opts.to.trim().toLowerCase();
+  const { apiKey, fromAddress, fromName, replyTo } = mailConfig();
+
+  try {
+    if (await isSuppressed(to)) {
+      await logSend({
+        personId: opts.personId,
+        kind: opts.kind,
+        toEmail: to,
+        provider: "none",
+        providerMessageId: null,
+        status: "suppressed",
+        error: "address is suppressed",
+      });
+      return { sent: false, provider: "none", messageId: null, reason: "suppressed" };
+    }
+
+    if (!apiKey || !fromAddress) {
+      await logSend({
+        personId: opts.personId,
+        kind: opts.kind,
+        toEmail: to,
+        provider: "none",
+        providerMessageId: null,
+        status: "failed",
+        error: "mail sender is not configured",
+      });
+      return { sent: false, provider: "none", messageId: null, reason: "not configured" };
+    }
+
+    const origin = safeOrigin(null);
+    const unsubUrl = origin
+      ? `${origin}/api/public/unsubscribe?e=${encodeURIComponent(to)}&t=${unsubscribeToken(to)}`
+      : null;
+    const headers: Record<string, string> = {};
+    if (unsubUrl) {
+      headers["List-Unsubscribe"] = `<${unsubUrl}>`;
+      headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+    }
+
+    const res = await fetch(RESEND_ENDPOINT, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: `${fromName} <${fromAddress}>`,
+        to: [to],
+        subject: opts.subject,
+        text: opts.text,
+        html: opts.html,
+        ...(replyTo ? { reply_to: replyTo } : {}),
+        ...(Object.keys(headers).length ? { headers } : {}),
+      }),
+    });
+
+    const payload = (await res.json().catch(() => null)) as { id?: string; message?: string } | null;
+
+    if (!res.ok) {
+      const message = `Resend refused [${res.status}]: ${payload?.message ?? "unknown error"}`;
+      await logSend({
+        personId: opts.personId,
+        kind: opts.kind,
+        toEmail: to,
+        provider: "resend",
+        providerMessageId: null,
+        status: "failed",
+        error: message,
+      });
+      return { sent: false, provider: "resend", messageId: null, reason: message };
+    }
+
+    await logSend({
+      personId: opts.personId,
+      kind: opts.kind,
+      toEmail: to,
+      provider: "resend",
+      providerMessageId: payload?.id ?? null,
+      status: "sent",
+      error: null,
+    });
+    return { sent: true, provider: "resend", messageId: payload?.id ?? null, reason: null };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "unknown error";
+    console.error(`[mail] plain send threw: ${message}`);
     return { sent: false, provider: "resend", messageId: null, reason: message };
   }
 }
