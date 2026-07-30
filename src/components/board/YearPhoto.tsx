@@ -41,6 +41,7 @@ export function YearPhoto({
       <NotchedBox
         corners={corners}
         notch={10}
+        clipContent
         className="ml-auto shrink-0 md:hidden"
         style={{ width: 56, height: 56 }}
       >
@@ -56,7 +57,7 @@ export function YearPhoto({
       </NotchedBox>
 
       <figure className="hidden md:block" style={{ margin: 0, width: "100%" }}>
-        <NotchedBox corners={corners} notch={NOTCH_SM} style={{ width: "100%", aspectRatio: "4 / 3" }}>
+        <NotchedBox clipContent corners={corners} notch={NOTCH_SM} style={{ width: "100%", aspectRatio: "4 / 3" }}>
           <img
             src={photoUrl(photo.storage_path)}
             alt={alt}

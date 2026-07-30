@@ -12,6 +12,12 @@ type NotchedBoxProps = {
   dashed?: boolean;
   /** Background fill, clipped to the notched shape. */
   fill?: string;
+  /**
+   * Clip the children to the notched shape. Needed for images, which would
+   * otherwise keep square corners and hide the notch. Off by default: on a
+   * text tile the diagonal cuts into the first glyph of the top-left line.
+   */
+  clipContent?: boolean;
   className?: string;
   style?: CSSProperties;
   children?: ReactNode;
@@ -28,6 +34,7 @@ export function NotchedBox({
   strokeWidth = 1.5,
   dashed = false,
   fill,
+  clipContent = false,
   className,
   style,
   children,
@@ -76,9 +83,9 @@ export function NotchedBox({
           />
         </svg>
       )}
-      {/* The content is clipped too, otherwise a photograph inside the box
-          keeps its square corners and the notch never actually shows. */}
-      <div style={{ position: "relative", height: "100%", clipPath }}>{children}</div>
+      <div style={{ position: "relative", height: "100%", clipPath: clipContent ? clipPath : undefined }}>
+        {children}
+      </div>
     </div>
   );
 }
