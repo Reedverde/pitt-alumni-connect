@@ -76,7 +76,9 @@ export function NotchedBox({
           />
         </svg>
       )}
-      <div style={{ position: "relative", height: "100%" }}>{children}</div>
+      {/* The content is clipped too, otherwise a photograph inside the box
+          keeps its square corners and the notch never actually shows. */}
+      <div style={{ position: "relative", height: "100%", clipPath }}>{children}</div>
     </div>
   );
 }

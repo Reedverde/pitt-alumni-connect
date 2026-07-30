@@ -433,6 +433,7 @@ export type Database = {
       photos: {
         Row: {
           alt: string | null
+          board_year: number | null
           height: number | null
           id: string
           original_name: string | null
@@ -443,6 +444,7 @@ export type Database = {
         }
         Insert: {
           alt?: string | null
+          board_year?: number | null
           height?: number | null
           id?: string
           original_name?: string | null
@@ -453,6 +455,7 @@ export type Database = {
         }
         Update: {
           alt?: string | null
+          board_year?: number | null
           height?: number | null
           id?: string
           original_name?: string | null
