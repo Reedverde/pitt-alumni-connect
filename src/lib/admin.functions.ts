@@ -240,3 +240,23 @@ export const adminDefaultEditionDates = createServerFn({ method: "POST" })
     if (!actor) return null;
     return mod.defaultEditionDates(data.event_year);
   });
+
+export const adminDeleteEditionEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return { ok: false };
+    return mod.deleteEditionEvent(actor, data.id);
+  });
+
+const _unusedDefaultEditionDates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { event_year: number }) => input)
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return null;
+    return mod.defaultEditionDates(data.event_year);
+  });
