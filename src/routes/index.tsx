@@ -1,24 +1,44 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 
 import { getBoard, type BoardPerson } from "@/lib/board.functions";
+import { getWeekendPage } from "@/lib/schedule.functions";
 import { buildYearGroups, claimedCount, type YearGroup } from "@/lib/board-grouping";
 import { NameChip } from "@/components/board/NameChip";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
 import { SiteNav } from "@/components/SiteNav";
+import { SiteFooter } from "@/components/SiteFooter";
+import { PhotoSlot } from "@/components/media/PhotoSlot";
+import { ScheduleSummary, ghostButton, primaryButton } from "@/components/schedule/ScheduleSummary";
 import { SidelineLoop } from "@/components/board/SidelineLoop";
-import { countdown, editionEyebrow, nextOctoberYear, resolveSeason } from "@/lib/edition-format";
+import {
+  countdown,
+  editionDateRange,
+  editionShortDates,
+  nextOctoberYear,
+  resolveSeason,
+} from "@/lib/edition-format";
 
 const boardQuery = queryOptions({
   queryKey: ["board"],
   queryFn: () => getBoard(),
 });
 
+const weekendQuery = queryOptions({
+  queryKey: ["weekend-page"],
+  queryFn: () => getWeekendPage(),
+});
+
 export const Route = createFileRoute("/")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(boardQuery),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(boardQuery),
+      context.queryClient.ensureQueryData(weekendQuery),
+    ]),
   head: () => ({
     meta: [
       { title: "Pitt Club Ultimate Alumni — Find your year" },
