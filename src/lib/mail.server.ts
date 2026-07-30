@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { loadCurrentEdition } from "./editions.server";
+import { logAuthAttempt } from "./auth-attempts.server";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
