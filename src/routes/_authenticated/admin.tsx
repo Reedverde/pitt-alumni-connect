@@ -15,6 +15,7 @@ import {
   ExportPanel,
   GapsPanel,
 } from "@/components/admin/Panels";
+import { EditionsPanel } from "@/components/admin/EditionsPanel";
 import { Section } from "@/components/admin/ui";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -82,6 +83,7 @@ function AdminPage() {
         </p>
       </header>
 
+      <EditionsPanel rows={data.editions} onSaved={refresh} />
       <ReviewQueue queue={data.queue} onRefresh={refresh} />
       <PeopleTable />
       <RosterImport seasonYear={data.seasonYear} onDone={refresh} />
