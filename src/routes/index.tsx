@@ -47,12 +47,12 @@ export const Route = createFileRoute("/")({
   component: BoardPage,
 });
 
-const DIVISION_FILTERS = [
-  { code: "MENS_A", label: "Sabah" },
-  { code: "MENS_B", label: "BITT / Pressure" },
-  { code: "WOMENS_A", label: "Danger" },
-  { code: "WOMENS_B", label: "Danger B" },
-];
+const DIVISION_CHIP_LABELS: Record<string, string> = {
+  MENS_A: "Sabah",
+  MENS_B: "BITT / Pressure",
+  WOMENS_A: "Danger",
+  WOMENS_B: "Danger B",
+};
 
 const DECADES = [
   { label: "1998–2009", from: 1998, to: 2009 },
@@ -65,7 +65,15 @@ const WEEKEND_START = Date.UTC(2026, 9, 2);
 function BoardPage() {
   const { data } = useSuspenseQuery(boardQuery);
   const queryClient = useQueryClient();
-  const [active, setActive] = useState<string[]>(DIVISION_FILTERS.map((d) => d.code));
+  const filters = useMemo(
+    () =>
+      data.divisions.map((d) => ({
+        code: d.code,
+        label: DIVISION_CHIP_LABELS[d.code] ?? d.label,
+      })),
+    [data.divisions],
+  );
+  const [active, setActive] = useState<string[]>(() => data.divisions.map((d) => d.code));
   const [newestFirst, setNewestFirst] = useState(true);
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
@@ -126,7 +134,7 @@ function BoardPage() {
           </p>
         </header>
 
-        <DivisionFilter active={active} onToggle={toggle} />
+        <DivisionFilter filters={filters} active={active} onToggle={toggle} />
         <DecadeRail groups={groups} />
 
         <div className="mt-6 flex justify-end">
@@ -210,13 +218,21 @@ function GoldDot() {
   );
 }
 
-function DivisionFilter({ active, onToggle }: { active: string[]; onToggle: (code: string) => void }) {
+function DivisionFilter({
+  filters,
+  active,
+  onToggle,
+}: {
+  filters: { code: string; label: string }[];
+  active: string[];
+  onToggle: (code: string) => void;
+}) {
   return (
     <fieldset className="mt-2 flex flex-wrap gap-2">
       <legend className="label-caps mb-2" style={{ color: "var(--sterling)" }}>
         Programs
       </legend>
-      {DIVISION_FILTERS.map((d) => {
+      {filters.map((d) => {
         const on = active.includes(d.code);
         return (
           <label

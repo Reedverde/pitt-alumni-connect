@@ -108,16 +108,19 @@ export type Database = {
           code: string
           label: string
           sort_order: number
+          visible: boolean
         }
         Insert: {
           code: string
           label: string
           sort_order: number
+          visible?: boolean
         }
         Update: {
           code?: string
           label?: string
           sort_order?: number
+          visible?: boolean
         }
         Relationships: []
       }

@@ -132,13 +132,22 @@ export async function searchPeopleServer(query: string): Promise<PersonMatch[]> 
   const q = cleanName(query);
   if (q.length < 2) return [];
 
-  const { data } = await supabaseAdmin
-    .from("people")
-    .select("id, first_name, last_name, played_as, grad_year, seed_division, deceased")
-    .eq("deceased", false)
-    .limit(5000);
+  const [{ data }, { data: divisionRows }] = await Promise.all([
+    supabaseAdmin
+      .from("people")
+      .select("id, first_name, last_name, played_as, grad_year, seed_division, deceased")
+      .eq("deceased", false)
+      .limit(5000),
+    supabaseAdmin.from("divisions").select("code, visible"),
+  ]);
 
-  const rows = (data ?? []) as PersonRow[];
+  const hidden = new Set(
+    (divisionRows ?? []).filter((d) => d.visible === false).map((d) => d.code as string),
+  );
+
+  const rows = ((data ?? []) as PersonRow[]).filter(
+    (p) => !(p.seed_division && hidden.has(p.seed_division)),
+  );
   const scored = rows
     .map((p) => {
       const full = [p.first_name, p.last_name].filter(Boolean).join(" ");

@@ -17,6 +17,7 @@ export type BoardPerson = {
 export type BoardData = {
   people: BoardPerson[];
   totals: { total: number; claimed: number; going: number };
+  divisions: { code: string; label: string }[];
 };
 
 export const getBoard = createServerFn({ method: "GET" }).handler(async (): Promise<BoardData> => {
@@ -26,13 +27,14 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
     { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
   );
 
-  const [peopleRes, countsRes] = await Promise.all([
+  const [peopleRes, countsRes, divisionsRes] = await Promise.all([
     supabase
       .from("board_people")
       .select("id, first_name, last_name, played_as, deceased, board_year, board_division, team_label, state")
       .order("board_year", { ascending: false })
       .limit(2000),
     supabase.from("board_year_counts").select("board_year, total, claimed, going"),
+    supabase.from("divisions").select("code, label, sort_order, visible").eq("visible", true),
   ]);
 
   if (peopleRes.error) throw peopleRes.error;
@@ -47,5 +49,10 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
     { total: 0, claimed: 0, going: 0 },
   );
 
-  return { people: (peopleRes.data ?? []) as BoardPerson[], totals };
+  const divisions = (divisionsRes.data ?? [])
+    .slice()
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .map((d) => ({ code: d.code as string, label: (d.label as string) ?? (d.code as string) }));
+
+  return { people: (peopleRes.data ?? []) as BoardPerson[], totals, divisions };
 });
