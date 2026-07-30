@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolveMyPersonId } from "./account-resolve";
 import type { RsvpStatus } from "./rsvp-types";
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -42,11 +43,6 @@ export const getMyProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<MyProfile> => {
     const { supabase } = context;
-    const { data: mine } = await supabase
-      .from("identities")
-      .select("id, email, is_primary, verified_at, person_id")
-      .order("is_primary", { ascending: false });
-
     const { loadCurrentEdition } = await import("./editions.server");
     const current = await loadCurrentEdition();
     const edition = {
@@ -56,8 +52,14 @@ export const getMyProfile = createServerFn({ method: "GET" })
       ends_on: current.ends_on,
     };
 
-    const personId = mine?.[0]?.person_id as string | undefined;
+    const personId = await resolveMyPersonId(supabase, context.userId);
     if (!personId) return { person: null, emails: [], stints: [], rsvp: null, edition, attended: [] };
+
+    const { data: mine } = await supabase
+      .from("identities")
+      .select("id, email, is_primary, verified_at, person_id")
+      .eq("person_id", personId)
+      .order("is_primary", { ascending: false });
 
     const [personRes, stintRes, rsvpRes, historyRes] = await Promise.all([
       supabase
