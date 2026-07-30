@@ -37,12 +37,12 @@ export const Route = createFileRoute("/weekend")({
       {
         name: "description",
         content:
-          "Three days in Pittsburgh: watch party, family BBQ, women's soccer and the alumni games. Add any of it to your calendar.",
+          "Three days in Pittsburgh. Everybody who ever played. The full schedule, plus calendar files for every event.",
       },
       { property: "og:title", content: "Alumni Weekend Schedule — Pitt Club Ultimate" },
       {
         property: "og:description",
-        content: "Three days in Pittsburgh. The full schedule, plus calendar files for every event.",
+        content: "Three days in Pittsburgh. Everybody who ever played. Add any of it to your calendar.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -65,9 +65,9 @@ export const Route = createFileRoute("/weekend")({
 });
 
 const DAY_BODIES = [
-  "Get into town, find the room, watch the game.",
-  "The long day. Families welcome at all of it.",
-  "Games in the morning, goodbyes by the afternoon.",
+  "Get in, find everybody, watch the game.",
+  "The long one. Bring the kids.",
+  "Games in the morning, goodbyes after.",
 ];
 
 /** Day tiles are generated from the edition's own start and end dates. */
@@ -151,7 +151,7 @@ function WeekendPage() {
             THE WEEKEND
           </h1>
           <p className="mt-4 max-w-[560px]" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
-            Three days in Pittsburgh. Four programs, one roof.
+            Three days in Pittsburgh. Everybody who ever played.
           </p>
           <div className="mt-6">
             <a href={`/api/public/calendar.ics?year=${edition.event_year}`} style={ghostButton}>

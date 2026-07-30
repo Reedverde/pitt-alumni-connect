@@ -11,9 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AlumniRouteImport } from './routes/alumni'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as WeekendRouteImport } from './routes/weekend'
-import { Route as WhyRouteImport } from './routes/why'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated/me'
 import { Route as EditionsYearRouteImport } from './routes/editions.$year'
@@ -30,6 +30,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AlumniRoute = AlumniRouteImport.update({
+  id: '/alumni',
+  path: '/alumni',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -38,11 +43,6 @@ const AuthRoute = AuthRouteImport.update({
 const WeekendRoute = WeekendRouteImport.update({
   id: '/weekend',
   path: '/weekend',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const WhyRoute = WhyRouteImport.update({
-  id: '/why',
-  path: '/why',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -78,9 +78,9 @@ const ApiPublicPhotoSplatRoute = ApiPublicPhotoSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
   '/weekend': typeof WeekendRoute
-  '/why': typeof WhyRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
   '/editions/$year': typeof EditionsYearRoute
@@ -90,9 +90,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
   '/weekend': typeof WeekendRoute
-  '/why': typeof WhyRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
   '/editions/$year': typeof EditionsYearRoute
@@ -104,9 +104,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
   '/weekend': typeof WeekendRoute
-  '/why': typeof WhyRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/me': typeof AuthenticatedMeRoute
   '/editions/$year': typeof EditionsYearRoute
@@ -118,9 +118,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/alumni'
     | '/auth'
     | '/weekend'
-    | '/why'
     | '/admin'
     | '/me'
     | '/editions/$year'
@@ -130,9 +130,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/alumni'
     | '/auth'
     | '/weekend'
-    | '/why'
     | '/admin'
     | '/me'
     | '/editions/$year'
@@ -143,9 +143,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/alumni'
     | '/auth'
     | '/weekend'
-    | '/why'
     | '/_authenticated/admin'
     | '/_authenticated/me'
     | '/editions/$year'
@@ -157,9 +157,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AlumniRoute: typeof AlumniRoute
   AuthRoute: typeof AuthRoute
   WeekendRoute: typeof WeekendRoute
-  WhyRoute: typeof WhyRoute
   EditionsYearRoute: typeof EditionsYearRoute
   ApiPhotosUploadRoute: typeof ApiPhotosUploadRoute
   ApiPublicCalendarDoticsRoute: typeof ApiPublicCalendarDoticsRoute
@@ -182,6 +182,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/alumni': {
+      id: '/alumni'
+      path: '/alumni'
+      fullPath: '/alumni'
+      preLoaderRoute: typeof AlumniRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -194,13 +201,6 @@ declare module '@tanstack/react-router' {
       path: '/weekend'
       fullPath: '/weekend'
       preLoaderRoute: typeof WeekendRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/why': {
-      id: '/why'
-      path: '/why'
-      fullPath: '/why'
-      preLoaderRoute: typeof WhyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -264,9 +264,9 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AlumniRoute: AlumniRoute,
   AuthRoute: AuthRoute,
   WeekendRoute: WeekendRoute,
-  WhyRoute: WhyRoute,
   EditionsYearRoute: EditionsYearRoute,
   ApiPhotosUploadRoute: ApiPhotosUploadRoute,
   ApiPublicCalendarDoticsRoute: ApiPublicCalendarDoticsRoute,
