@@ -38,7 +38,7 @@ export const Route = createFileRoute("/_authenticated/me")({
       {
         name: "description",
         content:
-          "Update your name, city, emails, the years you played, and your answer for Alumni Weekend 2026.",
+          "Update your name, city, emails, the years you played, and your answer for the next alumni weekend.",
       },
       { property: "og:title", content: "Your record — Pitt Club Ultimate Alumni" },
       { property: "og:description", content: "Update your alumni record and your weekend answer." },
@@ -148,7 +148,7 @@ function MePage() {
         </p>
       )}
 
-      <Section title="Alumni Weekend 2026">
+      <Section title={profile.edition?.title ?? "Alumni Weekend"}>
         <div className="grid gap-2 md:grid-cols-3">
           {(["going", "maybe", "not_this_year"] as RsvpStatus[]).map((s) => (
             <button
@@ -161,6 +161,11 @@ function MePage() {
             </button>
           ))}
         </div>
+        {profile.attended.length > 0 && (
+          <p className="mt-3" style={{ fontSize: 13, color: "var(--sterling)" }}>
+            You came in {profile.attended.join(", ")}.
+          </p>
+        )}
       </Section>
 
       <Section title="Name and city">

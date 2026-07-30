@@ -35,6 +35,7 @@ export function ClaimDialog({
   onClose: () => void;
   onClaimed: () => void;
 }) {
+  const eyebrow = useEditionEyebrow();
   const runSearch = useServerFn(searchPeople);
   const runSubmit = useServerFn(submitRsvp);
 

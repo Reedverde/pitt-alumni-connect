@@ -273,13 +273,14 @@ export function DripPanel({ drip }: { drip: DripData }) {
     <Section eyebrow="Drip" title="Sequences, read only">
       <p className="mb-4" style={{ fontSize: 13, color: "var(--sterling)" }}>
         Sending is not built in this pass. There is no control on this page that can turn a sequence
-        on.
+        on. Offsets resolve against the current edition's start date ({drip.anchorDate}), so a
+        rollover moves every send with it.
       </p>
       <div className="overflow-x-auto" style={{ borderBottom: hairline }}>
         <table className="w-full" style={{ borderCollapse: "collapse", minWidth: 640 }}>
           <thead>
             <tr>
-              {["Key", "Offset days", "Audience states", "Anchors only", "Active"].map((h) => (
+              {["Key", "Offset days", "Sends on", "Audience states", "Anchors only", "Active"].map((h) => (
                 <th key={h} style={headStyle}>
                   {h}
                 </th>
@@ -291,6 +292,7 @@ export function DripPanel({ drip }: { drip: DripData }) {
               <tr key={seq.id}>
                 <td style={cellStyle}>{seq.key}</td>
                 <td style={cellStyle}><Num>{seq.offset_days}</Num></td>
+                <td style={cellStyle}><Num>{seq.send_on}</Num></td>
                 <td style={{ ...cellStyle, color: "var(--sterling)" }}>
                   {(seq.audience_states ?? []).join(", ")}
                 </td>
