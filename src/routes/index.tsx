@@ -13,6 +13,7 @@ import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PhotoSlot } from "@/components/media/PhotoSlot";
+import { NotchedBox } from "@/components/media/NotchedBox";
 import { ScheduleSummary, ghostButton, primaryButton } from "@/components/schedule/ScheduleSummary";
 import { SidelineLoop } from "@/components/board/SidelineLoop";
 import {
@@ -26,6 +27,11 @@ const boardQuery = queryOptions({
   queryKey: ["board"],
   queryFn: () => getBoard(),
 });
+
+/** A year ending in 00 shows all four digits: "00" reads as a placeholder. */
+function sealLabel(year: number) {
+  return year % 100 === 0 ? String(year) : String(year).slice(-2);
+}
 
 const weekendQuery = queryOptions({
   queryKey: ["weekend-page"],
@@ -134,10 +140,15 @@ function BoardPage() {
     () => buildYearGroups(people.filter((p) => p.board_year > 1997)),
     [people],
   );
-  const orderedGroups = useMemo(
-    () => (newestFirst ? [...groups].reverse() : groups),
-    [groups, newestFirst],
-  );
+  // The anchor block is just another row with a sort key below every real year,
+  // so it obeys the toggle: first when oldest first, last when newest first.
+  const orderedRows = useMemo(() => {
+    const rows: Array<{ kind: "anchor" | "year"; key: string; group?: YearGroup }> = [
+      ...(anchorPeople.length > 0 ? [{ kind: "anchor" as const, key: "anchor" }] : []),
+      ...groups.map((group) => ({ kind: "year" as const, key: group.key, group })),
+    ];
+    return newestFirst ? rows.reverse() : rows;
+  }, [groups, anchorPeople, newestFirst]);
 
   const clock = countdown(data.edition, data.nextEdition);
 
@@ -193,12 +204,14 @@ function BoardPage() {
           </button>
         </div>
 
-        {anchorPeople.length > 0 && <AnchorRow people={anchorPeople} onClaim={openClaim} />}
-
         <div>
-          {orderedGroups.map((group) => (
-            <YearRow key={group.key} group={group} isDimmed={isDimmed} onClaim={openClaim} />
-          ))}
+          {orderedRows.map((row) =>
+            row.kind === "anchor" ? (
+              <AnchorRow key={row.key} people={anchorPeople} onClaim={openClaim} />
+            ) : (
+              <YearRow key={row.key} group={row.group!} isDimmed={isDimmed} onClaim={openClaim} />
+            ),
+          )}
         </div>
 
         <WhyTeaser />
@@ -502,12 +515,31 @@ function AnchorRow({
           </div>
         </div>
       </div>
-      <div className="flex flex-1 flex-wrap content-start items-start gap-2">
-        {sorted.map((person) => (
-          <NameChip key={person.id} person={person} dimmed={false} onClick={onClaim} />
-        ))}
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap content-start items-start gap-2">
+          {sorted.map((person) => (
+            <NameChip key={person.id} person={person} dimmed={false} onClick={onClaim} />
+          ))}
+        </div>
+        {claimed === 0 && <EmptyPrompt label={String(sorted[0]?.board_year ?? 1978)} />}
       </div>
     </section>
+  );
+}
+
+/** A prompt, not a chip: it sits under the chip wall on its own line. */
+function EmptyPrompt({ label }: { label: string }) {
+  return (
+    <NotchedBox
+      corners={["tl", "br"]}
+      stroke="var(--chalk)"
+      dashed
+      className="mt-4 w-full max-w-[560px]"
+    >
+      <p className="px-4 py-3" style={{ color: "var(--sterling)", fontSize: 13 }}>
+        Nobody from {label} has claimed yet. Be the first.
+      </p>
+    </NotchedBox>
   );
 }
 
@@ -528,7 +560,7 @@ function YearRow({
       style={{ borderBottom: "1px solid var(--chalk)" }}
     >
       <div className="flex items-center gap-4 md:w-[240px] md:shrink-0 md:flex-col md:items-start md:gap-3">
-        <Seal size={44}>{String(group.latestYear).slice(-2)}</Seal>
+        <Seal size={44}>{sealLabel(group.latestYear)}</Seal>
         <div>
           <div className="year-numeral" style={{ color: "var(--sabah-black)" }}>
             {group.label}
@@ -538,23 +570,13 @@ function YearRow({
           </div>
         </div>
       </div>
-      <div className="flex flex-1 flex-wrap content-start items-start gap-2">
-        {group.people.map((person) => (
-          <NameChip key={person.id} person={person} dimmed={isDimmed(person)} onClick={onClaim} />
-        ))}
-        {claimed === 0 && (
-          <p
-            className="flex items-center rounded-[18px] px-4 py-3"
-            style={{
-              border: "1px dashed var(--chalk)",
-              color: "var(--sterling)",
-              fontSize: 13,
-              maxWidth: 560,
-            }}
-          >
-            Nobody from {group.label} has claimed yet. Be the first.
-          </p>
-        )}
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap content-start items-start gap-2">
+          {group.people.map((person) => (
+            <NameChip key={person.id} person={person} dimmed={isDimmed(person)} onClick={onClaim} />
+          ))}
+        </div>
+        {claimed === 0 && <EmptyPrompt label={group.label} />}
       </div>
     </section>
   );
