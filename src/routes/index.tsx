@@ -150,6 +150,7 @@ function BoardPage() {
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
       <SiteNav onClaim={() => openClaim()} />
+      <Hero season={season} clock={clock} countdownLive={countdownLive} onClaim={() => openClaim()} />
       <CounterBar
         claimed={data.totals.claimed}
         going={data.totals.going}
@@ -160,18 +161,21 @@ function BoardPage() {
       />
 
       <main className="mx-auto w-full max-w-[1320px] px-5 pb-24">
-        <header className="pt-10 pb-8 md:pt-14">
-          <SlashEyebrow>
-            {season.edition
-              ? editionEyebrow(season.edition)
-              : `Alumni Weekend · Next: first weekend of October, ${nextOctoberYear()}`}
-          </SlashEyebrow>
-          <h1 className="display-64 mt-3" style={{ color: "var(--sabah-black)" }}>
+        {season.edition && (
+          <ScheduleSummary
+            edition={season.edition}
+            events={weekend.events}
+            divisions={data.divisions}
+          />
+        )}
+
+        <header className="pt-6 pb-8">
+          <SlashEyebrow>The board</SlashEyebrow>
+          <h2 className="display-48 mt-3" style={{ color: "var(--sabah-black)" }}>
             FIND YOUR YEAR
-          </h1>
-          <p className="mt-4 max-w-[560px] text-left" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
-            Every Pitt Club Ultimate alum we know of, on one wall, by year.{" "}
-            {goldLive ? "Gold means they are coming." : "Claim your name any time of year."}
+          </h2>
+          <p className="mt-3 max-w-[560px] text-left" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
+            Every person who ever played. Grey until they say they are coming.
           </p>
         </header>
 
@@ -196,7 +200,10 @@ function BoardPage() {
             <YearRow key={group.key} group={group} isDimmed={isDimmed} onClaim={openClaim} />
           ))}
         </div>
+
+        <WhyTeaser />
       </main>
+      <SiteFooter />
 
       <ClaimDialog
         open={claimOpen}
