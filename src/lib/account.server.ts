@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { teamLabel } from "./rsvp.server";
+import { SELF_ADDED_SEED_PREFIX, teamLabel } from "./rsvp.server";
 
 export type LinkResult = { linked: boolean; personId: string | null };
 
@@ -31,6 +31,25 @@ export async function linkAuthUser(
       verified_at: (identity.verified_at as string | null) ?? new Date().toISOString(),
     })
     .eq("id", identity.id as string);
+
+  // A record created by the anonymous RSVP endpoint joins the board only once
+  // its email is verified. Clearing the marker means this happens exactly once,
+  // so an admin hiding the chip later is never undone.
+  const { data: person } = await supabaseAdmin
+    .from("people")
+    .select("seed_id, show_on_board")
+    .eq("id", personId)
+    .maybeSingle();
+
+  if (
+    typeof person?.seed_id === "string" &&
+    person.seed_id.startsWith(SELF_ADDED_SEED_PREFIX)
+  ) {
+    await supabaseAdmin
+      .from("people")
+      .update({ show_on_board: true, seed_id: null })
+      .eq("id", personId);
+  }
 
   // Inbox possession on a preapproved address proves membership.
   const { data: preapproved } = await supabaseAdmin
@@ -145,17 +164,9 @@ export async function vouchForSuggestion(suggestionId: string, voucherPersonId: 
   }
 
   const payload = (suggestion.payload ?? {}) as Record<string, unknown>;
-  const { data: maxRow } = await supabaseAdmin
-    .from("people")
-    .select("member_no")
-    .order("member_no", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
   const { data: created, error } = await supabaseAdmin
     .from("people")
     .insert({
-      member_no: ((maxRow?.member_no as number | undefined) ?? 0) + 1,
       first_name: String(payload.first_name ?? "").slice(0, 80) || "Unknown",
       last_name: (payload.last_name as string | null) ?? null,
       played_as: (payload.played_as as string | null) ?? null,
