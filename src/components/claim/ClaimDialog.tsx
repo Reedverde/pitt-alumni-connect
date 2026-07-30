@@ -221,6 +221,7 @@ export function ClaimDialog({
               year={stamp.year}
               teamLabel={stamp.team}
               onDone={() => {
+                if (claimedPersonId && !lateStatus && !lateDismissed) return;
                 onClaimed();
                 onClose();
               }}
@@ -228,6 +229,44 @@ export function ClaimDialog({
             <p className="text-center" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
               You're on the board. Check your email to finish signing in.
             </p>
+            {claimedPersonId && !lateDismissed && (
+              <div className="mt-5 w-full">
+                {lateStatus ? (
+                  <p className="text-center" style={{ fontSize: 13, color: "var(--sterling)" }}>
+                    Answer saved.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <span style={{ fontSize: 14, color: "var(--steel-ink)" }}>
+                      Are you coming in October?
+                    </span>
+                    {(["going", "maybe", "not_this_year"] as RsvpStatus[]).map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        style={secondaryButton}
+                        onClick={() => void answerLate(s)}
+                      >
+                        {STATUS_LABELS[s]}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLateDismissed(true);
+                      onClaimed();
+                      onClose();
+                    }}
+                    style={quietLink}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <>
