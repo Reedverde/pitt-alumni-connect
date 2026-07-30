@@ -336,13 +336,27 @@ export const getStaleQueue = createServerFn({ method: "GET" })
  */
 export const getNavIdentity = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ personId: string | null; firstName: string | null }> => {
+  .handler(async ({ context }): Promise<{
+    personId: string | null;
+    firstName: string | null;
+    rsvpStatus: RsvpStatus | null;
+  }> => {
     const personId = await resolveMyPersonId(context.supabase, context.userId);
-    if (!personId) return { personId: null, firstName: null };
-    const { data } = await context.supabase
-      .from("people")
-      .select("first_name")
-      .eq("id", personId)
-      .maybeSingle();
-    return { personId, firstName: data?.first_name ?? null };
+    if (!personId) return { personId: null, firstName: null, rsvpStatus: null };
+    const { currentEditionYear } = await import("./editions.server");
+    const eventYear = await currentEditionYear();
+    const [personRes, rsvpRes] = await Promise.all([
+      context.supabase.from("people").select("first_name").eq("id", personId).maybeSingle(),
+      context.supabase
+        .from("rsvps")
+        .select("status")
+        .eq("person_id", personId)
+        .eq("event_year", eventYear)
+        .maybeSingle(),
+    ]);
+    return {
+      personId,
+      firstName: (personRes.data?.first_name as string | null) ?? null,
+      rsvpStatus: ((rsvpRes.data?.status as RsvpStatus | undefined) ?? null),
+    };
   });

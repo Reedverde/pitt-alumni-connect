@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useSessionPerson } from "@/lib/useSessionPerson";
 
 const circle = {
   width: 52,
@@ -20,17 +21,20 @@ const circle = {
 
 /** Fixed bottom-left stack of circular actions. */
 export function ActionRail() {
+  const { signedIn } = useSessionPerson();
   return (
     <div
       className="fixed left-4 bottom-4 z-40 flex flex-col gap-3"
       style={{ pointerEvents: "auto" }}
     >
-      <Link
-        to="/"
-        style={{ ...circle, background: "var(--pitt-royal)", color: "var(--pure-white)", border: "1px solid transparent" }}
-      >
-        RSVP
-      </Link>
+      {!signedIn && (
+        <Link
+          to="/"
+          style={{ ...circle, background: "var(--pitt-royal)", color: "var(--pure-white)", border: "1px solid transparent" }}
+        >
+          RSVP
+        </Link>
+      )}
       <button
         type="button"
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}

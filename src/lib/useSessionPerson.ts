@@ -43,5 +43,6 @@ export function useSessionPerson() {
     signedIn: hasSession,
     personId: query.data?.personId ?? null,
     firstName: query.data?.firstName ?? null,
+    rsvpStatus: query.data?.rsvpStatus ?? null,
   };
 }
