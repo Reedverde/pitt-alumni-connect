@@ -3,6 +3,15 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
 
 import { getSchedule, type ScheduleEvent } from "@/lib/schedule.functions";
+import { getPastEditions } from "@/lib/editions.functions";
+import {
+  dayLabel,
+  dayName,
+  editionDateRange,
+  editionDay,
+  editionEyebrow,
+  type EditionSummary,
+} from "@/lib/edition-format";
 import { SiteNav } from "@/components/SiteNav";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
@@ -13,24 +22,33 @@ import { NotchedBox } from "@/components/media/NotchedBox";
 import { NOTCH_LG, NOTCH_SM, type NotchCorner } from "@/components/media/notch";
 
 const scheduleQuery = queryOptions({
-  queryKey: ["schedule", 2026],
-  queryFn: () => getSchedule(),
+  queryKey: ["schedule", "current"],
+  queryFn: () => getSchedule({ data: {} }),
+});
+
+const pastEditionsQuery = queryOptions({
+  queryKey: ["past-editions"],
+  queryFn: () => getPastEditions(),
 });
 
 export const Route = createFileRoute("/weekend")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(scheduleQuery),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(scheduleQuery),
+      context.queryClient.ensureQueryData(pastEditionsQuery),
+    ]),
   head: () => ({
     meta: [
       { title: "Alumni Weekend Schedule — Pitt Club Ultimate" },
       {
         name: "description",
         content:
-          "Three days in Pittsburgh, October 2–4, 2026: watch party, family BBQ, women's soccer and the alumni games. Add any of it to your calendar.",
+          "Three days in Pittsburgh: watch party, family BBQ, women's soccer and the alumni games. Add any of it to your calendar.",
       },
       { property: "og:title", content: "Alumni Weekend Schedule — Pitt Club Ultimate" },
       {
         property: "og:description",
-        content: "October 2–4, 2026 in Pittsburgh. The full schedule, plus calendar files for every event.",
+        content: "Three days in Pittsburgh. The full schedule, plus calendar files for every event.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -52,11 +70,28 @@ export const Route = createFileRoute("/weekend")({
   component: WeekendPage,
 });
 
-const DAYS = [
-  { number: 1, seal: "01", date: "FRI OCT 2, 2026", title: "Friday", body: "Get into town, find the room, watch the game." },
-  { number: 2, seal: "02", date: "SAT OCT 3, 2026", title: "Saturday", body: "The long day. Families welcome at all of it." },
-  { number: 3, seal: "03", date: "SUN OCT 4, 2026", title: "Sunday", body: "Games in the morning, goodbyes by the afternoon." },
+const DAY_BODIES = [
+  "Get into town, find the room, watch the game.",
+  "The long day. Families welcome at all of it.",
+  "Games in the morning, goodbyes by the afternoon.",
 ];
+
+/** Day tiles are generated from the edition's own start and end dates. */
+function buildDays(edition: EditionSummary) {
+  const start = editionDay(edition, 1);
+  const end = editionDay({ ...edition, starts_on: edition.ends_on }, 1);
+  const span = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
+  return Array.from({ length: span }, (_, i) => {
+    const date = editionDay(edition, i + 1);
+    return {
+      number: i + 1,
+      seal: String(i + 1).padStart(2, "0"),
+      date: dayLabel(date),
+      title: dayName(date),
+      body: DAY_BODIES[i] ?? "More to come.",
+    };
+  });
+}
 
 const DIVISION_LABELS: Record<string, string> = {
   MENS_A: "En Sabah Nur",
@@ -98,7 +133,11 @@ function timeLabel(event: ScheduleEvent) {
 }
 
 function WeekendPage() {
-  const { data: events } = useSuspenseQuery(scheduleQuery);
+  const { data: schedule } = useSuspenseQuery(scheduleQuery);
+  const { data: pastEditions } = useSuspenseQuery(pastEditionsQuery);
+  const edition = schedule.edition;
+  const events = schedule.events;
+  const DAYS = buildDays(edition);
 
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
@@ -106,7 +145,7 @@ function WeekendPage() {
 
       <main className="mx-auto w-full max-w-[1080px] px-5 pb-24">
         <header className="pt-10 pb-6 md:pt-14">
-          <SlashEyebrow>Alumni Weekend · Oct 2–4, 2026</SlashEyebrow>
+          <SlashEyebrow>{editionEyebrow(edition)}</SlashEyebrow>
           <h1 className="display-64 mt-3" style={{ color: "var(--sabah-black)" }}>
             THE WEEKEND
           </h1>
@@ -114,12 +153,12 @@ function WeekendPage() {
             Three days in Pittsburgh. Four programs, one roof.
           </p>
           <div className="mt-6">
-            <a href="/api/public/calendar.ics?year=2026" style={ghostButton}>
+            <a href={`/api/public/calendar.ics?year=${edition.event_year}`} style={ghostButton}>
               Add the whole weekend
             </a>
           </div>
           <div className="mt-6">
-            <LabelRow label="Group shot, past alumni weekend" right="Oct 2–4, 2026" />
+            <LabelRow label="Group shot, past alumni weekend" right={editionDateRange(edition)} />
             <PhotoSlot
               className="mt-3"
               ratio="3 / 1"
@@ -181,7 +220,7 @@ function WeekendPage() {
 
               <div className="mt-4 flex flex-col gap-4">
                 {wholeProgram.map((event) => (
-                  <EventTile key={event.id} event={event} wholeProgram corners={["tl"]} />
+                  <EventTile key={event.id} event={event} wholeProgram corners={["tl"]} eventYear={edition.event_year} />
                 ))}
               </div>
 
@@ -200,6 +239,7 @@ function WeekendPage() {
                           key={event.id}
                           event={event}
                           wholeProgram={false}
+                          eventYear={edition.event_year}
                           corners={i % 2 === 0 ? ["tl"] : ["br"]}
                         />
                       ))}
@@ -216,9 +256,38 @@ function WeekendPage() {
             </section>
           );
         })}
+
+        <PastEditions editions={pastEditions} />
       </main>
       <ActionRail />
     </div>
+  );
+}
+
+function PastEditions({ editions }: { editions: { event_year: number; title: string; starts_on: string; ends_on: string; going: number }[] }) {
+  if (editions.length === 0) return null;
+  return (
+    <section className="mt-16">
+      <LabelRow label="Past weekends" right="Straight out of the RSVPs" />
+      <div className="mt-4 flex flex-col gap-3">
+        {editions.map((e) => (
+          <a key={e.event_year} href={`/editions/${e.event_year}`} style={{ textDecoration: "none" }}>
+            <NotchedBox corners={["tl"]} notch={NOTCH_SM} stroke="var(--chalk)" fill="var(--pure-white)" style={tileStyle}>
+              <p style={{ fontFamily: '"Space Mono", monospace', fontSize: 13, color: "var(--steel-ink)" }}>
+                {e.event_year} · {editionDateRange(e)}
+              </p>
+              <h3 className="mt-1" style={{ fontFamily: '"Archivo", sans-serif', fontWeight: 800, fontSize: 20, color: "var(--sabah-black)" }}>
+                {e.title}
+              </h3>
+              <p className="mt-1" style={{ fontSize: 16, color: "var(--sterling)" }}>
+                {e.going} said they were coming. See that schedule.
+              </p>
+            </NotchedBox>
+          </a>
+        ))}
+      </div>
+      <PhotoSlot className="mt-4" ratio="3 / 1" index="02" corners={["br"]} label="Past weekends" />
+    </section>
   );
 }
 
@@ -226,10 +295,12 @@ function EventTile({
   event,
   wholeProgram,
   corners,
+  eventYear,
 }: {
   event: ScheduleEvent;
   wholeProgram: boolean;
   corners: NotchCorner[];
+  eventYear: number;
 }) {
   return (
     <NotchedBox
@@ -269,7 +340,7 @@ function EventTile({
         </p>
       )}
       <div className="mt-4">
-        <a href={`/api/public/calendar.ics?year=2026&event=${event.id}`} style={ghostButton}>
+        <a href={`/api/public/calendar.ics?year=${eventYear}&event=${event.id}`} style={ghostButton}>
           Add to calendar
         </a>
       </div>
