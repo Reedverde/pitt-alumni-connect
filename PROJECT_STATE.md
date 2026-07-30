@@ -80,7 +80,8 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 
 ## KNOWN ISSUES
 
-- High: the database still holds roughly 50 sample- prefixed rows. The real 468 person import has not run
+- High: no standing access-verification script. Three bugs on 2026-07-30 were reported as fixed and were not. Nothing asserts per-role read and write on every table before publish
+- Medium: rsvps.party_size is readable by any signed-in alum. It must be admin only
 - Medium: og:image in __root.tsx points at a Lovable R2 preview screenshot URL that is tied to a preview build and will rot
 - Medium: no privacy policy on a site holding 468 real names and 120 email addresses
 - Medium: `throttle_events` has no pruning job. It grows forever and the count queries slow as it fills. Needs a pg_cron delete of rows older than 48 hours
