@@ -19,6 +19,8 @@ import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated/me'
 import { Route as EditionsYearRouteImport } from './routes/editions.$year'
 import { Route as ApiPhotosUploadRouteImport } from './routes/api/photos/upload'
 import { Route as ApiPublicCalendarDoticsRouteImport } from './routes/api/public/calendar[.]ics'
+import { Route as ApiPublicResendWebhookRouteImport } from './routes/api/public/resend-webhook'
+import { Route as ApiPublicUnsubscribeRouteImport } from './routes/api/public/unsubscribe'
 import { Route as ApiPublicPhotoSplatRouteImport } from './routes/api/public/photo/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -70,6 +72,16 @@ const ApiPublicCalendarDoticsRoute = ApiPublicCalendarDoticsRouteImport.update({
   path: '/api/public/calendar.ics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicResendWebhookRoute = ApiPublicResendWebhookRouteImport.update({
+  id: '/api/public/resend-webhook',
+  path: '/api/public/resend-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicUnsubscribeRoute = ApiPublicUnsubscribeRouteImport.update({
+  id: '/api/public/unsubscribe',
+  path: '/api/public/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPhotoSplatRoute = ApiPublicPhotoSplatRouteImport.update({
   id: '/api/public/photo/$',
   path: '/api/public/photo/$',
@@ -86,6 +98,8 @@ export interface FileRoutesByFullPath {
   '/editions/$year': typeof EditionsYearRoute
   '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
+  '/api/public/resend-webhook': typeof ApiPublicResendWebhookRoute
+  '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
   '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
 export interface FileRoutesByTo {
@@ -98,6 +112,8 @@ export interface FileRoutesByTo {
   '/editions/$year': typeof EditionsYearRoute
   '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
+  '/api/public/resend-webhook': typeof ApiPublicResendWebhookRoute
+  '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
   '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
 export interface FileRoutesById {
@@ -112,6 +128,8 @@ export interface FileRoutesById {
   '/editions/$year': typeof EditionsYearRoute
   '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
+  '/api/public/resend-webhook': typeof ApiPublicResendWebhookRoute
+  '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
   '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
 export interface FileRouteTypes {
@@ -126,6 +144,8 @@ export interface FileRouteTypes {
     | '/editions/$year'
     | '/api/photos/upload'
     | '/api/public/calendar.ics'
+    | '/api/public/resend-webhook'
+    | '/api/public/unsubscribe'
     | '/api/public/photo/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -138,6 +158,8 @@ export interface FileRouteTypes {
     | '/editions/$year'
     | '/api/photos/upload'
     | '/api/public/calendar.ics'
+    | '/api/public/resend-webhook'
+    | '/api/public/unsubscribe'
     | '/api/public/photo/$'
   id:
     | '__root__'
@@ -151,6 +173,8 @@ export interface FileRouteTypes {
     | '/editions/$year'
     | '/api/photos/upload'
     | '/api/public/calendar.ics'
+    | '/api/public/resend-webhook'
+    | '/api/public/unsubscribe'
     | '/api/public/photo/$'
   fileRoutesById: FileRoutesById
 }
@@ -163,6 +187,8 @@ export interface RootRouteChildren {
   EditionsYearRoute: typeof EditionsYearRoute
   ApiPhotosUploadRoute: typeof ApiPhotosUploadRoute
   ApiPublicCalendarDoticsRoute: typeof ApiPublicCalendarDoticsRoute
+  ApiPublicResendWebhookRoute: typeof ApiPublicResendWebhookRoute
+  ApiPublicUnsubscribeRoute: typeof ApiPublicUnsubscribeRoute
   ApiPublicPhotoSplatRoute: typeof ApiPublicPhotoSplatRoute
 }
 
@@ -238,6 +264,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCalendarDoticsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/resend-webhook': {
+      id: '/api/public/resend-webhook'
+      path: '/api/public/resend-webhook'
+      fullPath: '/api/public/resend-webhook'
+      preLoaderRoute: typeof ApiPublicResendWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/unsubscribe': {
+      id: '/api/public/unsubscribe'
+      path: '/api/public/unsubscribe'
+      fullPath: '/api/public/unsubscribe'
+      preLoaderRoute: typeof ApiPublicUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/photo/$': {
       id: '/api/public/photo/$'
       path: '/api/public/photo/$'
@@ -270,6 +310,8 @@ const rootRouteChildren: RootRouteChildren = {
   EditionsYearRoute: EditionsYearRoute,
   ApiPhotosUploadRoute: ApiPhotosUploadRoute,
   ApiPublicCalendarDoticsRoute: ApiPublicCalendarDoticsRoute,
+  ApiPublicResendWebhookRoute: ApiPublicResendWebhookRoute,
+  ApiPublicUnsubscribeRoute: ApiPublicUnsubscribeRoute,
   ApiPublicPhotoSplatRoute: ApiPublicPhotoSplatRoute,
 }
 export const routeTree = rootRouteImport

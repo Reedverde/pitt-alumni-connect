@@ -595,31 +595,52 @@ export type Database = {
           bounce_type: string | null
           bounced: boolean
           complained: boolean
+          created_at: string
+          error: string | null
           id: string
+          kind: string
           opened_at: string | null
           person_id: string
+          provider: string | null
+          provider_message_id: string | null
           sent_at: string | null
-          sequence_id: string
+          sequence_id: string | null
+          status: string
+          to_email: string | null
         }
         Insert: {
           bounce_type?: string | null
           bounced?: boolean
           complained?: boolean
+          created_at?: string
+          error?: string | null
           id?: string
+          kind?: string
           opened_at?: string | null
           person_id: string
+          provider?: string | null
+          provider_message_id?: string | null
           sent_at?: string | null
-          sequence_id: string
+          sequence_id?: string | null
+          status?: string
+          to_email?: string | null
         }
         Update: {
           bounce_type?: string | null
           bounced?: boolean
           complained?: boolean
+          created_at?: string
+          error?: string | null
           id?: string
+          kind?: string
           opened_at?: string | null
           person_id?: string
+          provider?: string | null
+          provider_message_id?: string | null
           sent_at?: string | null
-          sequence_id?: string
+          sequence_id?: string | null
+          status?: string
+          to_email?: string | null
         }
         Relationships: [
           {

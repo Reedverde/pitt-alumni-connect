@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { finalizeLogin } from "@/lib/account.functions";
+import { requestSignInLink } from "@/lib/signin.functions";
 import { useEditionEyebrow } from "@/lib/useEdition";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { FieldLabel, Notice, fieldStyle, primaryButton, secondaryButton } from "@/components/claim/ui";
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const runFinalize = useServerFn(finalizeLogin);
+  const sendSignInLink = useServerFn(requestSignInLink);
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -63,14 +65,16 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const { error: sendError } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: `${window.location.origin}/auth` },
-    });
+    try {
+      await sendSignInLink({
+        data: { email: email.trim().toLowerCase(), origin: window.location.origin },
+      });
+      // Never reveal whether that address is on the list.
+      setSent(true);
+    } catch {
+      setError("Couldn't send the link. Try again.");
+    }
     setBusy(false);
-    // Never reveal whether that address is on the list.
-    if (sendError && sendError.status !== 400) setError("Couldn't send the link. Try again.");
-    else setSent(true);
   };
 
   const eyebrow = useEditionEyebrow();

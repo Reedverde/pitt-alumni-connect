@@ -200,23 +200,15 @@ export type SubmitInput = {
 
 /** Sends the sign-in link server-side so the destination address is never
  *  disclosed to the caller. Never throws: the RSVP must not depend on it. */
-async function sendMagicLink(to: string, origin: string | null | undefined) {
-  try {
-    const { createClient } = await import("@supabase/supabase-js");
-    const client = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_PUBLISHABLE_KEY!,
-      { auth: { persistSession: false, autoRefreshToken: false } },
-    );
-    const safeOrigin =
-      typeof origin === "string" && /^https?:\/\/[^\s/]+$/.test(origin) ? origin : null;
-    await client.auth.signInWithOtp({
-      email: to,
-      options: safeOrigin ? { emailRedirectTo: `${safeOrigin}/auth` } : undefined,
-    });
-  } catch {
-    /* ignore */
-  }
+async function sendMagicLink(opts: {
+  to: string;
+  personId: string;
+  firstName: string | null;
+  status: RsvpStatus;
+  origin: string | null | undefined;
+}) {
+  const { sendMagicLinkEmail } = await import("./mail.server");
+  await sendMagicLinkEmail(opts);
 }
 
 /** Public write endpoint: creates or updates the RSVP before the person has
@@ -359,7 +351,13 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
 
   const boardYear = (pl?.board_year as number | null) ?? person.grad_year ?? null;
 
-  await sendMagicLink(magicLinkEmail, input.origin);
+  await sendMagicLink({
+    to: magicLinkEmail,
+    personId: person.id,
+    firstName: person.first_name,
+    status: effectiveStatus,
+    origin: input.origin,
+  });
 
   return {
     ok: true,
