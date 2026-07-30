@@ -14,6 +14,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PhotoSlot } from "@/components/media/PhotoSlot";
 import { NotchedBox } from "@/components/media/NotchedBox";
+import { NOTCH_ALL } from "@/components/media/notch";
 import { YearPhoto, cornersForRow } from "@/components/board/YearPhoto";
 import { ScheduleSummary, ghostButton, primaryButton } from "@/components/schedule/ScheduleSummary";
 import { SidelineLoop } from "@/components/board/SidelineLoop";
@@ -578,7 +579,7 @@ function AnchorRow({
 function EmptyPrompt({ label }: { label: string }) {
   return (
     <NotchedBox
-      corners={["tl", "br"]}
+      corners={NOTCH_ALL}
       stroke="var(--chalk)"
       dashed
       className="mt-4 w-full max-w-[560px]"
