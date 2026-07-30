@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
@@ -167,7 +167,7 @@ function CounterBar({ claimed, going, daysOut }: { claimed: number; going: numbe
   ];
   return (
     <div
-      className="sticky top-14 z-20 isolate"
+      className="sticky top-14 z-20 relative isolate overflow-hidden"
       style={{ background: "var(--pure-white)", borderBottom: "1px solid var(--chalk)" }}
     >
       <SidelineLoop />
