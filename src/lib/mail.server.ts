@@ -445,15 +445,22 @@ export async function sendPlainEmail(opts: {
       return { sent: false, provider: "none", messageId: null, reason: "not configured" };
     }
 
-    const origin = safeOrigin(null);
-    const unsubUrl = origin
-      ? `${origin}/api/public/unsubscribe?e=${encodeURIComponent(to)}&t=${unsubscribeToken(to)}`
-      : null;
-    const headers: Record<string, string> = {};
-    if (unsubUrl) {
-      headers["List-Unsubscribe"] = `<${unsubUrl}>`;
-      headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+    const domainCheck = await checkSendingDomain();
+    if (!domainCheck.ok) {
+      console.error(`[mail] refusing to send from an unverified domain: ${domainCheck.detail}`);
+      await logSend({
+        personId: opts.personId,
+        kind: opts.kind,
+        toEmail: to,
+        provider: "none",
+        providerMessageId: null,
+        status: "failed",
+        error: domainCheck.detail,
+      });
+      return { sent: false, provider: "none", messageId: null, reason: domainCheck.detail };
     }
+
+    const headers = unsubscribeHeaders(to);
 
     const res = await fetch(RESEND_ENDPOINT, {
       method: "POST",
@@ -503,11 +510,11 @@ export async function sendPlainEmail(opts: {
 }
 
 /** The pre-existing path: the built-in mailer. Kept only as a fallback. */
-async function fallbackOtp(to: string, origin: string | null | undefined) {
+async function fallbackOtp(to: string) {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return false;
-  const target = safeOrigin(origin);
+  const target = siteUrl();
   const res = await fetch(`${url}/auth/v1/otp`, {
     method: "POST",
     headers: { apikey: key, "Content-Type": "application/json" },
