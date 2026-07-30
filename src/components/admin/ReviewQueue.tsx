@@ -54,6 +54,12 @@ function MemorialCard({ item, onDone }: { item: QueueItem; onDone: () => void })
         Reported by {item.submitter ?? "a member"} on <When value={item.created_at} />. Nothing here
         changes a record until an admin confirms off site and types the confirming name and date.
       </p>
+      <pre
+        className="mt-3 overflow-x-auto"
+        style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 12, color: "var(--steel-ink)" }}
+      >
+        {JSON.stringify(item.payload, null, 2)}
+      </pre>
 
       <label className="label-caps mt-4 block" style={{ color: "var(--sterling)" }}>
         What was confirmed, and how
@@ -86,18 +92,19 @@ function MemorialCard({ item, onDone }: { item: QueueItem; onDone: () => void })
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" style={secondaryButton} disabled={busy} onClick={() => save(false)}>
-          Save note only
-        </button>
         <button
           type="button"
           style={{ ...secondaryButton, opacity: name.trim() && date ? 1 : 0.4 }}
           disabled={busy || !name.trim() || !date}
           onClick={() => save(true)}
         >
-          Record as confirmed
+          Record off-site confirmation
         </button>
       </div>
+      <p className="mt-2" style={{ fontSize: 12, color: "var(--sterling)" }}>
+        A memorial is never approved or rejected with a button. Until a confirmation is recorded the
+        report stays pending and nothing about it is public.
+      </p>
     </div>
   );
 }
@@ -226,7 +233,22 @@ function EditCard({ item, onDone }: { item: QueueItem; onDone: () => void }) {
   );
 }
 
-function RosterCard({ item }: { item: QueueItem }) {
+function RosterCard({ item, onDone }: { item: QueueItem; onDone: () => void }) {
+  const resolve = useServerFn(adminResolveSuggestion);
+  const [busy, setBusy] = useState(false);
+  const act = async (action: "approve" | "reject") => {
+    setBusy(true);
+    try {
+      await resolve({ data: { suggestionId: item.id, action } });
+      toast.success(action === "approve" ? "Batch approved." : "Batch closed.");
+      onDone();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't do that.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div style={{ borderTop: hairline, padding: "14px 0" }}>
       <p style={{ fontSize: 15, color: "var(--steel-ink)" }}>Roster import batch</p>
@@ -239,6 +261,16 @@ function RosterCard({ item }: { item: QueueItem }) {
       >
         {JSON.stringify(item.payload, null, 2)}
       </pre>
+      {item.status === "pending" ? (
+        <div className="mt-3 flex gap-2">
+          <button type="button" style={primaryButton} disabled={busy} onClick={() => act("approve")}>
+            Approve
+          </button>
+          <button type="button" style={secondaryButton} disabled={busy} onClick={() => act("reject")}>
+            Reject
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -295,7 +327,9 @@ export function ReviewQueue({ queue, onRefresh }: { queue: QueueItem[]; onRefres
           {group("roster_import").length === 0 ? (
             <Empty>Nothing pending.</Empty>
           ) : (
-            group("roster_import").map((item) => <RosterCard key={item.id} item={item} />)
+            group("roster_import").map((item) => (
+              <RosterCard key={item.id} item={item} onDone={onRefresh} />
+            ))
           )}
         </div>
 
