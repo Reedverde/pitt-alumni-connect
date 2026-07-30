@@ -10,7 +10,7 @@ import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
 import { SiteNav } from "@/components/SiteNav";
 import { SidelineLoop } from "@/components/board/SidelineLoop";
-import { countdown, editionEyebrow, resolveSeason } from "@/lib/edition-format";
+import { countdown, editionEyebrow, nextOctoberYear, resolveSeason } from "@/lib/edition-format";
 
 const boardQuery = queryOptions({
   queryKey: ["board"],
@@ -87,22 +87,35 @@ function BoardPage() {
     setClaimOpen(true);
   };
 
+  // Season and countdown both come from the editions rows, never a literal date.
+  const season = resolveSeason(data.edition, data.nextEdition);
+  const inSeason = season.edition !== null;
+
+  // Gold means a person is coming to the edition that is live now. Off season
+  // there is no such edition, so a past "going" renders as claimed.
+  const people = useMemo(
+    () =>
+      inSeason
+        ? data.people
+        : data.people.map((p) =>
+            p.state === "going" || p.state === "maybe" ? { ...p, state: "claimed" as const } : p,
+          ),
+    [data.people, inSeason],
+  );
+
   const anchorPeople = useMemo(
-    () => data.people.filter((p) => p.board_year <= 1997),
-    [data.people],
+    () => people.filter((p) => p.board_year <= 1997),
+    [people],
   );
   const groups = useMemo(
-    () => buildYearGroups(data.people.filter((p) => p.board_year > 1997)),
-    [data.people],
+    () => buildYearGroups(people.filter((p) => p.board_year > 1997)),
+    [people],
   );
   const orderedGroups = useMemo(
     () => (newestFirst ? [...groups].reverse() : groups),
     [groups, newestFirst],
   );
 
-  // Season and countdown both come from the editions rows, never a literal date.
-  const season = resolveSeason(data.edition, data.nextEdition);
-  const inSeason = season.edition !== null;
   const clock = countdown(data.edition, data.nextEdition);
 
   const toggle = (code: string) =>
@@ -124,12 +137,17 @@ function BoardPage() {
 
       <main className="mx-auto w-full max-w-[1320px] px-5 pb-24">
         <header className="pt-10 pb-8 md:pt-14">
-          <SlashEyebrow>{editionEyebrow(data.edition)}</SlashEyebrow>
+          <SlashEyebrow>
+            {inSeason
+              ? editionEyebrow(season.edition!)
+              : `Alumni Weekend · Next: first weekend of October, ${nextOctoberYear()}`}
+          </SlashEyebrow>
           <h1 className="display-64 mt-3" style={{ color: "var(--sabah-black)" }}>
             FIND YOUR YEAR
           </h1>
           <p className="mt-4 max-w-[560px] text-left" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
-            Every Pitt Club Ultimate alum we know of, on one wall, by year. Gold means they are coming.
+            Every Pitt Club Ultimate alum we know of, on one wall, by year.{" "}
+            {inSeason ? "Gold means they are coming." : "Claim your name any time of year."}
           </p>
         </header>
 
