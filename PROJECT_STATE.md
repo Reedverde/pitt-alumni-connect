@@ -120,3 +120,10 @@ LATER: tournament tracker. Alumni job network built on the open_to_network conse
 - Hub card: pitt-alumni-connect in project 45df6587-f345-46bd-bccc-3c2fa55467a7
 - Hub article file: src/data/pitt-alumni-connect-articles.ts
 - Lovable project ID: da83b43b-b24b-4b80-b9ec-619b1b431cbb
+
+## Security pass, 2026-07-30
+- /me now resolves the person strictly through identities.auth_user_id = auth.uid() via `resolveMyPersonId` in `src/lib/account-resolve.ts`. Every account server function ignores any client supplied personId.
+- Root cause of the wrong record and the 123 addresses: the viewer was an admin, the admin SELECT policy on identities returns every row, and the page took row zero.
+- identities policies rewritten: own person or admin for select, insert, update, delete. anon holds column grants on person_id and verified_at only.
+- people column grants tightened for authenticated: no deceased_note, deceased_confirmed_*, is_anchor, seed_id, needs_review, member_no. Updates limited to the seven self editable columns.
+- Data API access revoked for anon and authenticated on sends, suppressions, preapproved_emails, sequences, throttle_events, identities_needing_second_email.
