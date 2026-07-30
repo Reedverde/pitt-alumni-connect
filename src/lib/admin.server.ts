@@ -517,7 +517,12 @@ export async function resolveSuggestion(
         : typeof payload.start_year === "number"
           ? payload.start_year
           : null;
-    if (typeof insert.seed_division === "string" && stintYear !== null) {
+    if (
+      typeof insert.seed_division === "string" &&
+      stintYear !== null &&
+      stintYear >= 1970 &&
+      stintYear <= 2100
+    ) {
       await supabaseAdmin.from("stints").insert({
         person_id: createdId,
         division: insert.seed_division as string,
@@ -551,11 +556,15 @@ export async function resolveSuggestion(
         .eq("event_year", eventYear)
         .maybeSingle();
       if (!already) {
+        const src =
+          payload.src === "discord" || payload.src === "groupme" || payload.src === "email"
+            ? payload.src
+            : null;
         await supabaseAdmin.from("rsvps").insert({
           person_id: createdId,
           event_year: eventYear,
           status: requested,
-          src: "self_add",
+          ...(src ? { src } : {}),
           ...(typeof payload.party_size === "number" ? { party_size: payload.party_size } : {}),
         } as never);
       }
