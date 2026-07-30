@@ -301,6 +301,22 @@ export async function recordMemorialConfirmation(
   const { error } = await supabaseAdmin.from("people").update(patch as never).eq("id", input.personId);
   if (error) throw new Error(error.message);
 
+  // Suppression already happens the moment a memorial is reported. This repeats
+  // it for the admin-initiated path, where no report was ever filed.
+  const { data: memorialEmails } = await supabaseAdmin
+    .from("identities")
+    .select("email")
+    .eq("person_id", input.personId);
+  for (const row of memorialEmails ?? []) {
+    await supabaseAdmin.from("suppressions").upsert(
+      {
+        email: (row.email as string).toLowerCase(),
+        reason: input.markDeceased ? "memorial" : "memorial_pending",
+      },
+      { onConflict: "email" },
+    );
+  }
+
   if (input.suggestionId) {
     await supabaseAdmin
       .from("suggestions")
