@@ -653,7 +653,7 @@ export async function sendPlainEmail(opts: {
   html: string;
 }): Promise<MagicLinkResult> {
   const to = opts.to.trim().toLowerCase();
-  const { apiKey, fromAddress, fromName, replyTo } = mailConfig();
+  const { apiKey, fromAddress } = mailConfig();
 
   try {
     if (await isSuppressed(to)) {
