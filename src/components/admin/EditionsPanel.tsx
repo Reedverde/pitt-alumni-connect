@@ -300,13 +300,31 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
         </table>
       </div>
 
-      {eventYear !== null && (
+      {eventYear !== null && (() => {
+        const allEvents = rows.find((r) => r.event_year === eventYear)?.events ?? [];
+        const placeholderCount = allEvents.filter((e) => e.is_placeholder).length;
+        const shown = placeholdersOnly ? allEvents.filter((e) => e.is_placeholder) : allEvents;
+        return (
         <div className="mt-6" style={{ border: hairline, padding: 16 }}>
           <p className="label-caps mb-3" style={{ color: "var(--sterling)" }}>
             Events · {eventYear}
           </p>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <p style={{ fontSize: 13, fontWeight: 700, color: "var(--sabah-black)" }}>
+              {placeholderCount === 0
+                ? "No placeholder events. Everything here is real."
+                : `${placeholderCount} placeholder event${placeholderCount === 1 ? "" : "s"} still need real details.`}
+            </p>
+            <button
+              type="button"
+              style={secondaryButton}
+              onClick={() => setPlaceholdersOnly((v) => !v)}
+            >
+              {placeholdersOnly ? "Show all events" : "Show placeholders only"}
+            </button>
+          </div>
           <div className="mb-6 flex flex-col gap-2">
-            {(rows.find((r) => r.event_year === eventYear)?.events ?? []).map((ev) => (
+            {shown.map((ev) => (
               <div key={ev.id} className="flex flex-wrap items-center gap-3" style={{ fontSize: 13 }}>
                 <Num>Day {ev.day_number ?? 1}</Num>
                 <span style={{ color: "var(--sabah-black)" }}>{ev.title}</span>
@@ -339,7 +357,7 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
                 </button>
               </div>
             ))}
-            {(rows.find((r) => r.event_year === eventYear)?.events ?? []).length === 0 && (
+            {shown.length === 0 && (
               <p style={{ fontSize: 13, color: "var(--sterling)" }}>Nothing scheduled yet.</p>
             )}
           </div>
