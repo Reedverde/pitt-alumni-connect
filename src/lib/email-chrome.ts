@@ -44,10 +44,10 @@ export function emailHeader() {
       )}" width="32" height="32" alt="Pitt Club Ultimate" style="display:block;width:32px;height:32px;border:0;outline:none;text-decoration:none"></td>`
     : "";
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;background-color:#ffffff" bgcolor="#ffffff">
-<tr>${sealCell}<td align="left" style="background-color:#ffffff;font-family:${FONT_STACK};font-size:16px;font-weight:bold;letter-spacing:0.02em;text-transform:uppercase;color:${ROYAL}" bgcolor="#ffffff">PITT CLUB ULTIMATE</td></tr>
+<tr>${sealCell}<td align="left" class="e-mark" style="background-color:#ffffff;font-family:${FONT_STACK};font-size:16px;font-weight:bold;letter-spacing:0.02em;text-transform:uppercase;color:${ROYAL}" bgcolor="#ffffff">PITT CLUB ULTIMATE</td></tr>
 </table>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px">
-<tr><td height="1" style="height:1px;line-height:1px;font-size:1px;background-color:${CHALK}" bgcolor="${CHALK}">&nbsp;</td></tr>
+<tr><td height="1" class="e-rule" style="height:1px;line-height:1px;font-size:1px;background-color:${CHALK}" bgcolor="${CHALK}">&nbsp;</td></tr>
 </table>`;
 }
 
