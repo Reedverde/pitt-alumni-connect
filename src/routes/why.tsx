@@ -7,6 +7,8 @@ import { IndexPills } from "@/components/board/IndexPills";
 import { ActionRail } from "@/components/board/ActionRail";
 import { PhotoSlot, StatementCard } from "@/components/media/PhotoSlot";
 import { primaryButton } from "@/components/claim/ui";
+import { useEditionContext } from "@/lib/useEdition";
+import { editionLongRange, resolveSeason } from "@/lib/edition-format";
 
 export const Route = createFileRoute("/why")({
   head: () => ({
@@ -15,7 +17,7 @@ export const Route = createFileRoute("/why")({
       {
         name: "description",
         content:
-          "Twenty years at Nationals, then one gap. Alumni turned up after the miss, not after the titles. Alumni Weekend is October 2 to 4, 2026.",
+          "Twenty years at Nationals, then one gap. Alumni turned up after the miss, not after the titles. Alumni Weekend is the first weekend of October, every year.",
       },
       { property: "og:title", content: "Why Now — Pitt Club Ultimate Alumni" },
       {
@@ -30,6 +32,19 @@ export const Route = createFileRoute("/why")({
 });
 
 const body = { fontSize: 16, color: "var(--steel-ink)", lineHeight: 1.6 } as const;
+
+/** The dates read from the current edition, so this sentence never expires. */
+function WeekendDates() {
+  const { data } = useEditionContext();
+  const season = data ? resolveSeason(data.current, data.next) : null;
+  return (
+    <p className="mt-4" style={body}>
+      {season?.edition
+        ? `${editionLongRange(season.edition)}. Then the first weekend of October, every year after that.`
+        : "The first weekend of October, every year."}
+    </p>
+  );
+}
 
 function WhyPage() {
   return (
@@ -123,9 +138,7 @@ function WhyPage() {
             <p className="mt-4" style={body}>
               Sunday, a game nobody has to play in.
             </p>
-            <p className="mt-4" style={body}>
-              October 2 to 4, 2026. Then the first weekend of October, every year after that.
-            </p>
+            <WeekendDates />
             <div className="mt-8">
               <LabelRow label="The return" right="2026" />
               <PhotoSlot
