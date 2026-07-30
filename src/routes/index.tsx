@@ -13,6 +13,7 @@ import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PhotoSlot } from "@/components/media/PhotoSlot";
+import { NotchedBox } from "@/components/media/NotchedBox";
 import { ScheduleSummary, ghostButton, primaryButton } from "@/components/schedule/ScheduleSummary";
 import { SidelineLoop } from "@/components/board/SidelineLoop";
 import {
@@ -26,6 +27,11 @@ const boardQuery = queryOptions({
   queryKey: ["board"],
   queryFn: () => getBoard(),
 });
+
+/** A year ending in 00 shows all four digits: "00" reads as a placeholder. */
+function sealLabel(year: number) {
+  return year % 100 === 0 ? String(year) : String(year).slice(-2);
+}
 
 const weekendQuery = queryOptions({
   queryKey: ["weekend-page"],
