@@ -943,21 +943,36 @@ export type DataGaps = {
   no_grad_year: number;
   thin_years: { year: number; count: number }[];
   mens_a_recent: { year: number; count: number }[];
+  /** Verified identity, no rsvps row for the current edition. */
+  claimed_no_answer: { id: string; name: string; year: number | null; division: string | null }[];
 };
 
 export async function dataGaps(): Promise<DataGaps> {
-  const { data } = await supabaseAdmin.from("people").select("id, grad_year, deceased").limit(3000);
+  const { data } = await supabaseAdmin
+    .from("people")
+    .select("id, first_name, last_name, played_as, grad_year, deceased")
+    .limit(3000);
   const ctx = await loadContext();
   const people = data ?? [];
   const yearCounts = new Map<number, number>();
   let noStints = 0;
   let noGrad = 0;
+  const claimedNoAnswer: DataGaps["claimed_no_answer"] = [];
   for (const person of people) {
     const id = person.id as string;
     if ((ctx.stints.get(id) ?? 0) === 0) noStints++;
     if (person.grad_year === null) noGrad++;
     const year = ctx.placement.get(id)?.board_year ?? (person.grad_year as number | null);
     if (year !== null && year !== undefined) yearCounts.set(year, (yearCounts.get(year) ?? 0) + 1);
+    if (!person.deceased && ctx.verified.has(id) && !ctx.rsvp.has(id)) {
+      claimedNoAnswer.push({
+        id,
+        // Names, year and division only. No addresses on this panel.
+        name: [person.first_name, person.last_name].filter(Boolean).join(" "),
+        year: year ?? null,
+        division: ctx.placement.get(id)?.board_division ?? null,
+      });
+    }
   }
 
   const { data: mensA } = await supabaseAdmin
@@ -981,6 +996,9 @@ export async function dataGaps(): Promise<DataGaps> {
       .sort((a, b) => a[0] - b[0])
       .map(([year, count]) => ({ year, count })),
     mens_a_recent: [...mensCounts.entries()].map(([year, count]) => ({ year, count })),
+    claimed_no_answer: claimedNoAnswer.sort(
+      (a, b) => (a.year ?? 9999) - (b.year ?? 9999) || a.name.localeCompare(b.name),
+    ),
   };
 }
 
