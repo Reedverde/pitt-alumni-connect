@@ -1,0 +1,1 @@
+ALTER TABLE public.sends ALTER COLUMN person_id DROP NOT NULL;
