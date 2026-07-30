@@ -124,6 +124,36 @@ export type Database = {
         }
         Relationships: []
       }
+      editions: {
+        Row: {
+          created_at: string
+          ends_on: string
+          event_year: number
+          is_current: boolean
+          published: boolean
+          starts_on: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          ends_on: string
+          event_year: number
+          is_current?: boolean
+          published?: boolean
+          starts_on: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          ends_on?: string
+          event_year?: number
+          is_current?: boolean
+          published?: boolean
+          starts_on?: string
+          title?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           day_number: number | null
@@ -171,6 +201,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "divisions"
             referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "events_event_year_fkey"
+            columns: ["event_year"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["event_year"]
           },
         ]
       }
@@ -403,6 +440,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "rsvps_event_year_fkey"
+            columns: ["event_year"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["event_year"]
+          },
           {
             foreignKeyName: "rsvps_person_id_fkey"
             columns: ["person_id"]
@@ -943,8 +987,10 @@ export type Database = {
       }
     }
     Functions: {
+      current_edition_year: { Args: never; Returns: number }
       current_person_id: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
+      set_current_edition: { Args: { _event_year: number }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
