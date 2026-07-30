@@ -27,6 +27,17 @@ export function editionEyebrow(edition: EditionSummary): string {
   return `Alumni Weekend · ${editionDateRange(edition)}`;
 }
 
+/** Hero anchor: { range: "OCT 2 – 4", year: "2026" }. Never a hardcoded string. */
+export function editionShortDates(edition: EditionSummary): { range: string; year: string } {
+  const a = parts(edition.starts_on);
+  const b = parts(edition.ends_on);
+  const range =
+    a.m === b.m
+      ? `${MONTHS[a.m - 1].toUpperCase()} ${a.d} – ${b.d}`
+      : `${MONTHS[a.m - 1].toUpperCase()} ${a.d} – ${MONTHS[b.m - 1].toUpperCase()} ${b.d}`;
+  return { range, year: String(b.y) };
+}
+
 /** Date of a schedule day, day_number 1 being the first day of the edition. */
 export function editionDay(edition: EditionSummary, dayNumber: number): Date {
   const a = parts(edition.starts_on);
