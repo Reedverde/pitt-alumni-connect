@@ -29,6 +29,8 @@ type PhotoSlotProps = {
   outlineWidth?: number;
   /** Hide the caption/scrim overlay: for display photographs like the hero. */
   bare?: boolean;
+  /** Rounded corners instead of notches, e.g. "24px 24px 0 0". */
+  radius?: string;
   className?: string;
 };
 
@@ -62,6 +64,7 @@ export function PhotoSlot({
   outline,
   outlineWidth = 3,
   bare = false,
+  radius,
   className,
 }: PhotoSlotProps) {
   const { data: slots } = usePhotoSlots();
@@ -73,6 +76,38 @@ export function PhotoSlot({
   const resolvedAlt = (alt ?? assigned?.alt ?? "").trim() || label;
 
   if (resolvedSrc) {
+    if (radius) {
+      return (
+        <figure
+          className={className}
+          style={{
+            margin: 0,
+            ...frame,
+            position: "relative",
+            borderRadius: radius,
+            overflow: "hidden",
+            border: outline ? `${outlineWidth}px solid ${outline}` : undefined,
+            boxSizing: "border-box",
+          }}
+        >
+          <img
+            src={resolvedSrc}
+            alt={resolvedAlt}
+            loading={eager ? "eager" : "lazy"}
+            fetchPriority={eager ? "high" : undefined}
+            decoding="async"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              filter: fullColor ? undefined : DUOTONE,
+            }}
+          />
+        </figure>
+      );
+    }
     return (
       <figure className={className} style={{ margin: 0 }}>
         <NotchedBox
