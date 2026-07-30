@@ -77,16 +77,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Pitt Ultimate Alumni" },
-      { name: "description", content: "Stay connected with Pitt Ultimate alumni and the program." },
+      { title: "Pitt Club Ultimate Alumni" },
+      { name: "description", content: "The claim-your-name board and Alumni Weekend schedule for Pitt Club Ultimate." },
       { name: "author", content: "Pitt Ultimate Alumni" },
-      { property: "og:title", content: "Pitt Ultimate Alumni" },
-      { property: "og:description", content: "Stay connected with Pitt Ultimate alumni and the program." },
+      { property: "og:title", content: "Pitt Club Ultimate Alumni" },
+      { property: "og:description", content: "The claim-your-name board and Alumni Weekend schedule for Pitt Club Ultimate." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@PittUltimate" },
     ],
     links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Archivo:wght@400;700;800&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap",
+      },
       {
         rel: "stylesheet",
         href: appCss,

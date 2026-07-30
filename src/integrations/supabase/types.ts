@@ -1,0 +1,1073 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
+  public: {
+    Tables: {
+      admins: {
+        Row: {
+          person_id: string
+        }
+        Insert: {
+          person_id: string
+        }
+        Update: {
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admins_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admins_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admins_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
+      audit_log: {
+        Row: {
+          action: string
+          actor_person_id: string | null
+          after: Json | null
+          before: Json | null
+          created_at: string | null
+          id: number
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          action: string
+          actor_person_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string | null
+          id?: never
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          action?: string
+          actor_person_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string | null
+          id?: never
+          record_id?: string | null
+          table_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_actor_person_id_fkey"
+            columns: ["actor_person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_log_actor_person_id_fkey"
+            columns: ["actor_person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_log_actor_person_id_fkey"
+            columns: ["actor_person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
+      divisions: {
+        Row: {
+          code: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          label: string
+          sort_order: number
+        }
+        Update: {
+          code?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          day_number: number | null
+          division: string | null
+          ends_at: string | null
+          event_year: number
+          id: string
+          location: string | null
+          notes: string | null
+          sort_order: number
+          starts_at: string | null
+          time_tbd: boolean
+          title: string
+        }
+        Insert: {
+          day_number?: number | null
+          division?: string | null
+          ends_at?: string | null
+          event_year: number
+          id?: string
+          location?: string | null
+          notes?: string | null
+          sort_order?: number
+          starts_at?: string | null
+          time_tbd?: boolean
+          title: string
+        }
+        Update: {
+          day_number?: number | null
+          division?: string | null
+          ends_at?: string | null
+          event_year?: number
+          id?: string
+          location?: string | null
+          notes?: string | null
+          sort_order?: number
+          starts_at?: string | null
+          time_tbd?: boolean
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_division_fkey"
+            columns: ["division"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      identities: {
+        Row: {
+          auth_user_id: string | null
+          created_at: string | null
+          email: string
+          id: string
+          is_primary: boolean
+          person_id: string
+          provider: string
+          verified_at: string | null
+        }
+        Insert: {
+          auth_user_id?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          is_primary?: boolean
+          person_id: string
+          provider: string
+          verified_at?: string | null
+        }
+        Update: {
+          auth_user_id?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_primary?: boolean
+          person_id?: string
+          provider?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "identities_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "identities_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "identities_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
+      people: {
+        Row: {
+          created_at: string
+          current_city: string | null
+          deceased: boolean
+          deceased_confirmed_at: string | null
+          deceased_confirmed_by: string | null
+          deceased_note: string | null
+          first_name: string
+          grad_year: number | null
+          id: string
+          is_anchor: boolean
+          last_name: string | null
+          member_no: number
+          needs_review: boolean
+          open_to_network: boolean
+          played_as: string | null
+          seed_division: string | null
+          seed_division_alt: string | null
+          seed_id: string | null
+          share_email: boolean
+          show_on_board: boolean
+        }
+        Insert: {
+          created_at?: string
+          current_city?: string | null
+          deceased?: boolean
+          deceased_confirmed_at?: string | null
+          deceased_confirmed_by?: string | null
+          deceased_note?: string | null
+          first_name: string
+          grad_year?: number | null
+          id?: string
+          is_anchor?: boolean
+          last_name?: string | null
+          member_no?: number
+          needs_review?: boolean
+          open_to_network?: boolean
+          played_as?: string | null
+          seed_division?: string | null
+          seed_division_alt?: string | null
+          seed_id?: string | null
+          share_email?: boolean
+          show_on_board?: boolean
+        }
+        Update: {
+          created_at?: string
+          current_city?: string | null
+          deceased?: boolean
+          deceased_confirmed_at?: string | null
+          deceased_confirmed_by?: string | null
+          deceased_note?: string | null
+          first_name?: string
+          grad_year?: number | null
+          id?: string
+          is_anchor?: boolean
+          last_name?: string | null
+          member_no?: number
+          needs_review?: boolean
+          open_to_network?: boolean
+          played_as?: string | null
+          seed_division?: string | null
+          seed_division_alt?: string | null
+          seed_id?: string | null
+          share_email?: boolean
+          show_on_board?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "people_deceased_confirmed_by_fkey"
+            columns: ["deceased_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_deceased_confirmed_by_fkey"
+            columns: ["deceased_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_deceased_confirmed_by_fkey"
+            columns: ["deceased_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "people_seed_division_alt_fkey"
+            columns: ["seed_division_alt"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "people_seed_division_fkey"
+            columns: ["seed_division"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      preapproved_emails: {
+        Row: {
+          consumed_at: string | null
+          consumed_by: string | null
+          email: string
+          note: string | null
+        }
+        Insert: {
+          consumed_at?: string | null
+          consumed_by?: string | null
+          email: string
+          note?: string | null
+        }
+        Update: {
+          consumed_at?: string | null
+          consumed_by?: string | null
+          email?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preapproved_emails_consumed_by_fkey"
+            columns: ["consumed_by"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preapproved_emails_consumed_by_fkey"
+            columns: ["consumed_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preapproved_emails_consumed_by_fkey"
+            columns: ["consumed_by"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
+      rsvps: {
+        Row: {
+          event_year: number
+          id: string
+          person_id: string
+          responded_at: string | null
+          src: string | null
+          status: string
+        }
+        Insert: {
+          event_year: number
+          id?: string
+          person_id: string
+          responded_at?: string | null
+          src?: string | null
+          status: string
+        }
+        Update: {
+          event_year?: number
+          id?: string
+          person_id?: string
+          responded_at?: string | null
+          src?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rsvps_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rsvps_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rsvps_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
+      sends: {
+        Row: {
+          bounce_type: string | null
+          bounced: boolean
+          complained: boolean
+          id: string
+          opened_at: string | null
+          person_id: string
+          sent_at: string | null
+          sequence_id: string
+        }
+        Insert: {
+          bounce_type?: string | null
+          bounced?: boolean
+          complained?: boolean
+          id?: string
+          opened_at?: string | null
+          person_id: string
+          sent_at?: string | null
+          sequence_id: string
+        }
+        Update: {
+          bounce_type?: string | null
+          bounced?: boolean
+          complained?: boolean
+          id?: string
+          opened_at?: string | null
+          person_id?: string
+          sent_at?: string | null
+          sequence_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "sends_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "sequences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sequences: {
+        Row: {
+          active: boolean
+          audience_states: string[]
+          id: string
+          key: string
+          offset_days: number
+        }
+        Insert: {
+          active?: boolean
+          audience_states: string[]
+          id?: string
+          key: string
+          offset_days: number
+        }
+        Update: {
+          active?: boolean
+          audience_states?: string[]
+          id?: string
+          key?: string
+          offset_days?: number
+        }
+        Relationships: []
+      }
+      stints: {
+        Row: {
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string | null
+          division: string
+          id: string
+          person_id: string
+          role: string
+          source: string
+          year: number
+        }
+        Insert: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string | null
+          division: string
+          id?: string
+          person_id: string
+          role?: string
+          source: string
+          year: number
+        }
+        Update: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string | null
+          division?: string
+          id?: string
+          person_id?: string
+          role?: string
+          source?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stints_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stints_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stints_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "stints_division_fkey"
+            columns: ["division"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
+      suggestions: {
+        Row: {
+          created_at: string | null
+          id: string
+          payload: Json
+          peer_verified_by: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_by: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          payload: Json
+          peer_verified_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_by: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          payload?: Json
+          peer_verified_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_by?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestions_peer_verified_by_fkey"
+            columns: ["peer_verified_by"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestions_peer_verified_by_fkey"
+            columns: ["peer_verified_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestions_peer_verified_by_fkey"
+            columns: ["peer_verified_by"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "suggestions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "suggestions_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestions_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestions_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
+      suppressions: {
+        Row: {
+          created_at: string | null
+          email: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          reason: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          reason?: string
+        }
+        Relationships: []
+      }
+      team_names: {
+        Row: {
+          confidence: string
+          division: string
+          end_year: number | null
+          id: string
+          name: string | null
+          start_year: number | null
+        }
+        Insert: {
+          confidence: string
+          division: string
+          end_year?: number | null
+          id?: string
+          name?: string | null
+          start_year?: number | null
+        }
+        Update: {
+          confidence?: string
+          division?: string
+          end_year?: number | null
+          id?: string
+          name?: string | null
+          start_year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_names_division_fkey"
+            columns: ["division"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      verifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          person_id: string
+          verified_by: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          person_id: string
+          verified_by: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          person_id?: string
+          verified_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verifications_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verifications_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verifications_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "verifications_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verifications_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verifications_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      board_people: {
+        Row: {
+          board_division: string | null
+          board_year: number | null
+          deceased: boolean | null
+          first_name: string | null
+          id: string | null
+          last_name: string | null
+          played_as: string | null
+          state: string | null
+          team_label: string | null
+        }
+        Relationships: []
+      }
+      board_year_counts: {
+        Row: {
+          board_year: number | null
+          claimed: number | null
+          going: number | null
+          total: number | null
+        }
+        Relationships: []
+      }
+      current_players: {
+        Row: {
+          division: string | null
+          person_id: string | null
+          year: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stints_division_fkey"
+            columns: ["division"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
+      identities_needing_second_email: {
+        Row: {
+          email: string | null
+          id: string | null
+          person_id: string | null
+        }
+        Insert: {
+          email?: string | null
+          id?: string | null
+          person_id?: string | null
+        }
+        Update: {
+          email?: string | null
+          id?: string | null
+          person_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "identities_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "identities_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "identities_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
+      person_board_placement: {
+        Row: {
+          board_division: string | null
+          board_year: number | null
+          person_id: string | null
+          stint_count: number | null
+        }
+        Insert: {
+          board_division?: never
+          board_year?: never
+          person_id?: string | null
+          stint_count?: never
+        }
+        Update: {
+          board_division?: never
+          board_year?: never
+          person_id?: string | null
+          stint_count?: never
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      current_person_id: { Args: never; Returns: string }
+      is_admin: { Args: never; Returns: boolean }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
