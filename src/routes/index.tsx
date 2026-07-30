@@ -10,7 +10,7 @@ import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
 import { SiteNav } from "@/components/SiteNav";
 import { SidelineLoop } from "@/components/board/SidelineLoop";
-import { countdown, editionEyebrow } from "@/lib/edition-format";
+import { countdown, editionEyebrow, resolveSeason } from "@/lib/edition-format";
 
 const boardQuery = queryOptions({
   queryKey: ["board"],
@@ -100,7 +100,9 @@ function BoardPage() {
     [groups, newestFirst],
   );
 
-  // Countdown comes from the current edition row, never a literal date.
+  // Season and countdown both come from the editions rows, never a literal date.
+  const season = resolveSeason(data.edition, data.nextEdition);
+  const inSeason = season.edition !== null;
   const clock = countdown(data.edition, data.nextEdition);
 
   const toggle = (code: string) =>
@@ -112,7 +114,13 @@ function BoardPage() {
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
       <SiteNav onClaim={() => openClaim()} />
-      <CounterBar claimed={data.totals.claimed} going={data.totals.going} clock={clock} />
+      <CounterBar
+        claimed={data.totals.claimed}
+        going={data.totals.going}
+        total={data.totals.total}
+        clock={clock}
+        inSeason={inSeason}
+      />
 
       <main className="mx-auto w-full max-w-[1320px] px-5 pb-24">
         <header className="pt-10 pb-8 md:pt-14">
@@ -161,17 +169,28 @@ function BoardPage() {
 function CounterBar({
   claimed,
   going,
+  total,
   clock,
+  inSeason,
 }: {
   claimed: number;
   going: number;
+  total: number;
   clock: { value: string; label: string };
+  inSeason: boolean;
 }) {
-  const figures = [
-    { value: String(claimed), label: "Claimed", color: "var(--pitt-royal)", dot: false },
-    { value: String(going), label: "Going", color: "var(--sabah-black)", dot: true },
-    { value: clock.value, label: clock.label, color: "var(--steel-ink)", dot: false },
-  ];
+  // Off season there is nothing to be going to, so the bar drops going and the
+  // countdown entirely and shows a figure that is useful all year instead.
+  const figures = inSeason
+    ? [
+        { value: String(claimed), label: "Claimed", color: "var(--pitt-royal)", dot: false },
+        { value: String(going), label: "Going", color: "var(--sabah-black)", dot: true },
+        { value: clock.value, label: clock.label, color: "var(--steel-ink)", dot: false },
+      ]
+    : [
+        { value: String(claimed), label: "Claimed", color: "var(--pitt-royal)", dot: false },
+        { value: String(total), label: "On the board", color: "var(--steel-ink)", dot: false },
+      ];
   return (
     <div
       className="sticky top-14 z-20 relative isolate overflow-hidden"
@@ -196,14 +215,22 @@ function CounterBar({
       <div className="relative mx-auto flex h-14 max-w-[1320px] items-center px-5 md:hidden" style={{ fontSize: 13 }}>
         <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--pitt-royal)" }}>{claimed} claimed</span>
         <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
-        <span className="inline-flex items-center gap-1.5" style={{ fontFamily: '"Space Mono", monospace', color: "var(--sabah-black)" }}>
-          <GoldDot />
-          {going} going
-        </span>
-        <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
-        <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}>
-          {clock.value} {clock.label.toLowerCase()}
-        </span>
+        {inSeason ? (
+          <>
+            <span className="inline-flex items-center gap-1.5" style={{ fontFamily: '"Space Mono", monospace', color: "var(--sabah-black)" }}>
+              <GoldDot />
+              {going} going
+            </span>
+            <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
+            <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}>
+              {clock.value} {clock.label.toLowerCase()}
+            </span>
+          </>
+        ) : (
+          <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}>
+            {total} on the board
+          </span>
+        )}
       </div>
     </div>
   );
