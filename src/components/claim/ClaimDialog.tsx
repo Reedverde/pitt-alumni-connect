@@ -24,6 +24,18 @@ export type ClaimTarget = {
 
 type Step = "name" | "status" | "email" | "stamp" | "requested";
 
+/** Quiet text link. Never a button, never gold, never equal weight. */
+const quietLink: React.CSSProperties = {
+  fontFamily: "var(--font-body)",
+  fontSize: 13,
+  fontWeight: 400,
+  color: "var(--sterling)",
+  background: "none",
+  border: "none",
+  padding: 0,
+  textDecoration: "none",
+};
+
 export function ClaimDialog({
   open,
   target,
