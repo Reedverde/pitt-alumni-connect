@@ -74,6 +74,11 @@ type PersonRow = {
   deceased: boolean;
 };
 
+/** Marks a people row as created by the anonymous RSVP endpoint. The row stays
+ *  off the board until the email behind it is verified; the marker is cleared
+ *  at that moment so an admin can hide the chip again permanently. */
+export const SELF_ADDED_SEED_PREFIX = "selfadd:";
+
 async function placement(personIds: string[]) {
   const { data } = await supabaseAdmin
     .from("person_board_placement")
