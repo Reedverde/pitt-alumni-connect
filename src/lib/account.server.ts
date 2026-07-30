@@ -23,14 +23,24 @@ export async function linkAuthUser(
 
   const personId = identity.person_id as string;
 
+  const verifiedAt = (identity.verified_at as string | null) ?? new Date().toISOString();
+
   await supabaseAdmin
     .from("identities")
     .update({
       auth_user_id: authUserId,
       provider,
-      verified_at: (identity.verified_at as string | null) ?? new Date().toISOString(),
+      verified_at: verifiedAt,
     })
     .eq("id", identity.id as string);
+
+  // The address someone proves they hold becomes the address we write to. One
+  // atomic call: the partial unique index would reject two primaries, and two
+  // separate statements would leave a window with none. A manual choice made
+  // on /me outranks this and is left alone by the function.
+  await supabaseAdmin.rpc("promote_verified_primary", {
+    _identity_id: identity.id as string,
+  });
 
   // A record created by the anonymous RSVP endpoint joins the board only once
   // its email is verified. Clearing the marker means this happens exactly once,
