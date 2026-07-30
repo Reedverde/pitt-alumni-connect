@@ -2,19 +2,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { adminMergePeople } from "@/lib/admin.functions";
+import { adminKeepPairSeparate, adminMergeDuplicatePair } from "@/lib/admin.functions";
 import type { AdminPerson, DuplicatePair } from "@/lib/admin.server";
-import { Empty, Num, Section, TypedConfirm, cellStyle, hairline, headStyle, inputStyle } from "./ui";
+import { Empty, Num, Section, cellStyle, hairline, headStyle, secondaryButton } from "./ui";
 
-function Side({
-  person,
-  survivor,
-  onPick,
-}: {
-  person: AdminPerson;
-  survivor: boolean;
-  onPick: () => void;
-}) {
+function Side({ person, survivor }: { person: AdminPerson; survivor: boolean }) {
   return (
     <div
       style={{
@@ -23,10 +15,9 @@ function Side({
         padding: 12,
       }}
     >
-      <label className="flex items-center gap-2" style={{ fontSize: 13 }}>
-        <input type="radio" checked={survivor} onChange={onPick} />
-        <span className="label-caps">{survivor ? "Survivor" : "Keep as survivor"}</span>
-      </label>
+      <p className="label-caps" style={{ color: survivor ? "var(--pitt-royal)" : "var(--sterling)" }}>
+        {survivor ? "Survivor, kept" : "Folded in, deleted"}
+      </p>
       <table className="mt-2 w-full" style={{ borderCollapse: "collapse" }}>
         <tbody>
           {(
@@ -54,22 +45,49 @@ function Side({
   );
 }
 
-function PairRow({ pair, onDone }: { pair: DuplicatePair; onDone: () => void }) {
-  const merge = useServerFn(adminMergePeople);
-  const [survivorId, setSurvivorId] = useState(pair.a.id);
-  const [playedAs, setPlayedAs] = useState("");
+function name(p: AdminPerson) {
+  return [p.first_name, p.last_name].filter(Boolean).join(" ");
+}
+
+function PairRow({
+  pair,
+  onDone,
+  onDismiss,
+}: {
+  pair: DuplicatePair;
+  onDone: () => void;
+  onDismiss: () => void;
+}) {
+  const merge = useServerFn(adminMergeDuplicatePair);
+  const keepSeparate = useServerFn(adminKeepPairSeparate);
+  const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const loserId = survivorId === pair.a.id ? pair.b.id : pair.a.id;
+  const survivor = pair.survivorId === pair.a.id ? pair.a : pair.b;
+  const loser = pair.survivorId === pair.a.id ? pair.b : pair.a;
 
-  const run = async () => {
+  const runMerge = async () => {
     setBusy(true);
     try {
-      await merge({ data: { survivorId, loserId, playedAs: playedAs || null } });
-      toast.success("Merged. Child rows repointed and the loser deleted.");
+      await merge({ data: { survivorId: pair.survivorId, loserId: pair.loserId } });
+      toast.success("Merged. Child rows repointed and the ruling recorded.");
       onDone();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Merge failed.");
+    } finally {
+      setBusy(false);
+      setConfirming(false);
+    }
+  };
+
+  const runKeep = async () => {
+    setBusy(true);
+    try {
+      await keepSeparate({ data: { aId: pair.a.id, bId: pair.b.id, note: null } });
+      toast.success("Ruled separate. This pair will not surface again.");
+      onDone();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't record the ruling.");
     } finally {
       setBusy(false);
     }
@@ -81,39 +99,100 @@ function PairRow({ pair, onDone }: { pair: DuplicatePair; onDone: () => void }) 
         Similarity <Num>{pair.score.toFixed(2)}</Num>
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Side person={pair.a} survivor={survivorId === pair.a.id} onPick={() => setSurvivorId(pair.a.id)} />
-        <Side person={pair.b} survivor={survivorId === pair.b.id} onPick={() => setSurvivorId(pair.b.id)} />
+        <Side person={survivor} survivor />
+        <Side person={loser} survivor={false} />
       </div>
-      <div className="mt-3 grid gap-3 sm:grid-cols-[240px_1fr] sm:items-end">
-        <div>
-          <label className="label-caps block" style={{ color: "var(--sterling)" }}>
-            Played as on the survivor
-          </label>
-          <input
-            value={playedAs}
-            onChange={(e) => setPlayedAs(e.target.value)}
-            placeholder={pair.a.played_as ?? pair.b.played_as ?? "keep the survivor's"}
-            style={{ ...inputStyle, marginTop: 6 }}
-          />
-        </div>
-        <TypedConfirm phrase="MERGE" label="Merge and delete the other record" onConfirm={run} busy={busy} />
+
+      <div
+        className="mt-3"
+        style={{ border: hairline, borderRadius: 7, padding: 12, fontSize: 13 }}
+      >
+        <p className="label-caps" style={{ color: "var(--sterling)" }}>
+          What moves
+        </p>
+        <p className="mt-2" style={{ color: "var(--steel-ink)" }}>
+          Before: <strong>{name(survivor)}</strong> keeps its own rows.{" "}
+          <strong>{name(loser)}</strong> holds <Num>{pair.moves.stints}</Num> stints,{" "}
+          <Num>{pair.moves.identities}</Num> identities and <Num>{pair.moves.rsvps}</Num> RSVPs.
+        </p>
+        <p className="mt-1" style={{ color: "var(--steel-ink)" }}>
+          After: all of those point at <strong>{name(survivor)}</strong>, member no{" "}
+          <Num>{survivor.member_no}</Num>, and the record for <strong>{name(loser)}</strong>, member
+          no <Num>{loser.member_no}</Num>, is deleted. There is no undo.
+        </p>
+        <p className="mt-1" style={{ color: "var(--sterling)" }}>
+          Survivor picked automatically: more stints, ties to the lower member number.
+        </p>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {confirming ? (
+          <>
+            <button
+              type="button"
+              style={secondaryButton}
+              disabled={busy}
+              onClick={runMerge}
+            >
+              Confirm merge
+            </button>
+            <button
+              type="button"
+              style={{ ...secondaryButton, opacity: 0.7 }}
+              disabled={busy}
+              onClick={() => setConfirming(false)}
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            style={secondaryButton}
+            disabled={busy}
+            onClick={() => setConfirming(true)}
+          >
+            Merge
+          </button>
+        )}
+        <button type="button" style={secondaryButton} disabled={busy} onClick={runKeep}>
+          Keep separate, permanently
+        </button>
+        <button
+          type="button"
+          style={{ ...secondaryButton, opacity: 0.7 }}
+          disabled={busy}
+          onClick={onDismiss}
+        >
+          Not now, hide until the next scan
+        </button>
       </div>
     </div>
   );
 }
 
 export function MergeTool({ pairs, onDone }: { pairs: DuplicatePair[]; onDone: () => void }) {
+  const [dismissed, setDismissed] = useState<string[]>([]);
+  const visible = pairs.filter((p) => !dismissed.includes(p.key));
+
   return (
-    <Section eyebrow="Name collisions" title="Merge duplicates">
+    <Section eyebrow="Name collisions" title="Duplicate rulings">
       <p className="mb-2" style={{ fontSize: 13, color: "var(--sterling)" }}>
-        Merging repoints stints, identities, RSVPs, verifications and suggestions to the survivor,
-        then deletes the other record. The whole before and after goes to the audit log. There is no
-        undo.
+        Merging repoints stints, identities, RSVPs, verifications and suggestions onto the survivor,
+        then deletes the other record and records a ruling. Keep separate is permanent and the pair
+        never surfaces again. Not now stores nothing, so the pair returns on the next scan.
       </p>
-      {pairs.length === 0 ? (
-        <Empty>No candidate pairs by name and overlapping years.</Empty>
+      {visible.length === 0 ? (
+        <Empty>No unruled candidate pairs by name and overlapping years.</Empty>
       ) : (
-        pairs.map((pair) => <PairRow key={pair.key} pair={pair} onDone={onDone} />)
+        visible.map((pair) => (
+          <PairRow
+            key={pair.key}
+            pair={pair}
+            onDone={onDone}
+            onDismiss={() => setDismissed((d) => [...d, pair.key])}
+          />
+        ))
       )}
     </Section>
   );

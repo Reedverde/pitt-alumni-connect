@@ -1,13 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type {
-  AdminDashboard,
-  AdminPerson,
-  MailStatus,
-  PeopleFilter,
-  RosterLine,
-} from "./admin.server";
+import type { AdminDashboard, AdminPerson, MailStatus, RosterLine } from "./admin.server";
 
 /** Every read below asks is_admin() before it touches a table, and returns an
  *  empty payload — not an error — when the caller is not an admin, so the
@@ -23,18 +17,11 @@ export const getAdminDashboard = createServerFn({ method: "GET" })
 
 export const getAdminPeople = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (input: { query?: string; filter?: PeopleFilter; division?: string | null }) => input,
-  )
-  .handler(async ({ data, context }): Promise<AdminPerson[]> => {
+  .handler(async ({ context }): Promise<AdminPerson[]> => {
     const mod = await import("./admin.server");
     const actor = await mod.adminActor(context.supabase);
     if (!actor) return [];
-    return mod.listPeople({
-      query: String(data.query ?? "").slice(0, 120),
-      filter: (data.filter ?? "all") as PeopleFilter,
-      division: data.division ?? null,
-    });
+    return mod.listPeople();
   });
 
 export const adminUpdatePerson = createServerFn({ method: "POST" })
@@ -121,6 +108,30 @@ export const adminMergePeople = createServerFn({ method: "POST" })
     const actor = await mod.adminActor(context.supabase);
     if (!actor) return { ok: false };
     return mod.mergePeople(actor, data);
+  });
+
+export const adminMergeDuplicatePair = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { survivorId: string; loserId: string }) => input)
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return { ok: false };
+    return mod.mergeDuplicatePair(actor, data);
+  });
+
+export const adminKeepPairSeparate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { aId: string; bId: string; note?: string | null }) => input)
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return { ok: false };
+    return mod.rulePairSeparate(actor, {
+      aId: data.aId,
+      bId: data.bId,
+      note: (data.note ?? null) as string | null,
+    });
   });
 
 export const adminExportCsv = createServerFn({ method: "POST" })

@@ -243,6 +243,64 @@ export type Database = {
         }
         Relationships: []
       }
+      duplicate_rulings: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          person_a_id: string
+          person_b_id: string
+          ruled_at: string
+          ruled_by: string | null
+          ruling: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          person_a_id: string
+          person_b_id: string
+          ruled_at?: string
+          ruled_by?: string | null
+          ruling: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          person_a_id?: string
+          person_b_id?: string
+          ruled_at?: string
+          ruled_by?: string | null
+          ruling?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duplicate_rulings_ruled_by_fkey"
+            columns: ["ruled_by"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duplicate_rulings_ruled_by_fkey"
+            columns: ["ruled_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duplicate_rulings_ruled_by_fkey"
+            columns: ["ruled_by"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
       editions: {
         Row: {
           created_at: string
