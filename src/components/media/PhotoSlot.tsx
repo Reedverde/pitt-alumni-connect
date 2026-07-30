@@ -61,6 +61,7 @@ export function PhotoSlot({
   fullColor = false,
   outline,
   outlineWidth = 3,
+  bare = false,
   className,
 }: PhotoSlotProps) {
   const { data: slots } = usePhotoSlots();
@@ -100,6 +101,7 @@ export function PhotoSlot({
               filter: fullColor ? undefined : DUOTONE,
             }}
           />
+          {!bare && (
           <div
             style={{
               position: "absolute",
@@ -117,6 +119,7 @@ export function PhotoSlot({
             <span style={labelStyle}>{label} →</span>
             <span style={{ ...numeralStyle, alignSelf: "flex-end" }}>{index}</span>
           </div>
+          )}
         </NotchedBox>
       </figure>
     );
