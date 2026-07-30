@@ -315,13 +315,16 @@ function Hero({
         <div
           aria-hidden={false}
           className="pointer-events-none relative z-10 mx-auto mt-6 w-[86%] max-w-[560px] md:absolute md:right-5 md:bottom-10 md:mt-0 md:w-[42%]"
-          style={{ transform: "rotate(-4deg)" }}
+          style={{ transform: "rotate(5deg)" }}
         >
           <PhotoSlot
             ratio="4 / 3"
             index="01"
             label="Group shot, past alumni weekend"
             slotKey="weekend_hero"
+            fullColor
+            outline="var(--pure-white)"
+            outlineWidth={4}
             eager
           />
         </div>

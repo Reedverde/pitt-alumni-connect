@@ -10,6 +10,8 @@ type NotchedBoxProps = {
   stroke?: string;
   strokeWidth?: number;
   dashed?: boolean;
+  /** Draw the outline above the content, so a clipped photo cannot cover it. */
+  strokeOnTop?: boolean;
   /** Background fill, clipped to the notched shape. */
   fill?: string;
   /**
@@ -33,6 +35,7 @@ export function NotchedBox({
   stroke,
   strokeWidth = 1.5,
   dashed = false,
+  strokeOnTop = false,
   fill,
   clipContent = false,
   className,
@@ -77,7 +80,7 @@ export function NotchedBox({
       {fill && (
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: fill, clipPath }} />
       )}
-      {showOutline && (
+      {showOutline && !strokeOnTop && (
         <svg
           aria-hidden="true"
           width={size.w}
@@ -105,6 +108,23 @@ export function NotchedBox({
       >
         {children}
       </div>
+      {showOutline && strokeOnTop && (
+        <svg
+          aria-hidden="true"
+          width={size.w}
+          height={size.h}
+          viewBox={`0 0 ${size.w} ${size.h}`}
+          style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "visible" }}
+        >
+          <polygon
+            points={points}
+            fill="none"
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            strokeDasharray={dashed ? "6 5" : undefined}
+          />
+        </svg>
+      )}
     </div>
   );
 }

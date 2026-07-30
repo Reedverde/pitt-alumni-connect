@@ -22,6 +22,11 @@ type PhotoSlotProps = {
   alt?: string;
   /** The one slot above the fold. Everything else lazy loads. */
   eager?: boolean;
+  /** Skip the duotone treatment and show the photograph in full colour. */
+  fullColor?: boolean;
+  /** Outline colour drawn on top of the photograph, e.g. "var(--pure-white)". */
+  outline?: string;
+  outlineWidth?: number;
   className?: string;
 };
 
@@ -51,6 +56,9 @@ export function PhotoSlot({
   src,
   alt,
   eager = false,
+  fullColor = false,
+  outline,
+  outlineWidth = 3,
   className,
 }: PhotoSlotProps) {
   const { data: slots } = usePhotoSlots();
@@ -64,7 +72,15 @@ export function PhotoSlot({
   if (resolvedSrc) {
     return (
       <figure className={className} style={{ margin: 0 }}>
-        <NotchedBox clipContent corners={corners} notch={notch} style={frame}>
+        <NotchedBox
+          clipContent
+          strokeOnTop
+          corners={corners}
+          notch={notch}
+          stroke={outline}
+          strokeWidth={outlineWidth}
+          style={frame}
+        >
           <img
             src={resolvedSrc}
             alt={resolvedAlt}
@@ -79,7 +95,7 @@ export function PhotoSlot({
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              filter: DUOTONE,
+              filter: fullColor ? undefined : DUOTONE,
             }}
           />
           <div
