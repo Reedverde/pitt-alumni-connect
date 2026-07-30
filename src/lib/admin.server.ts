@@ -739,11 +739,28 @@ export type DuplicatePair = {
   a: AdminPerson;
   b: AdminPerson;
   score: number;
+  /** Chosen automatically: more stints wins, ties go to the lower member_no. */
+  survivorId: string;
+  loserId: string;
+  moves: { stints: number; identities: number; rsvps: number };
 };
+
+function pairKey(a: string, b: string) {
+  return a < b ? `${a}:${b}` : `${b}:${a}`;
+}
+
+async function ruledPairKeys(): Promise<Set<string>> {
+  const { data } = await supabaseAdmin
+    .from("duplicate_rulings")
+    .select("person_a_id, person_b_id");
+  return new Set(
+    (data ?? []).map((r) => pairKey(r.person_a_id as string, r.person_b_id as string)),
+  );
+}
 
 export async function duplicateCandidates(): Promise<DuplicatePair[]> {
   const { data } = await supabaseAdmin.from("people").select(PERSON_COLUMNS).limit(3000);
-  const ctx = await loadContext();
+  const [ctx, ruled] = await Promise.all([loadContext(), ruledPairKeys()]);
   const rows = (data ?? []) as PersonRow[];
   const pairs: { a: PersonRow; b: PersonRow; score: number }[] = [];
 
@@ -751,6 +768,7 @@ export async function duplicateCandidates(): Promise<DuplicatePair[]> {
     for (let j = i + 1; j < rows.length; j++) {
       const a = rows[i];
       const b = rows[j];
+      if (ruled.has(pairKey(a.id, b.id))) continue;
       const score = nameScore(fullName(a), fullName(b));
       if (score < 0.86) continue;
       const ya = ctx.placement.get(a.id)?.board_year ?? a.grad_year;
@@ -768,12 +786,94 @@ export async function duplicateCandidates(): Promise<DuplicatePair[]> {
     ctx,
   );
   const byId = new Map(decorated.map((p) => [p.id, p]));
-  return top.map((p) => ({
-    key: `${p.a.id}:${p.b.id}`,
-    a: byId.get(p.a.id)!,
-    b: byId.get(p.b.id)!,
-    score: p.score,
-  }));
+  const out: DuplicatePair[] = [];
+  for (const p of top) {
+    const a = byId.get(p.a.id)!;
+    const b = byId.get(p.b.id)!;
+    const survivor =
+      a.stint_count !== b.stint_count
+        ? a.stint_count > b.stint_count
+          ? a
+          : b
+        : a.member_no <= b.member_no
+          ? a
+          : b;
+    const loser = survivor.id === a.id ? b : a;
+    const [identRes, rsvpRes] = await Promise.all([
+      supabaseAdmin
+        .from("identities")
+        .select("id", { count: "exact", head: true })
+        .eq("person_id", loser.id),
+      supabaseAdmin
+        .from("rsvps")
+        .select("id", { count: "exact", head: true })
+        .eq("person_id", loser.id),
+    ]);
+    out.push({
+      key: pairKey(a.id, b.id),
+      a,
+      b,
+      score: p.score,
+      survivorId: survivor.id,
+      loserId: loser.id,
+      moves: {
+        stints: loser.stint_count,
+        identities: identRes.count ?? 0,
+        rsvps: rsvpRes.count ?? 0,
+      },
+    });
+  }
+  return out;
+}
+
+async function writeRuling(
+  actor: string | null,
+  aId: string,
+  bId: string,
+  ruling: "keep_separate" | "merged",
+  note: string | null,
+) {
+  const [first, second] = aId < bId ? [aId, bId] : [bId, aId];
+  await supabaseAdmin.from("duplicate_rulings").upsert(
+    {
+      person_a_id: first,
+      person_b_id: second,
+      ruling,
+      ruled_by: actor,
+      ruled_at: new Date().toISOString(),
+      note,
+    },
+    { onConflict: "person_a_id,person_b_id" },
+  );
+}
+
+/** "Keep separate" is permanent: the pair never surfaces on a future scan. */
+export async function rulePairSeparate(
+  actor: string | null,
+  input: { aId: string; bId: string; note: string | null },
+) {
+  if (input.aId === input.bId) throw new Error("Pick two different records.");
+  await writeRuling(actor, input.aId, input.bId, "keep_separate", input.note?.trim() || null);
+  await audit(actor, "duplicate_keep_separate", "duplicate_rulings", null, null, {
+    person_a_id: input.aId,
+    person_b_id: input.bId,
+    note: input.note ?? null,
+  });
+  return { ok: true };
+}
+
+/** Merge with the survivor already decided by the scan, then record the ruling. */
+export async function mergeDuplicatePair(
+  actor: string | null,
+  input: { survivorId: string; loserId: string },
+) {
+  await mergePeople(actor, {
+    survivorId: input.survivorId,
+    loserId: input.loserId,
+    playedAs: null,
+  });
+  await writeRuling(actor, input.survivorId, input.loserId, "merged", null);
+  return { ok: true };
 }
 
 export async function mergePeople(
