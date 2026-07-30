@@ -8,6 +8,7 @@ import { finalizeLogin } from "@/lib/account.functions";
 import { requestSignInLink } from "@/lib/signin.functions";
 import { useEditionEyebrow } from "@/lib/useEdition";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
+import { Lockup } from "@/components/Lockup";
 import { FieldLabel, Notice, fieldStyle, primaryButton, secondaryButton } from "@/components/claim/ui";
 
 export const Route = createFileRoute("/auth")({
@@ -96,7 +97,22 @@ function AuthPage() {
 
   return (
     <main className="mx-auto w-full max-w-[520px] px-5 py-16">
-      <SlashEyebrow>{eyebrow}</SlashEyebrow>
+      <div className="flex flex-col items-center">
+        <Lockup />
+        <p
+          className="mt-2"
+          style={{
+            fontFamily: '"Space Grotesk", sans-serif',
+            fontSize: 13,
+            color: "var(--sterling)",
+          }}
+        >
+          Alumni Weekend
+        </p>
+      </div>
+      <div className="mt-10">
+        <SlashEyebrow>{eyebrow}</SlashEyebrow>
+      </div>
       <h1 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
         SIGN IN
       </h1>
