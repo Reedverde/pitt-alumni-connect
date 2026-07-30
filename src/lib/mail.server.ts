@@ -16,6 +16,93 @@ import { logAuthAttempt } from "./auth-attempts.server";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
+/** The only kind of message allowed out while outbound email is paused. The
+ *  allow list is by message kind, not by calling function: a test send or a
+ *  party-size link is not a sign-in link even though it shares the code path. */
+const TRANSACTIONAL_KINDS = new Set(["magic_link"]);
+
+export type OutboundEmailMode = "transactional_only" | "all";
+
+/** Read of the single switch. Fails closed: if the setting cannot be read we
+ *  behave as though everything except sign-in links is paused. */
+export async function outboundEmailMode(): Promise<OutboundEmailMode> {
+  try {
+    const { data } = await supabaseAdmin
+      .from("app_settings")
+      .select("value")
+      .eq("key", "outbound_email_mode")
+      .maybeSingle();
+    return (data as { value?: string } | null)?.value === "all" ? "all" : "transactional_only";
+  } catch {
+    return "transactional_only";
+  }
+}
+
+export function outboundEmailModeSentence(mode: OutboundEmailMode) {
+  return mode === "all"
+    ? "Outbound email: on. Every message type can be sent."
+    : "Outbound email: paused. Only sign-in links are being sent.";
+}
+
+type DeliverInput = {
+  kind: string;
+  to: string;
+  personId: string | null;
+  subject: string;
+  text: string;
+  html: string;
+};
+
+/** THE CHOKE POINT. Nothing else in this codebase may call the Resend send
+ *  endpoint. Every message is checked against the outbound email mode here,
+ *  and a refusal writes a blocked row before returning. */
+async function resendDeliver(
+  input: DeliverInput,
+): Promise<{ ok: boolean; messageId: string | null; error: string | null; blocked?: true }> {
+  const { apiKey, fromAddress, fromName, replyTo } = mailConfig();
+  const mode = await outboundEmailMode();
+
+  if (mode !== "all" && !TRANSACTIONAL_KINDS.has(input.kind)) {
+    const reason = `outbound email is paused (transactional_only); "${input.kind}" is not a sign-in link`;
+    await logSend({
+      personId: input.personId,
+      kind: input.kind,
+      toEmail: input.to,
+      provider: "none",
+      providerMessageId: null,
+      status: "blocked",
+      error: reason,
+    });
+    console.warn(`[mail] blocked: ${reason}`);
+    return { ok: false, messageId: null, error: reason, blocked: true };
+  }
+
+  const headers = unsubscribeHeaders(input.to);
+  const res = await fetch(RESEND_ENDPOINT, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: `${fromName} <${fromAddress}>`,
+      to: [input.to],
+      subject: input.subject,
+      text: input.text,
+      html: input.html,
+      ...(replyTo ? { reply_to: replyTo } : {}),
+      ...(Object.keys(headers).length ? { headers } : {}),
+    }),
+  });
+
+  const payload = (await res.json().catch(() => null)) as { id?: string; message?: string } | null;
+  if (!res.ok) {
+    return {
+      ok: false,
+      messageId: null,
+      error: `Resend refused [${res.status}]: ${payload?.message ?? "unknown error"}`,
+    };
+  }
+  return { ok: true, messageId: payload?.id ?? null, error: null };
+}
+
 /** Sender identity is configuration, never code. The domain moves when the
  *  project's own domain is delegated: that is a secret change, not a deploy. */
 function mailConfig() {
