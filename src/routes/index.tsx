@@ -324,6 +324,7 @@ function Hero({
             label="Group shot, past alumni weekend"
             slotKey="weekend_hero"
             fullColor
+            bare
             outline="var(--pure-white)"
             outlineWidth={4}
             eager
