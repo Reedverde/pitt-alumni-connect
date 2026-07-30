@@ -600,7 +600,7 @@ export type Database = {
           id: string
           kind: string
           opened_at: string | null
-          person_id: string
+          person_id: string | null
           provider: string | null
           provider_message_id: string | null
           sent_at: string | null
@@ -617,7 +617,7 @@ export type Database = {
           id?: string
           kind?: string
           opened_at?: string | null
-          person_id: string
+          person_id?: string | null
           provider?: string | null
           provider_message_id?: string | null
           sent_at?: string | null
@@ -634,7 +634,7 @@ export type Database = {
           id?: string
           kind?: string
           opened_at?: string | null
-          person_id?: string
+          person_id?: string | null
           provider?: string | null
           provider_message_id?: string | null
           sent_at?: string | null

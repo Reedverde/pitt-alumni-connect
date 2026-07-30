@@ -82,10 +82,18 @@ export async function checkSendingDomain(force = false): Promise<DomainCheck> {
         }
       | null;
     if (!res.ok) {
+      // A sending-only (restricted) Resend key cannot read /domains. That is a
+      // key scope limit, not an unverified domain: refusing to send here would
+      // silently downgrade every message to the capped built-in mailer. Resend
+      // itself rejects a send from an unverified domain, so let the send be the
+      // check and say plainly that we could not confirm it up front.
+      const restricted = res.status === 401 || res.status === 403;
       value = {
-        ok: false,
+        ok: restricted,
         domain,
-        detail: `Resend refused the domain list [${res.status}]: ${payload?.message ?? "unknown error"}`,
+        detail: restricted
+          ? `Cannot read the Resend domain list with this API key (${payload?.message ?? "restricted key"}). Sending anyway: Resend rejects an unverified from-domain at send time. Tracking cannot be enforced from here; turn click and open tracking off on ${domain} in the Resend dashboard.`
+          : `Resend refused the domain list [${res.status}]: ${payload?.message ?? "unknown error"}`,
         ...blank,
       };
     } else {
