@@ -118,6 +118,8 @@ export const updateMyProfile = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const first = data.first_name.trim().slice(0, 80);
     if (!first) throw new Error("Your name can't be blank.");
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId) throw new Error("Forbidden");
     // The person wins over seed data: saved outright, never queued for review.
     const { error } = await context.supabase
       .from("people")
@@ -129,9 +131,8 @@ export const updateMyProfile = createServerFn({ method: "POST" })
         show_on_board: data.show_on_board,
         share_email: data.share_email,
         open_to_network: data.open_to_network,
-        needs_review: false,
       })
-      .eq("id", data.personId);
+      .eq("id", personId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -142,9 +143,11 @@ export const addMyEmail = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const email = data.email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) throw new Error("That email doesn't look right.");
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId) throw new Error("Forbidden");
     const { error } = await context.supabase
       .from("identities")
-      .insert({ person_id: data.personId, email, provider: "magic", is_primary: false });
+      .insert({ person_id: personId, email, provider: "magic", is_primary: false });
     if (error) throw new Error("Couldn't add that address.");
     return { ok: true };
   });
@@ -153,7 +156,13 @@ export const removeMyEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("identities").delete().eq("id", data.id);
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId) throw new Error("Forbidden");
+    const { error } = await context.supabase
+      .from("identities")
+      .delete()
+      .eq("id", data.id)
+      .eq("person_id", personId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -162,15 +171,18 @@ export const setPrimaryEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { personId: string; id: string }) => input)
   .handler(async ({ data, context }) => {
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId) throw new Error("Forbidden");
     await context.supabase
       .from("identities")
       .update({ is_primary: false, primary_set_manually_at: null })
-      .eq("person_id", data.personId);
+      .eq("person_id", personId);
     const { error } = await context.supabase
       .from("identities")
       // Stamping the manual choice stops a later verification from moving it.
       .update({ is_primary: true, primary_set_manually_at: new Date().toISOString() })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .eq("person_id", personId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -180,15 +192,21 @@ export const saveStint = createServerFn({ method: "POST" })
   .inputValidator((input: { id?: string | null; personId: string; division: string; role: string; year: number }) => input)
   .handler(async ({ data, context }) => {
     if (data.year === CURRENT_YEAR) throw new Error("The current season can't be edited.");
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId) throw new Error("Forbidden");
     const payload = {
-      person_id: data.personId,
+      person_id: personId,
       division: data.division,
       role: data.role,
       year: data.year,
       source: "self",
     };
     const { error } = data.id
-      ? await context.supabase.from("stints").update(payload).eq("id", data.id)
+      ? await context.supabase
+          .from("stints")
+          .update(payload)
+          .eq("id", data.id)
+          .eq("person_id", personId)
       : await context.supabase.from("stints").insert(payload);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -198,7 +216,13 @@ export const removeStint = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("stints").delete().eq("id", data.id);
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId) throw new Error("Forbidden");
+    const { error } = await context.supabase
+      .from("stints")
+      .delete()
+      .eq("id", data.id)
+      .eq("person_id", personId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -209,10 +233,12 @@ export const setMyRsvp = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { currentEditionYear } = await import("./editions.server");
     const eventYear = await currentEditionYear();
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId) throw new Error("Forbidden");
     const { data: existing } = await context.supabase
       .from("rsvps")
       .select("id")
-      .eq("person_id", data.personId)
+      .eq("person_id", personId)
       .eq("event_year", eventYear)
       .maybeSingle();
     const { error } = existing
@@ -220,9 +246,10 @@ export const setMyRsvp = createServerFn({ method: "POST" })
           .from("rsvps")
           .update({ status: data.status, responded_at: new Date().toISOString() })
           .eq("id", existing.id as string)
+          .eq("person_id", personId)
       : await context.supabase
           .from("rsvps")
-          .insert({ person_id: data.personId, event_year: eventYear, status: data.status, src: "email" });
+          .insert({ person_id: personId, event_year: eventYear, status: data.status, src: "email" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -242,8 +269,10 @@ export const suggestNewPerson = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     if (!data.first_name.trim()) throw new Error("Please enter a name.");
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId) throw new Error("Forbidden");
     const { error } = await context.supabase.from("suggestions").insert({
-      submitted_by: data.submittedBy,
+      submitted_by: personId,
       type: "new_person",
       status: "pending",
       payload: {
