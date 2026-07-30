@@ -311,12 +311,12 @@ function Hero({
           </h1>
         )}
 
-        {/* The photograph rises out of the bottom edge on a hard diagonal and is
-            cropped by the hero. Rotated toward 45 degrees, never straightened. */}
+        {/* The photograph rises out of the bottom edge on a hard diagonal,
+            centred in the hero and cropped by it. */}
         <div
           aria-hidden={false}
-          className="pointer-events-none absolute z-10 right-[-6%] bottom-[-26%] w-[78%] max-w-[420px] md:right-[2%] md:bottom-[-22%] md:w-[46%] md:max-w-[620px]"
-          style={{ transform: "rotate(38deg)", transformOrigin: "50% 100%" }}
+          className="pointer-events-none absolute left-1/2 z-10 bottom-[-24%] w-[80%] max-w-[440px] md:bottom-[-20%] md:w-[48%] md:max-w-[640px]"
+          style={{ transform: "translateX(-50%) rotate(38deg)", transformOrigin: "50% 100%" }}
         >
           <PhotoSlot
             ratio="4 / 3"
@@ -325,13 +325,17 @@ function Hero({
             slotKey="weekend_hero"
             fullColor
             bare
+            radius="28px 28px 0 0"
             outline="var(--pure-white)"
-            outlineWidth={4}
+            outlineWidth={7}
             eager
           />
         </div>
+      </div>
 
-        <div className="relative z-20 mt-8 md:max-w-[540px]">
+      {/* The copy sits below the picture so the hero can stay a picture. */}
+      <div className="mx-auto w-full max-w-[1320px] px-5 pb-12 md:pb-16">
+        <div className="md:max-w-[540px]">
           <p style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 20, color: "var(--concrete)" }}>
             Pittsburgh and Oakland. Three days. Everybody who ever played.
           </p>
