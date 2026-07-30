@@ -80,14 +80,12 @@ function EditionArchivePage() {
           </p>
         </header>
 
-        <PhotoSlot ratio="16 / 9" index="01" corners={["tl", "br"]} label={`Alumni weekend, ${edition.event_year}`} />
 
         {days.map((dayNumber) => {
           const date = editionDay(edition, dayNumber);
           return (
             <section key={dayNumber} className="mt-10">
               <NotchedBox
-                corners={["tl"]}
                 notch={NOTCH_LG}
                 stroke="var(--chalk)"
                 fill="var(--pure-white)"

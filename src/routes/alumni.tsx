@@ -124,7 +124,6 @@ function AlumniPage() {
             slotKey="why_founding_1998"
             index="01"
             ratio="3 / 4"
-            corners={["tl"]}
           />
           <PhotoSlot
             className="md:col-span-8"
@@ -132,7 +131,6 @@ function AlumniPage() {
             slotKey="why_back_to_back_2013"
             index="02"
             ratio="16 / 9"
-            corners={["br"]}
           />
           <StatementCard
             className="md:col-span-7"
@@ -184,7 +182,6 @@ function AlumniPage() {
             slotKey="why_return_2026"
             index="04"
             ratio="4 / 3"
-            corners={["bl"]}
           />
         </section>
 

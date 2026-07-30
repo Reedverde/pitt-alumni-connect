@@ -169,7 +169,6 @@ function WeekendPage() {
               className="mt-3"
               ratio="3 / 1"
               index="01"
-              corners={["tl", "br"]}
               label="Group shot, past alumni weekend"
               slotKey="weekend_hero"
               eager
@@ -345,7 +344,6 @@ function OffSeason({
               className="mt-3"
               ratio="3 / 1"
               index="01"
-              corners={["tl", "br"]}
               label="Group shot, past alumni weekend"
               slotKey="weekend_hero"
               eager
@@ -382,7 +380,6 @@ function PastEditions({ editions }: { editions: { event_year: number; title: str
           </a>
         ))}
       </div>
-      <PhotoSlot className="mt-4" ratio="3 / 1" index="02" corners={["br"]} label="Past weekends" />
     </section>
   );
 }
@@ -400,7 +397,6 @@ function EventTile({
 }) {
   return (
     <NotchedBox
-      corners={corners}
       notch={NOTCH_SM}
       stroke="var(--chalk)"
       fill="var(--pure-white)"

@@ -321,7 +321,6 @@ function Hero({
         <PhotoSlot
           ratio="16 / 9"
           index="01"
-          corners={["tl", "br"]}
           label="Group shot, past alumni weekend"
           slotKey="weekend_hero"
         />
