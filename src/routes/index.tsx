@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
@@ -8,7 +8,8 @@ import { NameChip } from "@/components/board/NameChip";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
-import { primaryButton } from "@/components/claim/ui";
+import { SiteNav } from "@/components/SiteNav";
+import { SidelineLoop } from "@/components/board/SidelineLoop";
 
 const boardQuery = queryOptions({
   queryKey: ["board"],
@@ -158,43 +159,6 @@ function BoardPage() {
   );
 }
 
-function SiteNav({ onClaim }: { onClaim: () => void }) {
-  return (
-    <nav
-      className="sticky top-0 z-30 flex h-14 items-center gap-3 px-5"
-      style={{ background: "var(--pure-white)", borderBottom: "1px solid var(--chalk)" }}
-    >
-      <span
-        aria-hidden="true"
-        className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-full"
-        style={{ border: "1.5px solid var(--sabah-black)", fontFamily: '"Space Mono", monospace', fontSize: 11, fontWeight: 700, color: "var(--sabah-black)" }}
-      >
-        PU
-      </span>
-      <span
-        style={{
-          fontFamily: '"Archivo", sans-serif',
-          fontWeight: 800,
-          fontSize: 16,
-          letterSpacing: "-0.02em",
-          textTransform: "uppercase",
-          color: "var(--pitt-royal)",
-        }}
-      >
-        Pitt Club Ultimate
-      </span>
-      <span className="ml-auto flex items-center gap-3">
-        <Link to="/auth" className="label-caps" style={{ color: "var(--sterling)" }}>
-          Sign in
-        </Link>
-        <button type="button" style={{ ...primaryButton, padding: "8px 14px" }} onClick={onClaim}>
-          Claim your name
-        </button>
-      </span>
-    </nav>
-  );
-}
-
 function CounterBar({ claimed, going, daysOut }: { claimed: number; going: number; daysOut: number }) {
   const figures = [
     { value: claimed, label: "Claimed", color: "var(--pitt-royal)", dot: false },
@@ -203,10 +167,11 @@ function CounterBar({ claimed, going, daysOut }: { claimed: number; going: numbe
   ];
   return (
     <div
-      className="sticky top-14 z-20"
+      className="sticky top-14 z-20 relative isolate overflow-hidden"
       style={{ background: "var(--pure-white)", borderBottom: "1px solid var(--chalk)" }}
     >
-      <div className="mx-auto hidden h-14 max-w-[1320px] items-center gap-10 px-5 md:flex">
+      <SidelineLoop />
+      <div className="relative mx-auto hidden h-14 max-w-[1320px] items-center gap-10 px-5 md:flex">
         {figures.map((f) => (
           <div key={f.label} className="flex flex-col justify-center">
             <span className="flex items-center gap-2">
@@ -221,7 +186,7 @@ function CounterBar({ claimed, going, daysOut }: { claimed: number; going: numbe
           </div>
         ))}
       </div>
-      <div className="mx-auto flex h-14 max-w-[1320px] items-center px-5 md:hidden" style={{ fontSize: 13 }}>
+      <div className="relative mx-auto flex h-14 max-w-[1320px] items-center px-5 md:hidden" style={{ fontSize: 13 }}>
         <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--pitt-royal)" }}>{claimed} claimed</span>
         <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
         <span className="inline-flex items-center gap-1.5" style={{ fontFamily: '"Space Mono", monospace', color: "var(--sabah-black)" }}>

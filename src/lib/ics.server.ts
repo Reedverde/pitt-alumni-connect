@@ -1,0 +1,135 @@
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+
+export const SITE_URL = "https://alumni.pittultimate.org";
+const TZ = "America/New_York";
+
+export type CalendarEvent = {
+  id: string;
+  title: string;
+  day_number: number | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  time_tbd: boolean;
+  location: string | null;
+  notes: string | null;
+  division: string | null;
+  sort_order: number;
+};
+
+function publicClient() {
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
+  return createClient<Database>(process.env.SUPABASE_URL!, key, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
+}
+
+/** Events for a year, ordered the way the page reads them. */
+export async function loadEvents(year: number, id?: string): Promise<CalendarEvent[]> {
+  let query = publicClient()
+    .from("events")
+    .select("id, title, day_number, starts_at, ends_at, time_tbd, location, notes, division, sort_order")
+    .eq("event_year", year)
+    .order("day_number", { ascending: true })
+    .order("sort_order", { ascending: true });
+  if (id) query = query.eq("id", id);
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as CalendarEvent[];
+}
+
+/** Alumni Weekend 2026 runs Oct 2-4; day_number 1 is Oct 2. */
+export function eventDate(year: number, dayNumber: number | null): Date {
+  return new Date(Date.UTC(year, 9, 1 + (dayNumber ?? 1)));
+}
+
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function dateStamp(d: Date) {
+  return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}`;
+}
+
+function utcStamp(d: Date) {
+  return `${dateStamp(d)}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+}
+
+function escapeText(value: string) {
+  return value.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+
+/** RFC 5545 caps a line at 75 octets; continuation lines start with a space. */
+function fold(line: string) {
+  if (line.length <= 74) return line;
+  const out: string[] = [line.slice(0, 74)];
+  let rest = line.slice(74);
+  while (rest.length > 73) {
+    out.push(` ${rest.slice(0, 73)}`);
+    rest = rest.slice(73);
+  }
+  if (rest) out.push(` ${rest}`);
+  return out.join("\r\n");
+}
+
+const TBD_NOTE =
+  "The exact time for this one is not set yet. We will email you as soon as it locks.";
+
+export function buildIcs(events: CalendarEvent[], year: number): string {
+  const stamp = utcStamp(new Date());
+  const lines: string[] = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Pitt Club Ultimate Alumni//Alumni Weekend//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    `X-WR-CALNAME:${escapeText(`Pitt Club Ultimate Alumni Weekend ${year}`)}`,
+    `X-WR-TIMEZONE:${TZ}`,
+  ];
+
+  for (const event of events) {
+    const description = [
+      event.notes ?? "",
+      event.time_tbd && !event.starts_at ? TBD_NOTE : "",
+      SITE_URL,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    lines.push("BEGIN:VEVENT");
+    // Stable per-event UID: re-downloading updates the entry instead of duplicating it.
+    lines.push(`UID:${event.id}@alumni.pittultimate.org`);
+    lines.push(`DTSTAMP:${stamp}`);
+
+    if (!event.time_tbd && event.starts_at) {
+      const start = new Date(event.starts_at);
+      const end = event.ends_at
+        ? new Date(event.ends_at)
+        : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+      lines.push(`DTSTART:${utcStamp(start)}`);
+      lines.push(`DTEND:${utcStamp(end)}`);
+    } else {
+      // No invented times: a TBD event is an all-day entry on its correct date.
+      const day = eventDate(year, event.day_number);
+      const next = new Date(day.getTime() + 24 * 60 * 60 * 1000);
+      lines.push(`DTSTART;VALUE=DATE:${dateStamp(day)}`);
+      lines.push(`DTEND;VALUE=DATE:${dateStamp(next)}`);
+    }
+
+    lines.push(`SUMMARY:${escapeText(event.title)}`);
+    if (event.location) lines.push(`LOCATION:${escapeText(event.location)}`);
+    lines.push(`DESCRIPTION:${escapeText(description)}`);
+    lines.push(`URL:${SITE_URL}/weekend`);
+    lines.push("END:VEVENT");
+  }
+
+  lines.push("END:VCALENDAR");
+  return lines.map(fold).join("\r\n") + "\r\n";
+}
+
+export function icsFilename(year: number, event?: CalendarEvent) {
+  const slug = event
+    ? event.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+    : "alumni-weekend";
+  return `pitt-ultimate-${slug}-${year}.ics`;
+}
