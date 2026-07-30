@@ -16,7 +16,7 @@ export const submitRsvp = createServerFn({ method: "POST" })
       personId?: string | null;
       firstName?: string | null;
       lastName?: string | null;
-      status: RsvpStatus;
+      status: RsvpStatus | null;
       email: string;
       src?: RsvpSource | null;
       origin?: string | null;
@@ -26,4 +26,12 @@ export const submitRsvp = createServerFn({ method: "POST" })
     const { submitRsvpServer } = await import("./rsvp.server");
     const ip = getRequestIP({ xForwardedFor: true }) ?? "unknown";
     return submitRsvpServer(data, ip);
+  });
+
+export const answerAfterClaim = createServerFn({ method: "POST" })
+  .inputValidator((input: { personId: string; email: string; status: RsvpStatus }) => input)
+  .handler(async ({ data }): Promise<{ ok: true }> => {
+    const { answerAfterClaimServer } = await import("./rsvp.server");
+    const ip = getRequestIP({ xForwardedFor: true }) ?? "unknown";
+    return answerAfterClaimServer(data, ip);
   });

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
-import { searchPeople, submitRsvp } from "@/lib/rsvp.functions";
+import { answerAfterClaim, searchPeople, submitRsvp } from "@/lib/rsvp.functions";
 import {
   personDisplayName,
   STATUS_LABELS,
@@ -24,6 +24,18 @@ export type ClaimTarget = {
 
 type Step = "name" | "status" | "email" | "stamp" | "requested";
 
+/** Quiet text link. Never a button, never gold, never equal weight. */
+const quietLink: React.CSSProperties = {
+  fontFamily: "var(--font-sans)",
+  fontSize: 13,
+  fontWeight: 400,
+  color: "var(--sterling)",
+  background: "none",
+  border: "none",
+  padding: 0,
+  textDecoration: "none",
+};
+
 export function ClaimDialog({
   open,
   target,
@@ -38,6 +50,7 @@ export function ClaimDialog({
   const eyebrow = useEditionEyebrow();
   const runSearch = useServerFn(searchPeople);
   const runSubmit = useServerFn(submitRsvp);
+  const runAnswer = useServerFn(answerAfterClaim);
 
   const [step, setStep] = useState<Step>("name");
   const [query, setQuery] = useState("");
@@ -48,11 +61,16 @@ export function ClaimDialog({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [status, setStatus] = useState<RsvpStatus | null>(null);
+  const [skipped, setSkipped] = useState(false);
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stamp, setStamp] = useState<{ year: number | null; team: string | null } | null>(null);
+  const [claimedPersonId, setClaimedPersonId] = useState<string | null>(null);
+  const [lateStatus, setLateStatus] = useState<RsvpStatus | null>(null);
+  const [lateDismissed, setLateDismissed] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const statusGroupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -60,7 +78,11 @@ export function ClaimDialog({
     setBusy(false);
     setEmail("");
     setStatus(null);
+    setSkipped(false);
     setStamp(null);
+    setClaimedPersonId(null);
+    setLateStatus(null);
+    setLateDismissed(false);
     if (target) {
       setSelected(target);
       setAddingNew(false);
@@ -129,8 +151,9 @@ export function ClaimDialog({
     setStep("status");
   };
 
-  const submit = async () => {
-    if (!status) return;
+  const submit = async (skipped = false) => {
+    if (!skipped && !status) return;
+    const sending = skipped ? null : status;
     setBusy(true);
     setError(null);
     try {
@@ -139,7 +162,7 @@ export function ClaimDialog({
           personId: selected?.id ?? null,
           firstName: addingNew ? firstName : null,
           lastName: addingNew ? lastName : null,
-          status,
+          status: sending,
           email,
           src: "email",
           origin: window.location.origin,
@@ -149,6 +172,7 @@ export function ClaimDialog({
         setStep("requested");
         return;
       }
+      setClaimedPersonId(sending === null ? (selected?.id ?? null) : null);
       setStamp({
         year: result.person?.board_year ?? selected?.board_year ?? null,
         team: result.person?.team_label ?? selected?.team_label ?? null,
@@ -157,6 +181,16 @@ export function ClaimDialog({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Try again.");
       setBusy(false);
+    }
+  };
+
+  const answerLate = async (s: RsvpStatus) => {
+    if (!claimedPersonId) return;
+    setLateStatus(s);
+    try {
+      await runAnswer({ data: { personId: claimedPersonId, email, status: s } });
+    } catch {
+      setLateStatus(null);
     }
   };
 
@@ -201,6 +235,7 @@ export function ClaimDialog({
               year={stamp.year}
               teamLabel={stamp.team}
               onDone={() => {
+                if (claimedPersonId && !lateStatus && !lateDismissed) return;
                 onClaimed();
                 onClose();
               }}
@@ -208,6 +243,44 @@ export function ClaimDialog({
             <p className="text-center" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
               You're on the board. Check your email to finish signing in.
             </p>
+            {claimedPersonId && !lateDismissed && (
+              <div className="mt-5 w-full">
+                {lateStatus ? (
+                  <p className="text-center" style={{ fontSize: 13, color: "var(--sterling)" }}>
+                    Answer saved.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <span style={{ fontSize: 14, color: "var(--steel-ink)" }}>
+                      Are you coming in October?
+                    </span>
+                    {(["going", "maybe", "not_this_year"] as RsvpStatus[]).map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        style={secondaryButton}
+                        onClick={() => void answerLate(s)}
+                      >
+                        {STATUS_LABELS[s]}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLateDismissed(true);
+                      onClaimed();
+                      onClose();
+                    }}
+                    style={quietLink}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -303,7 +376,7 @@ export function ClaimDialog({
                     </div>
                   </div>
                 )}
-                <div className="mt-5 grid gap-2 md:grid-cols-3">
+                <div ref={statusGroupRef} className="mt-5 grid gap-2 md:grid-cols-3">
                   {(["going", "maybe", "not_this_year"] as RsvpStatus[]).map((s) => {
                     const on = status === s;
                     return (
@@ -321,6 +394,20 @@ export function ClaimDialog({
                     );
                   })}
                 </div>
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    className="hover:underline"
+                    style={quietLink}
+                    onClick={() => {
+                      setStatus(null);
+                      setSkipped(true);
+                      setStep("email");
+                    }}
+                  >
+                    Skip for now
+                  </button>
+                </div>
                 <div className="mt-6 flex gap-2">
                   {!target && (
                     <button type="button" style={secondaryButton} onClick={() => setStep("name")}>
@@ -330,8 +417,15 @@ export function ClaimDialog({
                   <button
                     type="button"
                     style={{ ...primaryButton, opacity: status ? 1 : 0.5 }}
-                    disabled={!status}
-                    onClick={() => setStep("email")}
+                    aria-disabled={!status}
+                    onClick={() => {
+                      if (!status) {
+                        statusGroupRef.current?.querySelector<HTMLElement>("button")?.focus();
+                        return;
+                      }
+                      setSkipped(false);
+                      setStep("email");
+                    }}
                   >
                     Continue
                   </button>
@@ -344,7 +438,7 @@ export function ClaimDialog({
                 className="mt-6"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  void submit();
+                  void submit(skipped);
                 }}
               >
                 <FieldLabel htmlFor="claim-email">Email</FieldLabel>
@@ -367,11 +461,18 @@ export function ClaimDialog({
                   </p>
                 )}
                 <div className="mt-6 flex gap-2">
-                  <button type="button" style={secondaryButton} onClick={() => setStep("status")}>
+                  <button
+                    type="button"
+                    style={secondaryButton}
+                    onClick={() => {
+                      setSkipped(false);
+                      setStep("status");
+                    }}
+                  >
                     Back
                   </button>
                   <button type="submit" style={{ ...primaryButton, opacity: busy ? 0.6 : 1 }} disabled={busy}>
-                    {busy ? "Saving…" : "Save my answer"}
+                    {busy ? "Saving…" : skipped ? "Save my record" : "Save my answer"}
                   </button>
                 </div>
               </form>
