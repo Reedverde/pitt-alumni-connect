@@ -5,6 +5,7 @@ import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ActionRail } from "@/components/board/ActionRail";
 import { PhotoSlot, StatementCard } from "@/components/media/PhotoSlot";
 import { primaryButton } from "@/components/claim/ui";
+import { useSessionPerson } from "@/lib/useSessionPerson";
 
 export const Route = createFileRoute("/alumni")({
   head: () => ({
@@ -80,6 +81,7 @@ function RecordStrip() {
 }
 
 function AlumniPage() {
+  const { signedIn } = useSessionPerson();
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
       <SiteNav />
