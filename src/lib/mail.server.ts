@@ -2,10 +2,9 @@ import { createHmac, timingSafeEqual } from "crypto";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
-  FONT_STACK,
-  GOLD,
-  INK,
   emailButton,
+  emailFooter,
+  emailMuted,
   emailParagraph,
   emailPlainUrl,
   emailShell,
@@ -388,11 +387,15 @@ async function generateMagicLink(email: string, origin: string | null): Promise<
   return typeof link === "string" ? link : null;
 }
 
+/** Secondary line only. It never becomes the subject, never gates the link and
+ *  never changes the structure of the message. */
 const STATUS_LINE: Record<string, string> = {
-  going: "You said you are going.",
-  maybe: "You said maybe.",
-  not_this_year: "You said not this year.",
+  going: "We have you down as coming this year.",
+  maybe: "We have you down as a maybe this year.",
+  not_this_year: "We have you down as not coming this year.",
 };
+
+export const SIGNIN_SUBJECT = "Sign in to Pitt Club Ultimate Alumni";
 
 function formatRange(startsOn: string, endsOn: string) {
   const start = new Date(`${startsOn}T12:00:00Z`);
@@ -405,38 +408,44 @@ function formatRange(startsOn: string, endsOn: string) {
   return `${month(start)} ${start.getUTCDate()} – ${month(end)} ${end.getUTCDate()}, ${end.getUTCFullYear()}`;
 }
 
-function buildBody(opts: { name: string; statusLine: string; link: string; dates: string }) {
+/** One structure for every status. The sign-in link is the first thing under
+ *  the greeting, above the fold on a phone, and what was recorded is a
+ *  secondary line beneath it. No status suppresses or delays the link: the
+ *  account IS the durable contact record, and the person who cannot come this
+ *  year is exactly the person who must keep one. No gold anywhere. */
+export function buildBody(opts: { name: string; statusLine: string; link: string; dates: string }) {
+  const purpose = "This link signs you in to your alumni record. No password.";
+  const change = "You can change your answer any time by signing in.";
+
   const text = [
     `${opts.name},`,
     "",
+    purpose,
+    "",
+    `Sign in: ${opts.link}`,
+    "",
     opts.statusLine,
-    "",
-    `Confirm and see the board: ${opts.link}`,
-    "",
-    "This link signs you in. No password.",
+    change,
     ...(opts.dates ? ["", opts.dates] : []),
+    "",
+    "Pitt Club Ultimate Alumni",
   ].join("\n");
-
-  // Transactional tier: header, one line of explanation, the link as a button
-  // and as a visible full URL, nothing else. No photos, no schedule.
-  const going = /going/i.test(opts.statusLine);
-  const statusHtml = going
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px"><tr>
-<td width="10" style="width:10px;padding:0 8px 0 0"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="10" height="10" style="width:10px;height:10px;background-color:${GOLD};border-radius:5px" bgcolor="${GOLD}"><tr><td style="font-size:1px;line-height:10px">&nbsp;</td></tr></table></td>
-<td style="font-family:${FONT_STACK};font-size:16px;line-height:1.55;color:${INK}">${escapeHtml(opts.statusLine)}</td>
-</tr></table>`
-    : emailParagraph(opts.statusLine);
 
   const html = emailShell(
     [
       emailParagraph(`${opts.name},`),
-      statusHtml,
-      emailButton(opts.link, "Confirm and see the board"),
+      emailParagraph(purpose),
+      emailButton(opts.link, "Sign in"),
       emailPlainUrl(opts.link),
-      emailParagraph("This link signs you in. No password."),
-      ...(opts.dates ? [emailParagraph(opts.dates)] : []),
+      emailMuted(opts.statusLine),
+      emailMuted(change),
+      ...(opts.dates ? [emailMuted(opts.dates)] : []),
+      emailFooter([
+        "Pitt Club Ultimate Alumni",
+        "You are receiving this because you answered for Alumni Weekend.",
+      ]),
     ].join("\n"),
-    "Your sign-in link for Pitt Club Ultimate Alumni Weekend.",
+    "Your sign-in link for Pitt Club Ultimate Alumni.",
   );
 
   return { text, html };
@@ -593,7 +602,7 @@ export async function sendMagicLinkEmail(opts: {
       kind,
       to,
       personId: opts.personId,
-      subject: "Confirm your spot, Pitt Club Ultimate",
+      subject: SIGNIN_SUBJECT,
       text,
       html,
     });
