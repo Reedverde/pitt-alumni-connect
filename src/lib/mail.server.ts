@@ -251,16 +251,20 @@ export async function sendMagicLinkEmail(opts: {
   personId: string | null;
   firstName: string | null;
   status: string;
-  origin: string | null | undefined;
+  /** Accepted for call-site compatibility and deliberately ignored: every
+   *  link is built from PUBLIC_SITE_URL. */
+  origin?: string | null | undefined;
+  kind?: string;
 }): Promise<MagicLinkResult> {
   const to = opts.to.trim().toLowerCase();
   const { apiKey, fromAddress, fromName, replyTo } = mailConfig();
+  const kind = opts.kind ?? "magic_link";
 
   try {
     if (await isSuppressed(to)) {
       await logSend({
         personId: opts.personId,
-        kind: "magic_link",
+        kind,
         toEmail: to,
         provider: "none",
         providerMessageId: null,
@@ -277,10 +281,10 @@ export async function sendMagicLinkEmail(opts: {
       console.warn(
         `[mail] ${missing} not set — falling back to the built-in mailer, which is capped at a few messages an hour. Set the secret to deliver reliably.`,
       );
-      const fallback = await fallbackOtp(to, opts.origin);
+      const fallback = await fallbackOtp(to);
       await logSend({
         personId: opts.personId,
-        kind: "magic_link",
+        kind,
         toEmail: to,
         provider: "supabase",
         providerMessageId: null,
@@ -290,12 +294,33 @@ export async function sendMagicLinkEmail(opts: {
       return { sent: fallback, provider: "supabase", messageId: null, reason: `missing ${missing}` };
     }
 
-    const origin = safeOrigin(opts.origin);
+    const domainCheck = await checkSendingDomain();
+    if (!domainCheck.ok) {
+      console.error(`[mail] refusing to send from an unverified domain: ${domainCheck.detail}`);
+      const fallback = await fallbackOtp(to);
+      await logSend({
+        personId: opts.personId,
+        kind,
+        toEmail: to,
+        provider: "supabase",
+        providerMessageId: null,
+        status: fallback ? "sent" : "failed",
+        error: domainCheck.detail,
+      });
+      return {
+        sent: fallback,
+        provider: "supabase",
+        messageId: null,
+        reason: domainCheck.detail,
+      };
+    }
+
+    const origin = siteUrl();
     const link = await generateMagicLink(to, origin);
     if (!link) {
       await logSend({
         personId: opts.personId,
-        kind: "magic_link",
+        kind,
         toEmail: to,
         provider: "resend",
         providerMessageId: null,
@@ -315,15 +340,7 @@ export async function sendMagicLinkEmail(opts: {
       dates,
     });
 
-    const unsubUrl = origin
-      ? `${origin}/api/public/unsubscribe?e=${encodeURIComponent(to)}&t=${unsubscribeToken(to)}`
-      : null;
-
-    const headers: Record<string, string> = {};
-    if (unsubUrl) {
-      headers["List-Unsubscribe"] = `<${unsubUrl}>`;
-      headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
-    }
+    const headers = unsubscribeHeaders(to);
 
     const res = await fetch(RESEND_ENDPOINT, {
       method: "POST",
@@ -348,7 +365,7 @@ export async function sendMagicLinkEmail(opts: {
       console.error(`[mail] ${message}`);
       await logSend({
         personId: opts.personId,
-        kind: "magic_link",
+        kind,
         toEmail: to,
         provider: "resend",
         providerMessageId: null,
@@ -360,7 +377,7 @@ export async function sendMagicLinkEmail(opts: {
 
     await logSend({
       personId: opts.personId,
-      kind: "magic_link",
+      kind,
       toEmail: to,
       provider: "resend",
       providerMessageId: payload?.id ?? null,
@@ -374,7 +391,7 @@ export async function sendMagicLinkEmail(opts: {
     try {
       await logSend({
         personId: opts.personId,
-        kind: "magic_link",
+        kind,
         toEmail: to,
         provider: "resend",
         providerMessageId: null,
