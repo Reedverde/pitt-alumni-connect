@@ -54,6 +54,17 @@ export function NotchedBox({
 
   const clipPath = notchClipPath(notch, corners);
   const inset = strokeWidth / 2;
+  // Keep content out of the removed triangles: a cut corner pushes its two
+  // sides in by the notch size. Uncut sides keep their normal padding.
+  const cut = (c: NotchCorner) => corners.includes(c);
+  const contentPad = clipContent
+    ? undefined
+    : {
+        paddingTop: cut("tl") || cut("tr") ? notch : undefined,
+        paddingRight: cut("tr") || cut("br") ? notch : undefined,
+        paddingBottom: cut("bl") || cut("br") ? notch : undefined,
+        paddingLeft: cut("tl") || cut("bl") ? notch : undefined,
+      };
   const showOutline = Boolean(stroke) && size.w > notch * 2 && size.h > notch * 2;
   const points = showOutline
     ? notchPoints(size.w - strokeWidth, size.h - strokeWidth, notch, corners)
@@ -83,7 +94,15 @@ export function NotchedBox({
           />
         </svg>
       )}
-      <div style={{ position: "relative", height: "100%", clipPath: clipContent ? clipPath : undefined }}>
+      <div
+        style={{
+          position: "relative",
+          height: "100%",
+          boxSizing: "border-box",
+          clipPath: clipContent ? clipPath : undefined,
+          ...contentPad,
+        }}
+      >
         {children}
       </div>
     </div>
