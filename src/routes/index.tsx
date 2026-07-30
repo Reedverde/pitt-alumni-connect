@@ -215,11 +215,24 @@ function BoardPage() {
         </div>
 
         <div>
-          {orderedRows.map((row) =>
+          {orderedRows.map((row, i) =>
             row.kind === "anchor" ? (
-              <AnchorRow key={row.key} people={anchorPeople} onClaim={openClaim} />
+              <AnchorRow
+                key={row.key}
+                people={anchorPeople}
+                onClaim={openClaim}
+                photos={data.photosByYear}
+                rowIndex={i}
+              />
             ) : (
-              <YearRow key={row.key} group={row.group!} isDimmed={isDimmed} onClaim={openClaim} />
+              <YearRow
+                key={row.key}
+                group={row.group!}
+                isDimmed={isDimmed}
+                onClaim={openClaim}
+                photos={data.photosByYear}
+                rowIndex={i}
+              />
             ),
           )}
         </div>
