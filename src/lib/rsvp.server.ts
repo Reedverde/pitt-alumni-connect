@@ -74,6 +74,11 @@ type PersonRow = {
   deceased: boolean;
 };
 
+/** Marks a people row as created by the anonymous RSVP endpoint. The row stays
+ *  off the board until the email behind it is verified; the marker is cleared
+ *  at that moment so an admin can hide the chip again permanently. */
+export const SELF_ADDED_SEED_PREFIX = "selfadd:";
+
 async function placement(personIds: string[]) {
   const { data } = await supabaseAdmin
     .from("person_board_placement")
@@ -180,7 +185,29 @@ export type SubmitInput = {
   status: RsvpStatus;
   email: string;
   src?: RsvpSource | null;
+  origin?: string | null;
 };
+
+/** Sends the sign-in link server-side so the destination address is never
+ *  disclosed to the caller. Never throws: the RSVP must not depend on it. */
+async function sendMagicLink(to: string, origin: string | null | undefined) {
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    const client = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_PUBLISHABLE_KEY!,
+      { auth: { persistSession: false, autoRefreshToken: false } },
+    );
+    const safeOrigin =
+      typeof origin === "string" && /^https?:\/\/[^\s/]+$/.test(origin) ? origin : null;
+    await client.auth.signInWithOtp({
+      email: to,
+      options: safeOrigin ? { emailRedirectTo: `${safeOrigin}/auth` } : undefined,
+    });
+  } catch {
+    /* ignore */
+  }
+}
 
 /** Public write endpoint: creates or updates the RSVP before the person has
  *  authenticated. Every outcome returns the same shape; existence of an email
@@ -197,6 +224,7 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
   if (await overRateLimit(ip)) throw new Error("Something went wrong. Try again later.");
 
   let person: PersonRow | null = null;
+  let magicLinkEmail = email;
 
   if (input.personId) {
     const { data } = await supabaseAdmin
@@ -211,22 +239,15 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
     const lastName = cleanName(input.lastName) || null;
     if (!firstName) throw new Error("Please enter your name.");
 
-    const { data: maxRow } = await supabaseAdmin
-      .from("people")
-      .select("member_no")
-      .order("member_no", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const memberNo = ((maxRow?.member_no as number | undefined) ?? 0) + 1;
-
     const { data: created, error } = await supabaseAdmin
       .from("people")
       .insert({
-        member_no: memberNo,
         first_name: firstName,
         last_name: lastName,
         needs_review: true,
-        show_on_board: true,
+        // Unverified: stays off the public board until the magic link is clicked.
+        show_on_board: false,
+        seed_id: `${SELF_ADDED_SEED_PREFIX}${crypto.randomUUID()}`,
       })
       .select("id, first_name, last_name, played_as, grad_year, seed_division, deceased")
       .single();
@@ -234,43 +255,73 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
     person = created as PersonRow;
   }
 
-  // RSVP first: the record must save whether or not the email work succeeds.
-  const { data: existingRsvp } = await supabaseAdmin
-    .from("rsvps")
-    .select("id")
-    .eq("person_id", person.id)
-    .eq("event_year", EVENT_YEAR)
-    .maybeSingle();
-
-  if (existingRsvp) {
-    await supabaseAdmin
-      .from("rsvps")
-      .update({ status, src, responded_at: new Date().toISOString() })
-      .eq("id", existingRsvp.id as string);
-  } else {
-    await supabaseAdmin
-      .from("rsvps")
-      .insert({ person_id: person.id, event_year: EVENT_YEAR, status, src });
-  }
-
-  // Identity: if this email is already on file (for anyone), leave it alone.
-  const { data: existingIdentity } = await supabaseAdmin
+  // A person whose email is already verified owns their own RSVP. An anonymous
+  // caller may not overwrite it, and must not be able to tell that it refused.
+  const { data: verifiedIdentities } = await supabaseAdmin
     .from("identities")
-    .select("id, person_id")
-    .eq("email", email)
-    .maybeSingle();
+    .select("id, email, is_primary, verified_at")
+    .eq("person_id", person.id)
+    .not("verified_at", "is", null)
+    .order("is_primary", { ascending: false });
 
-  if (!existingIdentity) {
-    const { count } = await supabaseAdmin
+  const verifiedOwner = (verifiedIdentities ?? [])[0] as
+    | { id: string; email: string; is_primary: boolean }
+    | undefined;
+
+  let existingIdentity: { id: string; person_id: string } | null = null;
+  let effectiveStatus: RsvpStatus = status;
+
+  if (verifiedOwner) {
+    // No RSVP write, no identity write. Magic link goes to the address on file.
+    magicLinkEmail = verifiedOwner.email;
+
+    const { data: currentRsvp } = await supabaseAdmin
+      .from("rsvps")
+      .select("status")
+      .eq("person_id", person.id)
+      .eq("event_year", EVENT_YEAR)
+      .maybeSingle();
+    effectiveStatus = (currentRsvp?.status as RsvpStatus | undefined) ?? "not_this_year";
+  } else {
+    // RSVP first: the record must save whether or not the email work succeeds.
+    const { data: existingRsvp } = await supabaseAdmin
+      .from("rsvps")
+      .select("id")
+      .eq("person_id", person.id)
+      .eq("event_year", EVENT_YEAR)
+      .maybeSingle();
+
+    if (existingRsvp) {
+      await supabaseAdmin
+        .from("rsvps")
+        .update({ status, src, responded_at: new Date().toISOString() })
+        .eq("id", existingRsvp.id as string);
+    } else {
+      await supabaseAdmin
+        .from("rsvps")
+        .insert({ person_id: person.id, event_year: EVENT_YEAR, status, src });
+    }
+
+    // Identity: if this email is already on file (for anyone), leave it alone.
+    const { data: found } = await supabaseAdmin
       .from("identities")
-      .select("id", { count: "exact", head: true })
-      .eq("person_id", person.id);
-    await supabaseAdmin.from("identities").insert({
-      person_id: person.id,
-      email,
-      provider: "magic",
-      is_primary: (count ?? 0) === 0,
-    });
+      .select("id, person_id")
+      .eq("email", email)
+      .maybeSingle();
+    existingIdentity = (found as { id: string; person_id: string } | null) ?? null;
+
+    if (!existingIdentity) {
+      const { count } = await supabaseAdmin
+        .from("identities")
+        .select("id", { count: "exact", head: true })
+        .eq("person_id", person.id);
+      await supabaseAdmin.from("identities").insert({
+        person_id: person.id,
+        email,
+        provider: "magic",
+        is_primary: (count ?? 0) === 0,
+      });
+    }
   }
 
   await supabaseAdmin.from("audit_log").insert({
@@ -284,6 +335,7 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
       email_domain: email.split("@")[1] ?? null,
       matched_existing_email: Boolean(existingIdentity),
       matched_other_person: Boolean(existingIdentity && existingIdentity.person_id !== person.id),
+      ...(verifiedOwner ? { refused_verified_overwrite: true } : {}),
     },
   });
 
@@ -295,6 +347,8 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
 
   const boardYear = (pl?.board_year as number | null) ?? person.grad_year ?? null;
 
+  await sendMagicLink(magicLinkEmail, input.origin);
+
   return {
     ok: true,
     person: {
@@ -305,7 +359,14 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
         (pl?.board_division as string | null) ?? person.seed_division ?? null,
         boardYear,
       ),
-      state: status === "going" ? "going" : status === "maybe" ? "maybe" : "unclaimed",
+      state:
+        effectiveStatus === "going"
+          ? "going"
+          : effectiveStatus === "maybe"
+            ? "maybe"
+            : verifiedOwner
+              ? "claimed"
+              : "unclaimed",
     },
   };
 }

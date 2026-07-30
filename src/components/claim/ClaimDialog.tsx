@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
-import { supabase } from "@/integrations/supabase/client";
 import { searchPeople, submitRsvp } from "@/lib/rsvp.functions";
 import {
   personDisplayName,
@@ -97,7 +96,7 @@ export function ClaimDialog({
       } finally {
         if (!cancelled) setSearching(false);
       }
-    }, 220);
+    }, 300);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
@@ -141,16 +140,9 @@ export function ClaimDialog({
           status,
           email,
           src: "email",
+          origin: window.location.origin,
         },
       });
-      // Send the magic link, but never block the save on it.
-      supabase.auth
-        .signInWithOtp({
-          email: email.trim().toLowerCase(),
-          options: { emailRedirectTo: `${window.location.origin}/auth` },
-        })
-        .catch(() => undefined);
-
       setStamp({
         year: result.person?.board_year ?? selected?.board_year ?? null,
         team: result.person?.team_label ?? selected?.team_label ?? null,
