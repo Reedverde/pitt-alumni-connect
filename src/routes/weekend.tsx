@@ -165,6 +165,8 @@ function WeekendPage() {
               index="01"
               corners={["tl", "br"]}
               label="Group shot, past alumni weekend"
+              slotKey="weekend_hero"
+              eager
             />
           </div>
         </header>
