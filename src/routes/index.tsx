@@ -134,10 +134,15 @@ function BoardPage() {
     () => buildYearGroups(people.filter((p) => p.board_year > 1997)),
     [people],
   );
-  const orderedGroups = useMemo(
-    () => (newestFirst ? [...groups].reverse() : groups),
-    [groups, newestFirst],
-  );
+  // The anchor block is just another row with a sort key below every real year,
+  // so it obeys the toggle: first when oldest first, last when newest first.
+  const orderedRows = useMemo(() => {
+    const rows: Array<{ kind: "anchor" | "year"; key: string; group?: YearGroup }> = [
+      ...(anchorPeople.length > 0 ? [{ kind: "anchor" as const, key: "anchor" }] : []),
+      ...groups.map((group) => ({ kind: "year" as const, key: group.key, group })),
+    ];
+    return newestFirst ? rows.reverse() : rows;
+  }, [groups, anchorPeople, newestFirst]);
 
   const clock = countdown(data.edition, data.nextEdition);
 
@@ -193,12 +198,14 @@ function BoardPage() {
           </button>
         </div>
 
-        {anchorPeople.length > 0 && <AnchorRow people={anchorPeople} onClaim={openClaim} />}
-
         <div>
-          {orderedGroups.map((group) => (
-            <YearRow key={group.key} group={group} isDimmed={isDimmed} onClaim={openClaim} />
-          ))}
+          {orderedRows.map((row) =>
+            row.kind === "anchor" ? (
+              <AnchorRow key={row.key} people={anchorPeople} onClaim={openClaim} />
+            ) : (
+              <YearRow key={row.key} group={row.group!} isDimmed={isDimmed} onClaim={openClaim} />
+            ),
+          )}
         </div>
 
         <WhyTeaser />
