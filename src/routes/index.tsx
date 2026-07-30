@@ -263,7 +263,21 @@ function DivisionFilter({
   );
 }
 
+/** Derived from the data on the wall, so the last band never freezes on a year. */
+function buildDecades(groups: YearGroup[]) {
+  const years = groups.flatMap((g) => g.years);
+  if (years.length === 0) return [] as { label: string; from: number; to: number }[];
+  const max = Math.max(...years);
+  const bands = [{ label: "1998–2009", from: 1998, to: 2009 }];
+  for (let from = 2010; from <= max; from += 10) {
+    const to = Math.min(from + 9, max);
+    bands.push({ label: from === to ? String(from) : `${from}–${to}`, from, to });
+  }
+  return bands;
+}
+
 function DecadeRail({ groups }: { groups: YearGroup[] }) {
+  const DECADES = buildDecades(groups);
   return (
     <nav
       aria-label="Jump to a decade"
