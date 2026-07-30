@@ -185,7 +185,29 @@ export type SubmitInput = {
   status: RsvpStatus;
   email: string;
   src?: RsvpSource | null;
+  origin?: string | null;
 };
+
+/** Sends the sign-in link server-side so the destination address is never
+ *  disclosed to the caller. Never throws: the RSVP must not depend on it. */
+async function sendMagicLink(to: string, origin: string | null | undefined) {
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    const client = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_PUBLISHABLE_KEY!,
+      { auth: { persistSession: false, autoRefreshToken: false } },
+    );
+    const safeOrigin =
+      typeof origin === "string" && /^https?:\/\/[^\s/]+$/.test(origin) ? origin : null;
+    await client.auth.signInWithOtp({
+      email: to,
+      options: safeOrigin ? { emailRedirectTo: `${safeOrigin}/auth` } : undefined,
+    });
+  } catch {
+    /* ignore */
+  }
+}
 
 /** Public write endpoint: creates or updates the RSVP before the person has
  *  authenticated. Every outcome returns the same shape; existence of an email
@@ -202,6 +224,7 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
   if (await overRateLimit(ip)) throw new Error("Something went wrong. Try again later.");
 
   let person: PersonRow | null = null;
+  let magicLinkEmail = email;
 
   if (input.personId) {
     const { data } = await supabaseAdmin
@@ -324,9 +347,10 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
 
   const boardYear = (pl?.board_year as number | null) ?? person.grad_year ?? null;
 
+  await sendMagicLink(magicLinkEmail, input.origin);
+
   return {
     ok: true,
-    magicLinkEmail,
     person: {
       first_name: person.first_name,
       last_name: person.last_name,
