@@ -19,6 +19,7 @@ export const submitRsvp = createServerFn({ method: "POST" })
       status: RsvpStatus;
       email: string;
       src?: RsvpSource | null;
+      origin?: string | null;
     }) => input,
   )
   .handler(async ({ data }): Promise<RsvpResult> => {
