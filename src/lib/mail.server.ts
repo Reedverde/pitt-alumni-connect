@@ -459,11 +459,13 @@ export async function sendMagicLinkEmail(opts: {
   /** Accepted for call-site compatibility and deliberately ignored: every
    *  link is built from PUBLIC_SITE_URL. */
   origin?: string | null | undefined;
-  kind?: string;
+  /** Required, never defaulted. A caller that forgets to say what this message
+   *  is must NOT inherit the one kind that is allowed while paused. */
+  kind: string;
 }): Promise<MagicLinkResult> {
   const to = opts.to.trim().toLowerCase();
   const { apiKey, fromAddress } = mailConfig();
-  const kind = opts.kind ?? "magic_link";
+  const kind = opts.kind;
 
   try {
     // The built-in mailer below is a second way out of the building, so the
