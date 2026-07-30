@@ -305,15 +305,27 @@ function buildBody(opts: { name: string; statusLine: string; link: string; dates
     ...(opts.dates ? ["", opts.dates] : []),
   ].join("\n");
 
-  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // Transactional tier: header, one line of explanation, the link as a button
+  // and as a visible full URL, nothing else. No photos, no schedule.
+  const going = /going/i.test(opts.statusLine);
+  const statusHtml = going
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px"><tr>
+<td width="10" style="width:10px;padding:0 8px 0 0"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="10" height="10" style="width:10px;height:10px;background-color:${GOLD};border-radius:5px" bgcolor="${GOLD}"><tr><td style="font-size:1px;line-height:10px">&nbsp;</td></tr></table></td>
+<td style="font-family:${FONT_STACK};font-size:16px;line-height:1.55;color:${INK}">${escapeHtml(opts.statusLine)}</td>
+</tr></table>`
+    : emailParagraph(opts.statusLine);
 
-  const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#ffffff;font-family:Helvetica,Arial,sans-serif;font-size:16px;line-height:1.5;color:#0B0B0C">
-<p style="margin:0 0 16px">${esc(opts.name)},</p>
-<p style="margin:0 0 16px">${esc(opts.statusLine)}</p>
-<p style="margin:0 0 16px"><a href="${esc(opts.link)}" style="color:#003594;font-weight:bold">Confirm and see the board</a></p>
-<p style="margin:0 0 16px">This link signs you in. No password.</p>
-${opts.dates ? `<p style="margin:0">${esc(opts.dates)}</p>` : ""}
-</body></html>`;
+  const html = emailShell(
+    [
+      emailParagraph(`${opts.name},`),
+      statusHtml,
+      emailButton(opts.link, "Confirm and see the board"),
+      emailPlainUrl(opts.link),
+      emailParagraph("This link signs you in. No password."),
+      ...(opts.dates ? [emailParagraph(opts.dates)] : []),
+    ].join("\n"),
+    "Your sign-in link for Pitt Club Ultimate Alumni Weekend.",
+  );
 
   return { text, html };
 }
