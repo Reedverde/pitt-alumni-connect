@@ -179,7 +179,8 @@ export type SubmitInput = {
   personId?: string | null;
   firstName?: string | null;
   lastName?: string | null;
-  status: RsvpStatus;
+  /** null means the person skipped the question. No rsvps row is written. */
+  status: RsvpStatus | null;
   email: string;
   src?: RsvpSource | null;
   origin?: string | null;
@@ -191,11 +192,11 @@ async function sendMagicLink(opts: {
   to: string;
   personId: string;
   firstName: string | null;
-  status: RsvpStatus;
+  status: RsvpStatus | null;
   origin: string | null | undefined;
 }) {
   const { sendMagicLinkEmail } = await import("./mail.server");
-  await sendMagicLinkEmail(opts);
+  await sendMagicLinkEmail({ ...opts, status: opts.status ?? "claimed" });
 }
 
 function normalizedName(first: string, last: string | null) {
