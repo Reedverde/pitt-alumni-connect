@@ -13,6 +13,7 @@ export type PhotoRow = {
   alt: string | null;
   width: number | null;
   height: number | null;
+  board_year: number | null;
   uploaded_at: string;
 };
 
@@ -107,7 +108,7 @@ export async function storePhoto(opts: {
       height: opts.height,
       uploaded_by: opts.actor,
     })
-    .select("id, storage_path, original_name, alt, width, height, uploaded_at")
+    .select("id, storage_path, original_name, alt, width, height, board_year, uploaded_at")
     .single();
   if (error || !data) {
     await supabaseAdmin.storage.from(BUCKET).remove([path]);
@@ -120,7 +121,7 @@ export async function storePhoto(opts: {
 export async function listPhotos(): Promise<PhotoRow[]> {
   const { data } = await supabaseAdmin
     .from("photos")
-    .select("id, storage_path, original_name, alt, width, height, uploaded_at")
+    .select("id, storage_path, original_name, alt, width, height, board_year, uploaded_at")
     .order("uploaded_at", { ascending: false });
   return (data ?? []) as PhotoRow[];
 }
@@ -129,7 +130,7 @@ export async function listSlots(): Promise<SlotRow[]> {
   const { data } = await supabaseAdmin
     .from("photo_slots")
     .select(
-      "key, photo_id, updated_at, photos ( id, storage_path, original_name, alt, width, height, uploaded_at )",
+      "key, photo_id, updated_at, photos ( id, storage_path, original_name, alt, width, height, board_year, uploaded_at )",
     )
     .order("key");
   return ((data ?? []) as unknown as (SlotRow & { photos: PhotoRow | null })[]).map((r) => ({
@@ -150,6 +151,21 @@ export async function setPhotoAlt(actor: string | null, photoId: string, alt: st
     .single();
   await audit(actor, "photo_alt", photoId, null, data);
   return { ok: true };
+}
+
+/** The year tag that puts a photograph beside a year row on the board.
+ *  Null clears it, which simply removes the photograph from the board. */
+export async function setPhotoBoardYear(actor: string | null, photoId: string, year: number | null) {
+  const clean =
+    year === null || !Number.isFinite(year) || year < 1900 || year > 2200 ? null : Math.trunc(year);
+  const { data } = await supabaseAdmin
+    .from("photos")
+    .update({ board_year: clean })
+    .eq("id", photoId)
+    .select("id, board_year")
+    .single();
+  await audit(actor, "photo_board_year", photoId, null, data);
+  return { ok: true as const };
 }
 
 export async function assignSlot(actor: string | null, key: string, photoId: string | null) {
@@ -175,7 +191,7 @@ export async function deletePhoto(actor: string | null, photoId: string) {
   }
   const { data: row } = await supabaseAdmin
     .from("photos")
-    .select("id, storage_path, original_name, alt, width, height, uploaded_at")
+    .select("id, storage_path, original_name, alt, width, height, board_year, uploaded_at")
     .eq("id", photoId)
     .maybeSingle();
   if (!row) return { ok: false as const, error: "Already gone." };

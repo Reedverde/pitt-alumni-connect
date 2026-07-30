@@ -15,12 +15,21 @@ export type BoardPerson = {
   state: "unclaimed" | "claimed" | "going" | "maybe" | "memorial";
 };
 
+export type BoardPhoto = {
+  storage_path: string;
+  alt: string | null;
+  width: number | null;
+  height: number | null;
+};
+
 export type BoardData = {
   people: BoardPerson[];
   totals: { total: number; claimed: number; going: number };
   divisions: { code: string; label: string }[];
   edition: EditionSummary;
   nextEdition: EditionSummary | null;
+  /** One photograph per tagged year: the earliest uploaded one wins. */
+  photosByYear: Record<string, BoardPhoto>;
 };
 
 export const getBoard = createServerFn({ method: "GET" }).handler(async (): Promise<BoardData> => {
@@ -34,7 +43,7 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
   const current = await loadCurrentEdition();
   const next = await loadNextPublishedEdition(current.event_year);
 
-  const [peopleRes, countsRes, divisionsRes] = await Promise.all([
+  const [peopleRes, countsRes, divisionsRes, photosRes] = await Promise.all([
     supabase
       .from("board_people")
       .select("id, first_name, last_name, played_as, deceased, board_year, board_division, team_label, state")
@@ -42,6 +51,12 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
       .limit(2000),
     supabase.from("board_year_counts").select("board_year, total, claimed, going"),
     supabase.from("divisions").select("code, label, sort_order, visible").eq("visible", true),
+    supabase
+      .from("photos")
+      .select("storage_path, alt, width, height, board_year, uploaded_at")
+      .not("board_year", "is", null)
+      .order("board_year", { ascending: true })
+      .order("uploaded_at", { ascending: true }),
   ]);
 
   if (peopleRes.error) throw peopleRes.error;
@@ -61,6 +76,18 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     .map((d) => ({ code: d.code as string, label: (d.label as string) ?? (d.code as string) }));
 
+  const photosByYear: Record<string, BoardPhoto> = {};
+  for (const row of photosRes.data ?? []) {
+    const year = String(row.board_year);
+    if (photosByYear[year]) continue;
+    photosByYear[year] = {
+      storage_path: row.storage_path as string,
+      alt: (row.alt as string | null) ?? null,
+      width: (row.width as number | null) ?? null,
+      height: (row.height as number | null) ?? null,
+    };
+  }
+
   const edition: EditionSummary = {
     event_year: current.event_year,
     title: current.title,
@@ -76,6 +103,7 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
     totals,
     divisions,
     edition,
+    photosByYear,
     nextEdition: next
       ? {
           event_year: next.event_year,

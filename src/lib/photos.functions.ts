@@ -35,6 +35,16 @@ export const assignPhotoSlot = createServerFn({ method: "POST" })
     return mod.assignSlot(actor.personId, data.key, data.photoId);
   });
 
+export const updatePhotoBoardYear = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { photoId: string; year: number | null }) => input)
+  .handler(async ({ data, context }) => {
+    const mod = await import("./photos.server");
+    const actor = await mod.isAdminClient(context.supabase);
+    if (!actor) return { ok: false, error: "Not allowed." };
+    return mod.setPhotoBoardYear(actor.personId, data.photoId, data.year);
+  });
+
 export const removePhoto = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { photoId: string }) => input)
