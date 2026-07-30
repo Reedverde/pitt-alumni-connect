@@ -1165,7 +1165,14 @@ export async function createEdition(
 
 export async function updateEditionDates(
   actor: string | null,
-  input: { event_year: number; title: string; starts_on: string; ends_on: string },
+  input: {
+    event_year: number;
+    title: string;
+    starts_on: string;
+    ends_on: string;
+    lodging_note?: string | null;
+    travel_note?: string | null;
+  },
 ) {
   if (input.ends_on < input.starts_on) throw new Error("The end date is before the start date.");
   const before = await listEditions();
@@ -1175,6 +1182,8 @@ export async function updateEditionDates(
       title: input.title.trim().slice(0, 120),
       starts_on: input.starts_on,
       ends_on: input.ends_on,
+      lodging_note: input.lodging_note?.trim() ? input.lodging_note.trim().slice(0, 2000) : null,
+      travel_note: input.travel_note?.trim() ? input.travel_note.trim().slice(0, 2000) : null,
     })
     .eq("event_year", input.event_year);
   if (error) throw new Error(error.message);

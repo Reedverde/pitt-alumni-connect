@@ -130,6 +130,14 @@ export function ScheduleSummary({
       <p className="mt-2 max-w-[560px]" style={{ fontSize: 16, color: "var(--sterling)" }}>
         Spectators welcome. Nobody plays who doesn't want to.
       </p>
+      {(edition.lodging_note?.trim() || edition.travel_note?.trim()) && (
+        <p className="mt-2 max-w-[560px]" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
+          Coming from out of town?{" "}
+          <Link to="/weekend" hash="where-to-stay" style={{ color: "var(--pitt-royal)", fontWeight: 700 }}>
+            Where to stay and how to get around
+          </Link>
+        </p>
+      )}
 
       {days.map((day) => {
         const dayEvents = events.filter((e) => (e.day_number ?? 1) === day.number);

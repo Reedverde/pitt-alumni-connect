@@ -271,6 +271,8 @@ function WeekendPage() {
           );
         })}
 
+        <WhereToStay edition={edition} />
+
         <PastEditions editions={data.archive} />
       </main>
       <ActionRail />
