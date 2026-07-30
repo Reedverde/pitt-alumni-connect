@@ -311,11 +311,12 @@ function Hero({
           </h1>
         )}
 
-        {/* The photograph sits over the last line of type, tilted off the grid. */}
+        {/* The photograph rises out of the bottom edge on a hard diagonal and is
+            cropped by the hero. Rotated toward 45 degrees, never straightened. */}
         <div
           aria-hidden={false}
-          className="pointer-events-none relative z-10 mx-auto mt-6 w-[86%] max-w-[560px] md:absolute md:right-5 md:bottom-10 md:mt-0 md:w-[42%]"
-          style={{ transform: "rotate(5deg)" }}
+          className="pointer-events-none absolute z-10 right-[-6%] bottom-[-26%] w-[78%] max-w-[420px] md:right-[2%] md:bottom-[-22%] md:w-[46%] md:max-w-[620px]"
+          style={{ transform: "rotate(38deg)", transformOrigin: "50% 100%" }}
         >
           <PhotoSlot
             ratio="4 / 3"
