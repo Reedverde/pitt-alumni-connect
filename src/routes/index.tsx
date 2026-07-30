@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useSuspenseQuery, queryOptions, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import { getBoard, type BoardPerson } from "@/lib/board.functions";
@@ -7,6 +7,8 @@ import { buildYearGroups, claimedCount, type YearGroup } from "@/lib/board-group
 import { NameChip } from "@/components/board/NameChip";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
+import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
+import { primaryButton } from "@/components/claim/ui";
 
 const boardQuery = queryOptions({
   queryKey: ["board"],
@@ -61,8 +63,27 @@ const WEEKEND_START = Date.UTC(2026, 9, 2);
 
 function BoardPage() {
   const { data } = useSuspenseQuery(boardQuery);
+  const queryClient = useQueryClient();
   const [active, setActive] = useState<string[]>(DIVISION_FILTERS.map((d) => d.code));
   const [newestFirst, setNewestFirst] = useState(true);
+  const [claimOpen, setClaimOpen] = useState(false);
+  const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
+
+  const openClaim = (person?: BoardPerson) => {
+    setClaimTarget(
+      person
+        ? {
+            id: person.id,
+            first_name: person.first_name,
+            last_name: person.last_name,
+            played_as: person.played_as,
+            board_year: person.board_year,
+            team_label: person.team_label,
+          }
+        : null,
+    );
+    setClaimOpen(true);
+  };
 
   const anchorPeople = useMemo(
     () => data.people.filter((p) => p.board_year <= 1997),
@@ -90,7 +111,7 @@ function BoardPage() {
 
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
-      <SiteNav />
+      <SiteNav onClaim={() => openClaim()} />
       <CounterBar claimed={data.totals.claimed} going={data.totals.going} daysOut={daysOut} />
 
       <main className="mx-auto w-full max-w-[1320px] px-5 pb-24">
@@ -118,19 +139,26 @@ function BoardPage() {
           </button>
         </div>
 
-        {anchorPeople.length > 0 && <AnchorRow people={anchorPeople} />}
+        {anchorPeople.length > 0 && <AnchorRow people={anchorPeople} onClaim={openClaim} />}
 
         <div>
           {orderedGroups.map((group) => (
-            <YearRow key={group.key} group={group} isDimmed={isDimmed} />
+            <YearRow key={group.key} group={group} isDimmed={isDimmed} onClaim={openClaim} />
           ))}
         </div>
       </main>
+
+      <ClaimDialog
+        open={claimOpen}
+        target={claimTarget}
+        onClose={() => setClaimOpen(false)}
+        onClaimed={() => queryClient.invalidateQueries({ queryKey: ["board"] })}
+      />
     </div>
   );
 }
 
-function SiteNav() {
+function SiteNav({ onClaim }: { onClaim: () => void }) {
   return (
     <nav
       className="sticky top-0 z-30 flex h-14 items-center gap-3 px-5"
@@ -154,6 +182,14 @@ function SiteNav() {
         }}
       >
         Pitt Club Ultimate
+      </span>
+      <span className="ml-auto flex items-center gap-3">
+        <Link to="/auth" className="label-caps" style={{ color: "var(--sterling)" }}>
+          Sign in
+        </Link>
+        <button type="button" style={{ ...primaryButton, padding: "8px 14px" }} onClick={onClaim}>
+          Claim your name
+        </button>
       </span>
     </nav>
   );
@@ -271,7 +307,13 @@ function DecadeRail({ groups }: { groups: YearGroup[] }) {
   );
 }
 
-function AnchorRow({ people }: { people: BoardPerson[] }) {
+function AnchorRow({
+  people,
+  onClaim,
+}: {
+  people: BoardPerson[];
+  onClaim: (person: BoardPerson) => void;
+}) {
   const sorted = [...people].sort((a, b) =>
     `${a.last_name ?? a.first_name}`.localeCompare(`${b.last_name ?? b.first_name}`),
   );
@@ -294,14 +336,22 @@ function AnchorRow({ people }: { people: BoardPerson[] }) {
       </div>
       <div className="flex flex-1 flex-wrap content-start items-start gap-2">
         {sorted.map((person) => (
-          <NameChip key={person.id} person={person} dimmed={false} />
+          <NameChip key={person.id} person={person} dimmed={false} onClick={onClaim} />
         ))}
       </div>
     </section>
   );
 }
 
-function YearRow({ group, isDimmed }: { group: YearGroup; isDimmed: (p: BoardPerson) => boolean }) {
+function YearRow({
+  group,
+  isDimmed,
+  onClaim,
+}: {
+  group: YearGroup;
+  isDimmed: (p: BoardPerson) => boolean;
+  onClaim: (person: BoardPerson) => void;
+}) {
   const claimed = claimedCount(group.people);
   return (
     <section
@@ -322,7 +372,7 @@ function YearRow({ group, isDimmed }: { group: YearGroup; isDimmed: (p: BoardPer
       </div>
       <div className="flex flex-1 flex-wrap content-start items-start gap-2">
         {group.people.map((person) => (
-          <NameChip key={person.id} person={person} dimmed={isDimmed(person)} />
+          <NameChip key={person.id} person={person} dimmed={isDimmed(person)} onClick={onClaim} />
         ))}
         {claimed === 0 && (
           <p
