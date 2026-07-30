@@ -1099,10 +1099,11 @@ export type AdminDashboard = {
   seasonYear: number;
   editions: EditionRow[];
   sends: SendRow[];
+  sendTotals: SendTotals;
 };
 
 export async function dashboard(): Promise<AdminDashboard> {
-  const [queue, teamRes, divisionRes, gaps, heads, digest, drip, duplicates, editions, sends] = await Promise.all([
+  const [queue, teamRes, divisionRes, gaps, heads, digest, drip, duplicates, editions, sends, totals] = await Promise.all([
     reviewQueue(),
     supabaseAdmin
       .from("team_names")
@@ -1117,6 +1118,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     duplicateCandidates(),
     listEditions(),
     recentSends(),
+    sendTotals(),
   ]);
   return {
     isAdmin: true,
@@ -1130,6 +1132,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     duplicates,
     editions,
     sends,
+    sendTotals: totals,
     seasonYear: CURRENT_SEASON,
   };
 }
