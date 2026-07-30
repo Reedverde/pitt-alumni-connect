@@ -126,10 +126,17 @@ function timeLabel(event: ScheduleEvent) {
 }
 
 function WeekendPage() {
-  const { data: schedule } = useSuspenseQuery(scheduleQuery);
-  const { data: pastEditions } = useSuspenseQuery(pastEditionsQuery);
-  const edition = schedule.edition;
-  const events = schedule.events;
+  const { data } = useSuspenseQuery(weekendQuery);
+  const season = resolveSeason(data.edition, null, todayInNewYork());
+  const edition = season.edition;
+  const events = data.events;
+
+  // Off season: the current edition has ended and nothing new is published yet.
+  // This is where the page sits most of the year, so it reads as a resource, not an error.
+  if (!edition) {
+    return <OffSeason archive={data.archive} />;
+  }
+
   const DAYS = buildDays(edition);
 
   return (
@@ -150,6 +157,11 @@ function WeekendPage() {
               Add the whole weekend
             </a>
           </div>
+          {season.phase === "in_progress" && (
+            <p className="mt-4 label-caps" style={{ color: "var(--pitt-royal)" }}>
+              Happening now · Day {season.todayDayNumber} of {DAYS.length}
+            </p>
+          )}
           <div className="mt-6">
             <LabelRow label="Group shot, past alumni weekend" right={editionDateRange(edition)} />
             <PhotoSlot
@@ -182,6 +194,8 @@ function WeekendPage() {
         </NotchedBox>
 
         {DAYS.map((day) => {
+          const isPast = season.phase === "in_progress" && season.todayDayNumber !== null && day.number < season.todayDayNumber;
+          const isToday = season.phase === "in_progress" && day.number === season.todayDayNumber;
           const dayEvents = events.filter((e) => (e.day_number ?? 1) === day.number);
           const wholeProgram = dayEvents.filter((e) => !e.division);
           const lanes = Object.keys(DIVISION_LABELS)
@@ -189,7 +203,7 @@ function WeekendPage() {
             .filter((lane) => lane.events.length > 0);
 
           return (
-            <section key={day.number} className="mt-10">
+            <section key={day.number} className="mt-10" style={{ opacity: isPast ? 0.45 : 1 }}>
               <NotchedBox
                 corners={day.number === 2 ? ["br"] : day.number === 3 ? ["tl", "br"] : ["tl"]}
                 notch={NOTCH_LG}
@@ -198,7 +212,12 @@ function WeekendPage() {
                 style={tileStyle}
               >
                 <div className="flex items-start gap-4">
-                  <Seal size={64}>{day.seal}</Seal>
+                  <span
+                    className="inline-flex shrink-0 rounded-full"
+                    style={isToday ? { boxShadow: "0 0 0 5px color-mix(in srgb, var(--pitt-royal) 22%, transparent)" } : undefined}
+                  >
+                    <Seal size={64}>{day.seal}</Seal>
+                  </span>
                   <div>
                     <p className="label-caps" style={{ color: "var(--sterling)" }}>
                       <span style={{ fontFamily: '"Space Mono", monospace' }}>{day.date}</span>
@@ -252,7 +271,47 @@ function WeekendPage() {
           );
         })}
 
-        <PastEditions editions={pastEditions} />
+        <PastEditions editions={data.archive} />
+      </main>
+      <ActionRail />
+    </div>
+  );
+}
+
+function OffSeason({
+  archive,
+}: {
+  archive: { event_year: number; title: string; starts_on: string; ends_on: string; going: number }[];
+}) {
+  const expected = nextOctoberYear();
+  return (
+    <div style={{ background: "var(--field-white)" }} className="min-h-screen">
+      <SiteNav />
+      <main className="mx-auto w-full max-w-[1080px] px-5 pb-24">
+        <header className="pt-10 pb-6 md:pt-14">
+          <SlashEyebrow>Alumni Weekend · Between years</SlashEyebrow>
+          <h1 className="display-64 mt-3" style={{ color: "var(--sabah-black)" }}>
+            THE WEEKEND
+          </h1>
+          <p className="mt-4 max-w-[560px]" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
+            The next one is expected the first weekend of October, {expected}. Dates go up here as soon
+            as they are set, and this page is where they will always be.
+          </p>
+          <div className="mt-6">
+            <LabelRow label="Group shot, past alumni weekend" right="The record so far" />
+            <PhotoSlot
+              className="mt-3"
+              ratio="3 / 1"
+              index="01"
+              corners={["tl", "br"]}
+              label="Group shot, past alumni weekend"
+              slotKey="weekend_hero"
+              eager
+            />
+          </div>
+        </header>
+
+        <PastEditions editions={archive} />
       </main>
       <ActionRail />
     </div>
