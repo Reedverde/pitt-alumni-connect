@@ -1,6 +1,16 @@
 import { createHmac, timingSafeEqual } from "crypto";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  FONT_STACK,
+  GOLD,
+  INK,
+  emailButton,
+  emailParagraph,
+  emailPlainUrl,
+  emailShell,
+  escapeHtml,
+} from "./email-chrome";
 import { loadCurrentEdition } from "./editions.server";
 import { logAuthAttempt } from "./auth-attempts.server";
 
