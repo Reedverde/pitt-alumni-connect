@@ -7,14 +7,14 @@ export function SiteFooter() {
   return (
     <footer style={{ borderTop: "1px solid var(--chalk)", background: "var(--pure-white)" }}>
       <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-5 py-10 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <img
             src={pittClubUltimateLogo.url}
             alt="Pitt Club Ultimate"
-            width={34}
-            height={34}
+            width={120}
             loading="lazy"
-            className="h-[34px] w-[34px] object-contain"
+            className="w-[68px] max-w-[120px] object-contain"
+            style={{ height: "auto" }}
           />
           <span
             style={{
@@ -29,7 +29,7 @@ export function SiteFooter() {
             Pitt Club Ultimate
           </span>
         </div>
-        <nav className="flex flex-wrap items-center gap-5">
+        <nav className="flex flex-wrap items-center gap-x-5 gap-y-3">
           <Link to="/" className="label-caps" style={{ color: "var(--steel-ink)", textDecoration: "none" }}>
             Board
           </Link>
@@ -47,6 +47,30 @@ export function SiteFooter() {
             style={{ color: "var(--pitt-royal)", textDecoration: "none" }}
           >
             The endowment
+          </a>
+          <a
+            href="https://www.esnultimate.org/endowment/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="label-caps"
+            style={{ color: "var(--sterling)", textDecoration: "none" }}
+          >
+            Endowment
+          </a>
+          <a
+            href="https://everde.co"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontFamily: '"Space Grotesk", system-ui, sans-serif',
+              fontSize: 11,
+              fontWeight: 400,
+              letterSpacing: "0.04em",
+              color: "var(--sterling)",
+              textDecoration: "none",
+            }}
+          >
+            Site by everde.co
           </a>
         </nav>
       </div>
