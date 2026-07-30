@@ -508,7 +508,7 @@ function VisibilityToggles({
 }) {
   const rows = [
     { key: "show_on_board" as const, label: "Show my name on the public board" },
-    { key: "share_email" as const, label: "Show my email to signed-in alumni" },
+    { key: "share_email" as const, label: "Let an organizer pass my email on if a teammate asks" },
     { key: "open_to_network" as const, label: "I'm open to hearing from alumni about work" },
   ];
   return (
