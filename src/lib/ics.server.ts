@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { editionDay, type EditionSummary } from "./edition-format";
 
 export const SITE_URL = "https://alumni.pittultimate.org";
 const TZ = "America/New_York";
@@ -38,9 +39,9 @@ export async function loadEvents(year: number, id?: string): Promise<CalendarEve
   return (data ?? []) as CalendarEvent[];
 }
 
-/** Alumni Weekend 2026 runs Oct 2-4; day_number 1 is Oct 2. */
-export function eventDate(year: number, dayNumber: number | null): Date {
-  return new Date(Date.UTC(year, 9, 1 + (dayNumber ?? 1)));
+/** day_number 1 is the edition's first day, read from editions.starts_on. */
+export function eventDate(edition: EditionSummary, dayNumber: number | null): Date {
+  return editionDay(edition, dayNumber ?? 1);
 }
 
 function pad(n: number) {
@@ -75,7 +76,8 @@ function fold(line: string) {
 const TBD_NOTE =
   "The exact time for this one is not set yet. We will email you as soon as it locks.";
 
-export function buildIcs(events: CalendarEvent[], year: number): string {
+export function buildIcs(events: CalendarEvent[], edition: EditionSummary): string {
+  const year = edition.event_year;
   const stamp = utcStamp(new Date());
   const lines: string[] = [
     "BEGIN:VCALENDAR",
@@ -110,7 +112,7 @@ export function buildIcs(events: CalendarEvent[], year: number): string {
       lines.push(`DTEND:${utcStamp(end)}`);
     } else {
       // No invented times: a TBD event is an all-day entry on its correct date.
-      const day = eventDate(year, event.day_number);
+      const day = eventDate(edition, event.day_number);
       const next = new Date(day.getTime() + 24 * 60 * 60 * 1000);
       lines.push(`DTSTART;VALUE=DATE:${dateStamp(day)}`);
       lines.push(`DTEND;VALUE=DATE:${dateStamp(next)}`);
