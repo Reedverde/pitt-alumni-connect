@@ -136,3 +136,9 @@ LATER: tournament tracker. Alumni job network built on the open_to_network conse
 
 ## Branding, login and email headers (2026-07-30)
 Shared email chrome lives in `src/lib/email-chrome.ts`: table based header, live text wordmark PITT CLUB ULTIMATE in Pitt Royal, 1px chalk rule as a background row, Arial stack, pure white background, colour scheme pinned to light. Gold appears only on the going confirmation dot. The seal image is optional and read from the `MAIL_SEAL_URL` secret: no approved flat single colour ESN mark exists in the project yet, so the header currently ships wordmark only. `src/components/Lockup.tsx` renders the same lockup on /auth. The shield PNG stays in the footer only.
+
+## Outbound email kill switch (2026-07-30)
+`app_settings.outbound_email_mode` = `transactional_only` (default, admin editable, audited as `outbound_email_mode`).
+Single choke point: `resendDeliver()` in `src/lib/mail.server.ts` — the only caller of the Resend send endpoint.
+Allow list is by message kind: `magic_link` only. Everything else (digest, all drips, `t_minus_10_headcount`, admin test, party-size link) is refused there and writes a `sends` row with status `blocked`. The Supabase built-in mailer fallback consults the same `outboundEmailMode()`.
+Admin: Mail configuration panel shows "Outbound email: paused. Only sign-in links are being sent." with a toggle.
