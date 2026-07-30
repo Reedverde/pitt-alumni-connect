@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import type { EditionSummary } from "./edition-format";
 
 export type BoardPerson = {
   id: string;
@@ -18,6 +19,8 @@ export type BoardData = {
   people: BoardPerson[];
   totals: { total: number; claimed: number; going: number };
   divisions: { code: string; label: string }[];
+  edition: EditionSummary;
+  nextEdition: EditionSummary | null;
 };
 
 export const getBoard = createServerFn({ method: "GET" }).handler(async (): Promise<BoardData> => {
@@ -26,6 +29,10 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
     process.env.SUPABASE_PUBLISHABLE_KEY!,
     { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
   );
+
+  const { loadCurrentEdition, loadNextPublishedEdition } = await import("./editions.server");
+  const current = await loadCurrentEdition();
+  const next = await loadNextPublishedEdition(current.event_year);
 
   const [peopleRes, countsRes, divisionsRes] = await Promise.all([
     supabase
@@ -54,5 +61,25 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     .map((d) => ({ code: d.code as string, label: (d.label as string) ?? (d.code as string) }));
 
-  return { people: (peopleRes.data ?? []) as BoardPerson[], totals, divisions };
+  const edition: EditionSummary = {
+    event_year: current.event_year,
+    title: current.title,
+    starts_on: current.starts_on,
+    ends_on: current.ends_on,
+  };
+
+  return {
+    people: (peopleRes.data ?? []) as BoardPerson[],
+    totals,
+    divisions,
+    edition,
+    nextEdition: next
+      ? {
+          event_year: next.event_year,
+          title: next.title,
+          starts_on: next.starts_on,
+          ends_on: next.ends_on,
+        }
+      : null,
+  };
 });
