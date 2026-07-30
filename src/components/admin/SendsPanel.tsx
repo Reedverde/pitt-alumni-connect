@@ -8,6 +8,7 @@ const STATUS_COLOR: Record<string, string> = {
   bounced: "var(--pitt-royal)",
   complained: "var(--pitt-royal)",
   suppressed: "var(--sterling)",
+  throttled: "var(--sterling)",
 };
 
 function when(iso: string | null) {
