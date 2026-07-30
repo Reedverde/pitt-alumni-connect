@@ -11,6 +11,8 @@ import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
 import { SiteNav } from "@/components/SiteNav";
+import { PersonPanel } from "@/components/board/PersonPanel";
+import { useSessionPerson } from "@/lib/useSessionPerson";
 import { SiteFooter } from "@/components/SiteFooter";
 import heroPeak from "@/assets/hero-peak.png.asset.json";
 import { NotchedBox } from "@/components/media/NotchedBox";
@@ -107,6 +109,25 @@ function BoardPage() {
   const [newestFirst, setNewestFirst] = useState(true);
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
+  const [panelPerson, setPanelPerson] = useState<BoardPerson | null>(null);
+  const navigate = useNavigate();
+  const session = useSessionPerson();
+
+  // A chip is the main way back into your own record. Unclaimed keeps the claim
+  // flow; anything already claimed offers the sign-in route instead, and your
+  // own chip goes straight to /me.
+  const openChip = (person: BoardPerson) => {
+    if (person.state === "memorial") return;
+    if (person.state === "unclaimed") {
+      openClaim(person);
+      return;
+    }
+    if (session.signedIn && session.personId === person.id) {
+      void navigate({ to: "/me" });
+      return;
+    }
+    setPanelPerson(person);
+  };
 
   const openClaim = (person?: BoardPerson) => {
     setClaimTarget(
@@ -221,7 +242,7 @@ function BoardPage() {
               <AnchorRow
                 key={row.key}
                 people={anchorPeople}
-                onClaim={openClaim}
+                onClaim={openChip}
                 photos={data.photosByYear}
                 rowIndex={i}
               />
@@ -230,7 +251,7 @@ function BoardPage() {
                 key={row.key}
                 group={row.group!}
                 isDimmed={isDimmed}
-                onClaim={openClaim}
+                onClaim={openChip}
                 photos={data.photosByYear}
                 rowIndex={i}
               />
@@ -241,6 +262,8 @@ function BoardPage() {
         <WhyTeaser />
       </main>
       <SiteFooter />
+
+      {panelPerson && <PersonPanel person={panelPerson} onClose={() => setPanelPerson(null)} />}
 
       <ClaimDialog
         open={claimOpen}
