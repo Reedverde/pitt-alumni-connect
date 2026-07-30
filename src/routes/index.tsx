@@ -284,6 +284,7 @@ function Hero({
               fontWeight: 800,
               fontSize: "clamp(64px, 15vw, 200px)",
               lineHeight: 0.86,
+              paddingBottom: "0.14em",
               letterSpacing: "-0.045em",
               color: "var(--pure-white)",
               textTransform: "uppercase",
