@@ -12,7 +12,7 @@ import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { PhotoSlot } from "@/components/media/PhotoSlot";
+import heroPeak from "@/assets/hero-peak.png.asset.json";
 import { NotchedBox } from "@/components/media/NotchedBox";
 import { NOTCH_ALL } from "@/components/media/notch";
 import { YearPhoto, cornersForRow } from "@/components/board/YearPhoto";
@@ -269,7 +269,7 @@ function Hero({
   return (
     <section style={{ background: "var(--sabah-black)" }}>
       <div
-        className="relative mx-auto w-full max-w-[1320px] px-5 pt-10 pb-[95vw] md:pt-14 md:pb-[30vw]"
+        className="relative mx-auto w-full max-w-[1320px] px-5 pt-10 pb-[42vw] md:pt-14 md:pb-[26vw]"
         style={{ overflow: "hidden" }}
       >
         <p className="flex items-center" style={{ color: "var(--pure-white)" }}>
@@ -315,24 +315,22 @@ function Hero({
         )}
 
         {/* The photograph rises out of the bottom edge on a hard diagonal,
-            centred in the hero and cropped by it. */}
-        <div
-          aria-hidden={false}
-          className="pointer-events-none absolute left-1/2 z-10 w-[150vw] max-w-none bottom-[-46vw] -translate-x-[38%] rotate-[38deg] origin-bottom md:w-[min(140vw,1400px)] md:bottom-[-50vw] md:-translate-x-[57%]"
-        >
-          <PhotoSlot
-            ratio="4 / 3"
-            index="01"
-            label="Group shot, past alumni weekend"
-            slotKey="weekend_hero"
-            fullColor
-            bare
-            radius="28px 28px 0 0"
-            outline="var(--pure-white)"
-            outlineWidth={7}
-            eager
-          />
-        </div>
+            spanning the full width of the hero. */}
+        <img
+          src={heroPeak.url}
+          alt="Pitt Ultimate players piled together on the sideline"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 w-full select-none"
+          style={{
+            filter: [
+              "drop-shadow(0 -6px 0 var(--pure-white))",
+              "drop-shadow(6px 0 0 var(--pure-white))",
+              "drop-shadow(-6px 0 0 var(--pure-white))",
+              "drop-shadow(0 6px 0 var(--pure-white))",
+            ].join(" "),
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+          }}
+        />
       </div>
 
       {/* The copy sits below the picture so the hero can stay a picture. */}
