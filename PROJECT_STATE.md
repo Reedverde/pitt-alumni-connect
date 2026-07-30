@@ -149,3 +149,8 @@ Leak: `src/lib/rsvp.server.ts:201` called `sendMagicLinkEmail` with no `kind`, a
 Repeats: every accepted `submitRsvpServer` call sent unconditionally, including the verified-owner branch that writes nothing. New `confirmation_sends` table (unique person_id + event_year + status) claims a row before the send and releases it only when the send never left, so one confirmation per person per edition per status change.
 `sends.outcome` ('sent' | 'blocked' | 'failed' | 'suppressed') plus `blocked_reason`; every delivery count filters `outcome = 'sent'`.
 Session: sessions are not time boxed (`auth.sessions.not_after` is null), refresh tokens rotate on use and the generated client persists and auto refreshes, so a sliding session outlasts 90 days. Access token JWT stays at the 3600s default; that value is a project auth setting with no tool exposed to change it. Sign out on /me uses `scope: "global"`.
+
+## Schedule, 2026-07-30
+9 events. Friday: Pitt football watch party 7 PM East Liberty, exact bar TBD, followed by an Oakland bar crawl at 9 PM. Both times are provisional and awaiting planner confirmation. The two overlap the ESPN broadcast window and the two venues are in different neighbourhoods; this reintroduces the split night that a single bar was chosen to solve.
+Saturday BBQ at Schenley Overlook Shelter is booked and paid but still carries time_tbd, so it renders as TBD to every visitor. Needs a time.
+Four division events remain placeholders: Sabah alumni gathering, Sabah alumni game, Pressure and BITT alumni gathering, Pressure and BITT alumni game. Confirm or delete.
