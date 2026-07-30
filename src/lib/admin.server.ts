@@ -6,6 +6,8 @@ import { nameScore, normalize } from "./fuzzy";
 import { teamLabel } from "./rsvp.server";
 import { EVENT_YEAR } from "./rsvp-types";
 
+export type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
+
 export const CURRENT_SEASON = new Date().getFullYear();
 
 export type Actor = { personId: string | null };
@@ -232,7 +234,7 @@ export async function updatePerson(
   if (typeof clean.first_name === "string" && !clean.first_name) delete clean.first_name;
   if (Object.keys(clean).length === 0) return { ok: true };
 
-  const { error } = await supabaseAdmin.from("people").update(clean).eq("id", personId);
+  const { error } = await supabaseAdmin.from("people").update(clean as never).eq("id", personId);
   if (error) throw new Error(error.message);
   await audit(actor, "admin_person_update", "people", personId, before, clean);
   return { ok: true };
@@ -280,7 +282,7 @@ export async function recordMemorialConfirmation(
   }
 
   if (Object.keys(patch).length === 0) return { ok: true };
-  const { error } = await supabaseAdmin.from("people").update(patch).eq("id", input.personId);
+  const { error } = await supabaseAdmin.from("people").update(patch as never).eq("id", input.personId);
   if (error) throw new Error(error.message);
 
   if (input.suggestionId) {
@@ -321,7 +323,7 @@ export type QueueItem = {
   created_at: string | null;
   submitter: string | null;
   peer_vouched: boolean;
-  payload: Record<string, unknown>;
+  payload: Record<string, Json>;
   proposedName: string | null;
   matches: { id: string; name: string; grad_year: number | null; score: number }[];
   diff: { field: string; before: string; after: string }[];
@@ -348,7 +350,7 @@ export async function reviewQueue(): Promise<QueueItem[]> {
 
   const out: QueueItem[] = [];
   for (const row of rows) {
-    const payload = (row.payload ?? {}) as Record<string, unknown>;
+    const payload = (row.payload ?? {}) as Record<string, Json>;
     const submitter = byId.get(row.submitted_by as string);
     const item: QueueItem = {
       id: row.id as string,
