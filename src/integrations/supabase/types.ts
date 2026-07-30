@@ -279,48 +279,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "duplicate_rulings_person_a_id_fkey"
-            columns: ["person_a_id"]
-            isOneToOne: false
-            referencedRelation: "board_people"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "duplicate_rulings_person_a_id_fkey"
-            columns: ["person_a_id"]
-            isOneToOne: false
-            referencedRelation: "people"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "duplicate_rulings_person_a_id_fkey"
-            columns: ["person_a_id"]
-            isOneToOne: false
-            referencedRelation: "person_board_placement"
-            referencedColumns: ["person_id"]
-          },
-          {
-            foreignKeyName: "duplicate_rulings_person_b_id_fkey"
-            columns: ["person_b_id"]
-            isOneToOne: false
-            referencedRelation: "board_people"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "duplicate_rulings_person_b_id_fkey"
-            columns: ["person_b_id"]
-            isOneToOne: false
-            referencedRelation: "people"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "duplicate_rulings_person_b_id_fkey"
-            columns: ["person_b_id"]
-            isOneToOne: false
-            referencedRelation: "person_board_placement"
-            referencedColumns: ["person_id"]
-          },
-          {
             foreignKeyName: "duplicate_rulings_ruled_by_fkey"
             columns: ["ruled_by"]
             isOneToOne: false
