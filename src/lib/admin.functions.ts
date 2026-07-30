@@ -181,7 +181,14 @@ export const adminCreateEdition = createServerFn({ method: "POST" })
 export const adminUpdateEdition = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (input: { event_year: number; title: string; starts_on: string; ends_on: string }) => input,
+    (input: {
+      event_year: number;
+      title: string;
+      starts_on: string;
+      ends_on: string;
+      lodging_note?: string | null;
+      travel_note?: string | null;
+    }) => input,
   )
   .handler(async ({ data, context }) => {
     const mod = await import("./admin.server");

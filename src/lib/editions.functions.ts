@@ -15,12 +15,16 @@ const summary = (e: {
   starts_on: string;
   ends_on: string;
   published?: boolean;
+  lodging_note?: string | null;
+  travel_note?: string | null;
 }): EditionSummary => ({
   event_year: e.event_year,
   title: e.title,
   starts_on: e.starts_on,
   ends_on: e.ends_on,
   published: e.published ?? true,
+  lodging_note: e.lodging_note ?? null,
+  travel_note: e.travel_note ?? null,
 });
 
 /** Current edition plus the next published one, for countdowns and copy. */

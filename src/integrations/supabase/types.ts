@@ -130,27 +130,33 @@ export type Database = {
           ends_on: string
           event_year: number
           is_current: boolean
+          lodging_note: string | null
           published: boolean
           starts_on: string
           title: string
+          travel_note: string | null
         }
         Insert: {
           created_at?: string
           ends_on: string
           event_year: number
           is_current?: boolean
+          lodging_note?: string | null
           published?: boolean
           starts_on: string
           title: string
+          travel_note?: string | null
         }
         Update: {
           created_at?: string
           ends_on?: string
           event_year?: number
           is_current?: boolean
+          lodging_note?: string | null
           published?: boolean
           starts_on?: string
           title?: string
+          travel_note?: string | null
         }
         Relationships: []
       }

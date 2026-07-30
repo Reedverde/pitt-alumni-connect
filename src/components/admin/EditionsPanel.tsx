@@ -1,5 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -32,8 +32,11 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
     starts_on: "",
     ends_on: "",
   });
-  const [editing, setEditing] = useState<Record<number, { title: string; starts_on: string; ends_on: string }>>({});
+  const [editing, setEditing] = useState<
+    Record<number, { title: string; starts_on: string; ends_on: string; lodging_note: string; travel_note: string }>
+  >({});
   const [eventYear, setEventYear] = useState<number | null>(null);
+  const [placeholdersOnly, setPlaceholdersOnly] = useState(false);
   const [eventDraft, setEventDraft] = useState({
     title: "",
     day_number: "1",
@@ -87,7 +90,8 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
             {rows.map((row) => {
               const edit = editing[row.event_year];
               return (
-                <tr key={row.event_year}>
+                <Fragment key={row.event_year}>
+                <tr>
                   <td style={cellStyle}>
                     <Num>{row.event_year}</Num>
                   </td>
@@ -189,11 +193,13 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
                             onClick={() =>
                               setEditing((s) => ({
                                 ...s,
-                                [row.event_year]: {
-                                  title: row.title,
-                                  starts_on: row.starts_on,
-                                  ends_on: row.ends_on,
-                                },
+                                 [row.event_year]: {
+                                   title: row.title,
+                                   starts_on: row.starts_on,
+                                   ends_on: row.ends_on,
+                                   lodging_note: row.lodging_note ?? "",
+                                   travel_note: row.travel_note ?? "",
+                                 },
                               }))
                             }
                           >
@@ -250,19 +256,75 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
                     </div>
                   </td>
                 </tr>
+                {edit && (
+                  <tr>
+                    <td style={cellStyle} colSpan={9}>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <label style={{ fontSize: 13, color: "var(--sterling)" }}>
+                          Lodging note
+                          <textarea
+                            style={{ ...inputStyle, minHeight: 84 }}
+                            value={edit.lodging_note}
+                            onChange={(e) =>
+                              setEditing((s) => ({
+                                ...s,
+                                [row.event_year]: { ...edit, lodging_note: e.target.value },
+                              }))
+                            }
+                          />
+                        </label>
+                        <label style={{ fontSize: 13, color: "var(--sterling)" }}>
+                          Travel note
+                          <textarea
+                            style={{ ...inputStyle, minHeight: 84 }}
+                            value={edit.travel_note}
+                            onChange={(e) =>
+                              setEditing((s) => ({
+                                ...s,
+                                [row.event_year]: { ...edit, travel_note: e.target.value },
+                              }))
+                            }
+                          />
+                        </label>
+                      </div>
+                      <p className="mt-2" style={{ fontSize: 13, color: "var(--sterling)" }}>
+                        Plain text. Both show on the weekend page when filled and disappear when empty.
+                      </p>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               );
             })}
           </tbody>
         </table>
       </div>
 
-      {eventYear !== null && (
+      {eventYear !== null && (() => {
+        const allEvents = rows.find((r) => r.event_year === eventYear)?.events ?? [];
+        const placeholderCount = allEvents.filter((e) => e.is_placeholder).length;
+        const shown = placeholdersOnly ? allEvents.filter((e) => e.is_placeholder) : allEvents;
+        return (
         <div className="mt-6" style={{ border: hairline, padding: 16 }}>
           <p className="label-caps mb-3" style={{ color: "var(--sterling)" }}>
             Events · {eventYear}
           </p>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <p style={{ fontSize: 13, fontWeight: 700, color: "var(--sabah-black)" }}>
+              {placeholderCount === 0
+                ? "No placeholder events. Everything here is real."
+                : `${placeholderCount} placeholder event${placeholderCount === 1 ? "" : "s"} still need real details.`}
+            </p>
+            <button
+              type="button"
+              style={secondaryButton}
+              onClick={() => setPlaceholdersOnly((v) => !v)}
+            >
+              {placeholdersOnly ? "Show all events" : "Show placeholders only"}
+            </button>
+          </div>
           <div className="mb-6 flex flex-col gap-2">
-            {(rows.find((r) => r.event_year === eventYear)?.events ?? []).map((ev) => (
+            {shown.map((ev) => (
               <div key={ev.id} className="flex flex-wrap items-center gap-3" style={{ fontSize: 13 }}>
                 <Num>Day {ev.day_number ?? 1}</Num>
                 <span style={{ color: "var(--sabah-black)" }}>{ev.title}</span>
@@ -295,7 +357,7 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
                 </button>
               </div>
             ))}
-            {(rows.find((r) => r.event_year === eventYear)?.events ?? []).length === 0 && (
+            {shown.length === 0 && (
               <p style={{ fontSize: 13, color: "var(--sterling)" }}>Nothing scheduled yet.</p>
             )}
           </div>
@@ -395,7 +457,8 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
             </button>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       <div className="mt-8" style={{ border: hairline, padding: 16 }}>
         <p className="label-caps mb-3" style={{ color: "var(--sterling)" }}>

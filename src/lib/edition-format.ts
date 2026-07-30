@@ -6,6 +6,9 @@ export type EditionSummary = {
   ends_on: string;
   /** Absent means "assume published"; the loaders always set it. */
   published?: boolean;
+  /** Organizer-editable free text. Absent or empty means the section is hidden. */
+  lodging_note?: string | null;
+  travel_note?: string | null;
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
