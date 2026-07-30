@@ -44,3 +44,41 @@ export const getSchedule = createServerFn({ method: "GET" })
       events,
     };
   });
+
+export type WeekendPageData = {
+  /** The edition the page is about, or null in the off season. */
+  edition: EditionSummary | null;
+  events: ScheduleEvent[];
+  /** Every published edition with its going count, for the archive list. */
+  archive: (EditionSummary & { going: number })[];
+};
+
+/** /weekend is a permanent URL. It resolves its own state and never 404s or empties. */
+export const getWeekendPage = createServerFn({ method: "GET" }).handler(
+  async (): Promise<WeekendPageData> => {
+    const { loadEvents } = await import("@/lib/ics.server");
+    const { loadCurrentEdition, loadNextPublishedEdition, loadEditions, goingCounts } = await import(
+      "@/lib/editions.server"
+    );
+    const { resolveSeason } = await import("./edition-format");
+
+    const current = await loadCurrentEdition();
+    const next = await loadNextPublishedEdition(current.event_year);
+    const season = resolveSeason(current, next);
+
+    const [editions, counts] = await Promise.all([loadEditions(), goingCounts()]);
+    const archive = editions
+      .filter((e) => e.published && e.event_year !== season.edition?.event_year)
+      .map((e) => ({
+        event_year: e.event_year,
+        title: e.title,
+        starts_on: e.starts_on,
+        ends_on: e.ends_on,
+        published: true,
+        going: counts.get(e.event_year) ?? 0,
+      }));
+
+    const events = season.edition ? await loadEvents(season.edition.event_year) : [];
+    return { edition: season.edition, events, archive };
+  },
+);
