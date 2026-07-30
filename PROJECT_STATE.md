@@ -133,3 +133,6 @@ LATER: tournament tracker. Alumni job network built on the open_to_network conse
 - board_people, board_year_counts and person_board_placement run with security_invoker = off so the public board keeps working without any anon access to identities. These views expose no email column. This is a deliberate trade against the linter's "security definer view" rule.
 - /me resolves auth.uid() -> identities.auth_user_id -> person_id and filters every query by that id, including for admins. Verified: signed in as an admin, /me returns only Reed Verdesoto and his 3 own addresses while RLS would allow 124.
 - throttle_events stays policy-free: written only by server code using the service role.
+
+## Branding, login and email headers (2026-07-30)
+Shared email chrome lives in `src/lib/email-chrome.ts`: table based header, live text wordmark PITT CLUB ULTIMATE in Pitt Royal, 1px chalk rule as a background row, Arial stack, pure white background, colour scheme pinned to light. Gold appears only on the going confirmation dot. The seal image is optional and read from the `MAIL_SEAL_URL` secret: no approved flat single colour ESN mark exists in the project yet, so the header currently ships wordmark only. `src/components/Lockup.tsx` renders the same lockup on /auth. The shield PNG stays in the footer only.
