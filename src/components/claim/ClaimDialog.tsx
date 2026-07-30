@@ -374,7 +374,7 @@ export function ClaimDialog({
                     </div>
                   </div>
                 )}
-                <div className="mt-5 grid gap-2 md:grid-cols-3">
+                <div ref={statusGroupRef} className="mt-5 grid gap-2 md:grid-cols-3">
                   {(["going", "maybe", "not_this_year"] as RsvpStatus[]).map((s) => {
                     const on = status === s;
                     return (
@@ -392,6 +392,16 @@ export function ClaimDialog({
                     );
                   })}
                 </div>
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    className="hover:underline"
+                    style={quietLink}
+                    onClick={() => void submit(true)}
+                  >
+                    Skip for now
+                  </button>
+                </div>
                 <div className="mt-6 flex gap-2">
                   {!target && (
                     <button type="button" style={secondaryButton} onClick={() => setStep("name")}>
@@ -401,8 +411,14 @@ export function ClaimDialog({
                   <button
                     type="button"
                     style={{ ...primaryButton, opacity: status ? 1 : 0.5 }}
-                    disabled={!status}
-                    onClick={() => setStep("email")}
+                    aria-disabled={!status}
+                    onClick={() => {
+                      if (!status) {
+                        statusGroupRef.current?.querySelector<HTMLElement>("button")?.focus();
+                        return;
+                      }
+                      setStep("email");
+                    }}
                   >
                     Continue
                   </button>
