@@ -302,9 +302,11 @@ export const reportMemorial = createServerFn({ method: "POST" })
 export const getPendingVerifications = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { personId: string }) => input)
-  .handler(async ({ data }) => {
+  .handler(async ({ context }) => {
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId) return [];
     const { pendingForPeer } = await import("./account.server");
-    return pendingForPeer(data.personId);
+    return pendingForPeer(personId);
   });
 
 export const vouchForPerson = createServerFn({ method: "POST" })
