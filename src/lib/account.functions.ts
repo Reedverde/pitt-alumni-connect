@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveMyPersonId } from "./account-resolve";
-import type { RsvpStatus } from "./rsvp-types";
+import { normalizePartySize, type RsvpStatus } from "./rsvp-types";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -21,6 +21,7 @@ export type MyProfile = {
   emails: { id: string; email: string; is_primary: boolean; verified: boolean }[];
   stints: { id: string; division: string; role: string; year: number }[];
   rsvp: RsvpStatus | null;
+  rsvpPartySize: number;
   edition: { event_year: number; title: string; starts_on: string; ends_on: string } | null;
   attended: number[];
 };
@@ -53,7 +54,7 @@ export const getMyProfile = createServerFn({ method: "GET" })
     };
 
     const personId = await resolveMyPersonId(supabase, context.userId);
-    if (!personId) return { person: null, emails: [], stints: [], rsvp: null, edition, attended: [] };
+    if (!personId) return { person: null, emails: [], stints: [], rsvp: null, rsvpPartySize: 1, edition, attended: [] };
 
     const { data: mine } = await supabase
       .from("identities")
@@ -72,7 +73,7 @@ export const getMyProfile = createServerFn({ method: "GET" })
       supabase.from("stints").select("id, division, role, year").eq("person_id", personId).order("year"),
       supabase
         .from("rsvps")
-        .select("status")
+        .select("status, party_size")
         .eq("person_id", personId)
         .eq("event_year", edition.event_year)
         .maybeSingle(),
@@ -93,6 +94,7 @@ export const getMyProfile = createServerFn({ method: "GET" })
       })),
       stints: (stintRes.data ?? []) as MyProfile["stints"],
       rsvp: ((rsvpRes.data?.status as RsvpStatus | undefined) ?? null),
+      rsvpPartySize: Number(rsvpRes.data?.party_size ?? 1),
       edition,
       attended: (historyRes.data ?? [])
         .map((r) => r.event_year as number)
@@ -229,7 +231,7 @@ export const removeStint = createServerFn({ method: "POST" })
 
 export const setMyRsvp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { personId: string; status: RsvpStatus }) => input)
+  .inputValidator((input: { personId: string; status: RsvpStatus; partySize?: number | null }) => input)
   .handler(async ({ data, context }) => {
     const { currentEditionYear } = await import("./editions.server");
     const eventYear = await currentEditionYear();
@@ -244,12 +246,41 @@ export const setMyRsvp = createServerFn({ method: "POST" })
     const { error } = existing
       ? await context.supabase
           .from("rsvps")
-          .update({ status: data.status, responded_at: new Date().toISOString() })
+          .update({
+            status: data.status,
+            party_size: normalizePartySize(data.status, data.partySize ?? 1),
+            responded_at: new Date().toISOString(),
+          })
           .eq("id", existing.id as string)
           .eq("person_id", personId)
       : await context.supabase
           .from("rsvps")
-          .insert({ person_id: personId, event_year: eventYear, status: data.status, src: "email" });
+          .insert({
+            person_id: personId,
+            event_year: eventYear,
+            status: data.status,
+            party_size: normalizePartySize(data.status, data.partySize ?? 1),
+            src: "email",
+          });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Heads only. Never touches status: changing the number is not a new answer. */
+export const setMyPartySize = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { partySize: number }) => input)
+  .handler(async ({ data, context }) => {
+    const { currentEditionYear } = await import("./editions.server");
+    const eventYear = await currentEditionYear();
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId) throw new Error("Forbidden");
+    const { error } = await context.supabase
+      .from("rsvps")
+      .update({ party_size: normalizePartySize("going", data.partySize) })
+      .eq("person_id", personId)
+      .eq("event_year", eventYear)
+      .eq("status", "going");
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -349,7 +380,7 @@ export const getNavIdentity = createServerFn({ method: "GET" })
       context.supabase.from("people").select("first_name").eq("id", personId).maybeSingle(),
       context.supabase
         .from("rsvps")
-        .select("status")
+        .select("status, party_size")
         .eq("person_id", personId)
         .eq("event_year", eventYear)
         .maybeSingle(),

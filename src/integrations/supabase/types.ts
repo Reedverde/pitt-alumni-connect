@@ -587,6 +587,7 @@ export type Database = {
         Row: {
           event_year: number
           id: string
+          party_size: number
           person_id: string
           responded_at: string | null
           src: string | null
@@ -595,6 +596,7 @@ export type Database = {
         Insert: {
           event_year: number
           id?: string
+          party_size?: number
           person_id: string
           responded_at?: string | null
           src?: string | null
@@ -603,6 +605,7 @@ export type Database = {
         Update: {
           event_year?: number
           id?: string
+          party_size?: number
           person_id?: string
           responded_at?: string | null
           src?: string | null

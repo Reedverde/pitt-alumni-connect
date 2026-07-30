@@ -3,7 +3,14 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { adminExportCsv, adminSetDivisionVisible, adminUpdateTeamName } from "@/lib/admin.functions";
-import type { DataGaps, DigestCohort, DivisionRow, DripData, TeamNameRow } from "@/lib/admin.server";
+import type {
+  DataGaps,
+  DigestCohort,
+  DivisionRow,
+  DripData,
+  Headcount,
+  TeamNameRow,
+} from "@/lib/admin.server";
 import { Empty, Num, Section, cellStyle, hairline, headStyle, inputStyle, primaryButton, secondaryButton } from "./ui";
 
 export function DivisionsPanel({ rows, onSaved }: { rows: DivisionRow[]; onSaved: () => void }) {
@@ -184,6 +191,28 @@ export function ConfidencePanel({ rows, onSaved }: { rows: TeamNameRow[]; onSave
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** People who answered going, and the heads they are bringing. The two are
+ *  deliberately shown side by side because they are different numbers. */
+export function HeadcountPanel({ headcount }: { headcount: Headcount }) {
+  return (
+    <Section eyebrow="Capacity" title="Total heads expected">
+      <div className="flex flex-wrap items-baseline gap-8">
+        <p style={{ fontSize: 15, color: "var(--steel-ink)" }}>
+          <Num>{headcount.going}</Num> going
+        </p>
+        <p style={{ fontSize: 15, color: "var(--steel-ink)" }}>
+          <Num>{headcount.heads}</Num> total heads expected
+        </p>
+      </div>
+      {headcount.heads > headcount.capacity && (
+        <p className="mt-3" style={{ fontSize: 13, color: "var(--steel-ink)" }}>
+          Above Schenley Overlook capacity. Thorne Barn holds more.
+        </p>
+      )}
+    </Section>
   );
 }
 

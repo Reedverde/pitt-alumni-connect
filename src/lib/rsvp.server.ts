@@ -7,6 +7,7 @@ import {
   recordThrottleEvent,
 } from "./throttle.server";
 import {
+  normalizePartySize,
   RSVP_SOURCES,
   RSVP_STATUSES,
   type PersonMatch,
@@ -179,8 +180,10 @@ export type SubmitInput = {
   personId?: string | null;
   firstName?: string | null;
   lastName?: string | null;
-  /** null means the person skipped the question. No rsvps row is written. */
-  status: RsvpStatus | null;
+  /** Mandatory. The claim cannot be completed without an answer. */
+  status: RsvpStatus;
+  /** Heads including the person. Ignored unless the status is "going". */
+  partySize?: number | null;
   email: string;
   src?: RsvpSource | null;
   origin?: string | null;
@@ -281,10 +284,10 @@ async function requestNewPerson(args: {
  *  authenticated. Every outcome returns the same shape; existence of an email
  *  or a person is never disclosed. */
 export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<RsvpResult> {
-  // null is a legitimate answer: the person skipped the question.
-  const status: RsvpStatus | null = input.status ?? null;
-  if (status !== null && !RSVP_STATUSES.includes(status))
-    throw new Error("Something went wrong. Try again.");
+  // The answer is mandatory. No status, no record.
+  const status = input.status as RsvpStatus;
+  if (!RSVP_STATUSES.includes(status)) throw new Error("Please pick an answer.");
+  const partySize = normalizePartySize(status, input.partySize ?? 1);
   const src: RsvpSource = RSVP_SOURCES.includes(input.src as RsvpSource)
     ? (input.src as RsvpSource)
     : "email";
@@ -359,25 +362,22 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
     effectiveStatus = (currentRsvp?.status as RsvpStatus | undefined) ?? null;
   } else {
     // RSVP first: the record must save whether or not the email work succeeds.
-    // A skipped answer writes nothing. Absence of a row is the state.
-    if (status !== null) {
-      const { data: existingRsvp } = await supabaseAdmin
-        .from("rsvps")
-        .select("id")
-        .eq("person_id", person.id)
-        .eq("event_year", eventYear)
-        .maybeSingle();
+    const { data: existingRsvp } = await supabaseAdmin
+      .from("rsvps")
+      .select("id")
+      .eq("person_id", person.id)
+      .eq("event_year", eventYear)
+      .maybeSingle();
 
-      if (existingRsvp) {
-        await supabaseAdmin
-          .from("rsvps")
-          .update({ status, src, responded_at: new Date().toISOString() })
-          .eq("id", existingRsvp.id as string);
-      } else {
-        await supabaseAdmin
-          .from("rsvps")
-          .insert({ person_id: person.id, event_year: eventYear, status, src });
-      }
+    if (existingRsvp) {
+      await supabaseAdmin
+        .from("rsvps")
+        .update({ status, src, party_size: partySize, responded_at: new Date().toISOString() })
+        .eq("id", existingRsvp.id as string);
+    } else {
+      await supabaseAdmin
+        .from("rsvps")
+        .insert({ person_id: person.id, event_year: eventYear, status, src, party_size: partySize });
     }
 
     // Identity: if this email is already on file (for anyone), leave it alone.
@@ -408,6 +408,7 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
     record_id: person.id,
     after: {
       status,
+      party_size: partySize,
       src,
       ip_hash: hashIp(ip),
       email_domain: email.split("@")[1] ?? null,
@@ -470,65 +471,4 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
               : "unclaimed",
     },
   };
-}
-
-/** The person skipped the question during the claim and answered it on the
- *  confirmation screen instead. Accepts only the pair (person, email) that the
- *  claim just created, and only while that identity is still unverified. */
-export async function answerAfterClaimServer(
-  input: { personId: string; email: string; status: RsvpStatus },
-  ip: string,
-): Promise<{ ok: true }> {
-  if (!RSVP_STATUSES.includes(input.status)) throw new Error("Something went wrong. Try again.");
-  if (!isValidEmail(input.email)) throw new Error("Something went wrong. Try again.");
-  const email = input.email.trim().toLowerCase();
-  const ipHash = hashIp(ip);
-
-  const verdict = await evaluateRsvpThrottle(ipHash, email);
-  if (verdict.level === "hard") throw new Error("Something went wrong. Try again later.");
-  await recordThrottleEvent("rsvp_ip", ipHash);
-
-  const { data: identity } = await supabaseAdmin
-    .from("identities")
-    .select("id, person_id, verified_at")
-    .eq("email", email)
-    .eq("person_id", input.personId)
-    .maybeSingle();
-  // Silent no-op rather than an error: never disclose which pairs exist.
-  if (!identity || identity.verified_at) return { ok: true };
-
-  const { data: person } = await supabaseAdmin
-    .from("people")
-    .select("id, deceased")
-    .eq("id", input.personId)
-    .maybeSingle();
-  if (!person || person.deceased) return { ok: true };
-
-  const eventYear = await currentEditionYear();
-  const { data: existing } = await supabaseAdmin
-    .from("rsvps")
-    .select("id")
-    .eq("person_id", input.personId)
-    .eq("event_year", eventYear)
-    .maybeSingle();
-
-  if (existing) {
-    await supabaseAdmin
-      .from("rsvps")
-      .update({ status: input.status, responded_at: new Date().toISOString() })
-      .eq("id", existing.id as string);
-  } else {
-    await supabaseAdmin
-      .from("rsvps")
-      .insert({ person_id: input.personId, event_year: eventYear, status: input.status, src: "email" });
-  }
-
-  await supabaseAdmin.from("audit_log").insert({
-    action: "rsvp_answered_after_skip",
-    table_name: "rsvps",
-    record_id: input.personId,
-    after: { status: input.status, ip_hash: ipHash },
-  });
-
-  return { ok: true };
 }

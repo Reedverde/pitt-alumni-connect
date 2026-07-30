@@ -5,6 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { nameScore, normalize } from "./fuzzy";
 import { teamLabel } from "./rsvp.server";
 import {
+  currentEditionYear,
   firstOctoberWeekend,
   goingCounts,
   loadCurrentEdition,
@@ -13,6 +14,9 @@ import {
 } from "./editions.server";
 
 export type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
+
+/** Schenley Overlook Shelter. Thorne Barn is the weather and overflow backup. */
+export const SHELTER_CAPACITY = 24;
 
 export const CURRENT_SEASON = new Date().getFullYear();
 
@@ -1059,12 +1063,36 @@ export async function dripData(): Promise<DripData> {
   };
 }
 
+export type Headcount = {
+  going: number;
+  heads: number;
+  capacity: number;
+};
+
+/** Heads, not people. The going count stays one chip one person; this is the
+ *  number the shelter has to hold. */
+export async function headcount(): Promise<Headcount> {
+  const eventYear = await currentEditionYear();
+  const { data } = await supabaseAdmin
+    .from("rsvps")
+    .select("party_size")
+    .eq("event_year", eventYear)
+    .eq("status", "going");
+  const rows = data ?? [];
+  return {
+    going: rows.length,
+    heads: rows.reduce((sum, r) => sum + Number(r.party_size ?? 1), 0),
+    capacity: SHELTER_CAPACITY,
+  };
+}
+
 export type AdminDashboard = {
   isAdmin: true;
   queue: QueueItem[];
   teamNames: TeamNameRow[];
   divisions: DivisionRow[];
   gaps: DataGaps;
+  headcount: Headcount;
   digest: DigestCohort[];
   drip: DripData;
   duplicates: DuplicatePair[];
@@ -1074,7 +1102,7 @@ export type AdminDashboard = {
 };
 
 export async function dashboard(): Promise<AdminDashboard> {
-  const [queue, teamRes, divisionRes, gaps, digest, drip, duplicates, editions, sends] = await Promise.all([
+  const [queue, teamRes, divisionRes, gaps, heads, digest, drip, duplicates, editions, sends] = await Promise.all([
     reviewQueue(),
     supabaseAdmin
       .from("team_names")
@@ -1083,6 +1111,7 @@ export async function dashboard(): Promise<AdminDashboard> {
       .order("start_year"),
     supabaseAdmin.from("divisions").select("code, label, sort_order, visible").order("sort_order"),
     dataGaps(),
+    headcount(),
     organizerDigest(),
     dripData(),
     duplicateCandidates(),
@@ -1095,6 +1124,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     teamNames: (teamRes.data ?? []) as TeamNameRow[],
     divisions: (divisionRes.data ?? []) as DivisionRow[],
     gaps,
+    headcount: heads,
     digest,
     drip,
     duplicates,

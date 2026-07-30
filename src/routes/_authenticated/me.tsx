@@ -12,12 +12,14 @@ import {
   reportMemorial,
   saveStint,
   setMyRsvp,
+  setMyPartySize,
   setPrimaryEmail,
   suggestNewPerson,
   updateMyProfile,
   vouchForPerson,
   type MyProfile,
 } from "@/lib/account.functions";
+import { PartySizeStepper } from "@/components/claim/PartySizeStepper";
 import { STATUS_LABELS, personDisplayName, type RsvpStatus } from "@/lib/rsvp-types";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { FieldLabel, Notice, fieldStyle, primaryButton, secondaryButton } from "@/components/claim/ui";
@@ -70,6 +72,7 @@ function MePage() {
   const putStint = useServerFn(saveStint);
   const dropStint = useServerFn(removeStint);
   const putRsvp = useServerFn(setMyRsvp);
+  const putPartySize = useServerFn(setMyPartySize);
   const loadPending = useServerFn(getPendingVerifications);
   const vouch = useServerFn(vouchForPerson);
   const suggest = useServerFn(suggestNewPerson);
@@ -178,12 +181,32 @@ function MePage() {
               key={s}
               type="button"
               style={{ ...(profile.rsvp === s ? primaryButton : secondaryButton), width: "100%" }}
-              onClick={() => run(() => putRsvp({ data: { personId: person.id, status: s } }), "Answer saved.")}
+              onClick={() =>
+                run(
+                  () =>
+                    putRsvp({
+                      data: {
+                        personId: person.id,
+                        status: s,
+                        partySize: s === "going" ? profile.rsvpPartySize : 1,
+                      },
+                    }),
+                  "Answer saved.",
+                )
+              }
             >
               {STATUS_LABELS[s]}
             </button>
           ))}
         </div>
+        {profile.rsvp === "going" && (
+          <PartySizeStepper
+            value={profile.rsvpPartySize}
+            onChange={(next) =>
+              run(() => putPartySize({ data: { partySize: next } }), "Party size updated.")
+            }
+          />
+        )}
         {profile.attended.length > 0 && (
           <p className="mt-3" style={{ fontSize: 13, color: "var(--sterling)" }}>
             You came in {profile.attended.join(", ")}.
