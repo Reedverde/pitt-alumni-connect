@@ -201,6 +201,18 @@
     font-size: 88px;
   }
 }
+/* Oversized display word used as section structure. One per section, max. */
+@utility display-xl {
+  font-family: "Archivo", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 64px;
+  line-height: 0.92;
+  letter-spacing: -0.045em;
+  color: var(--sabah-black);
+  @media (min-width: 768px) {
+    font-size: 132px;
+  }
+}
 @utility display-64 {
   font-family: "Archivo", system-ui, sans-serif;
   font-weight: 800;
