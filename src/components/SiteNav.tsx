@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 
 import { primaryButton } from "@/components/claim/ui";
+import pittClubUltimateLogo from "@/assets/pitt-club-ultimate-logo.png.asset.json";
 
 const linkStyle = { color: "var(--sterling)" } as const;
 const activeStyle = { color: "var(--pitt-royal)" } as const;
@@ -12,19 +13,13 @@ export function SiteNav({ onClaim }: { onClaim?: () => void }) {
       style={{ background: "var(--pure-white)", borderBottom: "1px solid var(--chalk)" }}
     >
       <Link to="/" className="flex items-center gap-3">
-        <span
-          aria-hidden="true"
-          className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-full"
-          style={{
-            border: "1.5px solid var(--sabah-black)",
-            fontFamily: '"Space Mono", monospace',
-            fontSize: 11,
-            fontWeight: 700,
-            color: "var(--sabah-black)",
-          }}
-        >
-          PU
-        </span>
+        <img
+          src={pittClubUltimateLogo.url}
+          alt="Pitt Club Ultimate"
+          width={34}
+          height={34}
+          className="h-[34px] w-[34px] object-contain"
+        />
         <span
           className="hidden sm:inline"
           style={{
