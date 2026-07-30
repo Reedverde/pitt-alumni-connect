@@ -64,7 +64,7 @@ export function PhotoSlot({
   if (resolvedSrc) {
     return (
       <figure className={className} style={{ margin: 0 }}>
-        <NotchedBox corners={corners} notch={notch} style={frame}>
+        <NotchedBox clipContent corners={corners} notch={notch} style={frame}>
           <img
             src={resolvedSrc}
             alt={resolvedAlt}
