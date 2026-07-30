@@ -9,6 +9,7 @@ import { ReviewQueue } from "@/components/admin/ReviewQueue";
 import { RosterImport } from "@/components/admin/RosterImport";
 import {
   ConfidencePanel,
+  DivisionsPanel,
   DigestPanel,
   DripPanel,
   ExportPanel,
@@ -88,6 +89,7 @@ function AdminPage() {
       <ExportPanel />
 
       <Section eyebrow="Data confidence" title="What we actually know">
+        <DivisionsPanel rows={data.divisions} onSaved={refresh} />
         <ConfidencePanel rows={data.teamNames} onSaved={refresh} />
         <GapsPanel gaps={data.gaps} />
       </Section>
