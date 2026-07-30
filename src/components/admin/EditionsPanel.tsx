@@ -457,7 +457,8 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
             </button>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       <div className="mt-8" style={{ border: hairline, padding: 16 }}>
         <p className="label-caps mb-3" style={{ color: "var(--sterling)" }}>
