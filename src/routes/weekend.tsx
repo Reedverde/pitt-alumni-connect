@@ -6,7 +6,11 @@ import { getSchedule, type ScheduleEvent } from "@/lib/schedule.functions";
 import { SiteNav } from "@/components/SiteNav";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
+import { LabelRow } from "@/components/board/LabelRow";
+import { ActionRail } from "@/components/board/ActionRail";
 import { PhotoSlot } from "@/components/media/PhotoSlot";
+import { NotchedBox } from "@/components/media/NotchedBox";
+import { NOTCH_LG, NOTCH_SM, type NotchCorner } from "@/components/media/notch";
 
 const scheduleQuery = queryOptions({
   queryKey: ["schedule", 2026],
@@ -80,8 +84,6 @@ const ghostButton: CSSProperties = {
 
 const tileStyle: CSSProperties = {
   background: "var(--pure-white)",
-  border: "1px solid var(--chalk)",
-  borderRadius: 18,
   padding: 20,
 };
 
@@ -116,24 +118,34 @@ function WeekendPage() {
               Add the whole weekend
             </a>
           </div>
-          <PhotoSlot
-            className="mt-6"
-            ratio="3 / 1"
-            label="Group shot, past alumni weekend"
-          />
+          <div className="mt-6">
+            <LabelRow label="Group shot, past alumni weekend" right="Oct 2–4, 2026" />
+            <PhotoSlot
+              className="mt-3"
+              ratio="3 / 1"
+              index="01"
+              corners={["tl", "br"]}
+              label="Group shot, past alumni weekend"
+            />
+          </div>
         </header>
 
-        <section
-          className="my-8 rounded-[18px] px-6 py-7"
-          style={{ background: "var(--pitt-royal)", color: "var(--pure-white)" }}
+        <NotchedBox
+          className="my-8"
+          corners={["tl", "br"]}
+          notch={NOTCH_LG}
+          fill="var(--pitt-royal)"
+          style={{ color: "var(--pure-white)" }}
         >
+          <div className="px-6 py-7">
           <p className="max-w-[640px]" style={{ fontSize: 16 }}>
             Times marked TBD are still being set. RSVP now and we'll email you when they lock.
           </p>
           <p className="mt-3 max-w-[640px]" style={{ fontSize: 16, opacity: 0.86 }}>
             Spectators welcome. Nobody plays who doesn't want to.
           </p>
-        </section>
+          </div>
+        </NotchedBox>
 
         {DAYS.map((day) => {
           const dayEvents = events.filter((e) => (e.day_number ?? 1) === day.number);
@@ -144,7 +156,13 @@ function WeekendPage() {
 
           return (
             <section key={day.number} className="mt-10">
-              <div style={tileStyle}>
+              <NotchedBox
+                corners={day.number === 2 ? ["br"] : day.number === 3 ? ["tl", "br"] : ["tl"]}
+                notch={NOTCH_LG}
+                stroke="var(--chalk)"
+                fill="var(--pure-white)"
+                style={tileStyle}
+              >
                 <div className="flex items-start gap-4">
                   <Seal size={64}>{day.seal}</Seal>
                   <div>
@@ -159,11 +177,11 @@ function WeekendPage() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </NotchedBox>
 
               <div className="mt-4 flex flex-col gap-4">
                 {wholeProgram.map((event) => (
-                  <EventTile key={event.id} event={event} wholeProgram />
+                  <EventTile key={event.id} event={event} wholeProgram corners={["tl"]} />
                 ))}
               </div>
 
@@ -177,8 +195,13 @@ function WeekendPage() {
                       <p className="label-caps" style={{ color: "var(--sterling)" }}>
                         {DIVISION_LABELS[lane.code]}
                       </p>
-                      {lane.events.map((event) => (
-                        <EventTile key={event.id} event={event} wholeProgram={false} />
+                      {lane.events.map((event, i) => (
+                        <EventTile
+                          key={event.id}
+                          event={event}
+                          wholeProgram={false}
+                          corners={i % 2 === 0 ? ["tl"] : ["br"]}
+                        />
                       ))}
                     </div>
                   ))}
@@ -194,20 +217,41 @@ function WeekendPage() {
           );
         })}
       </main>
+      <ActionRail />
     </div>
   );
 }
 
-function EventTile({ event, wholeProgram }: { event: ScheduleEvent; wholeProgram: boolean }) {
+function EventTile({
+  event,
+  wholeProgram,
+  corners,
+}: {
+  event: ScheduleEvent;
+  wholeProgram: boolean;
+  corners: NotchCorner[];
+}) {
   return (
-    <article
-      style={{
-        ...tileStyle,
-        ...(wholeProgram
-          ? { borderLeft: "4px solid var(--pitt-gold)" }
-          : {}),
-      }}
+    <NotchedBox
+      corners={corners}
+      notch={NOTCH_SM}
+      stroke="var(--chalk)"
+      fill="var(--pure-white)"
+      style={tileStyle}
     >
+      {wholeProgram && (
+        <span
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: -20,
+            top: corners.includes("tl") ? NOTCH_SM : 0,
+            bottom: corners.includes("bl") ? NOTCH_SM : 0,
+            width: 4,
+            background: "var(--pitt-gold)",
+          }}
+        />
+      )}
       <p style={{ fontFamily: '"Space Mono", monospace', fontSize: 13, fontWeight: 700, color: "var(--steel-ink)" }}>
         {timeLabel(event)}
       </p>
@@ -229,6 +273,6 @@ function EventTile({ event, wholeProgram }: { event: ScheduleEvent; wholeProgram
           Add to calendar
         </a>
       </div>
-    </article>
+    </NotchedBox>
   );
 }
