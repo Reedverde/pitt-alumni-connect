@@ -61,6 +61,7 @@ export function ClaimDialog({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [status, setStatus] = useState<RsvpStatus | null>(null);
+  const [skipped, setSkipped] = useState(false);
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +78,7 @@ export function ClaimDialog({
     setBusy(false);
     setEmail("");
     setStatus(null);
+    setSkipped(false);
     setStamp(null);
     setClaimedPersonId(null);
     setLateStatus(null);
@@ -397,7 +399,11 @@ export function ClaimDialog({
                     type="button"
                     className="hover:underline"
                     style={quietLink}
-                    onClick={() => void submit(true)}
+                    onClick={() => {
+                      setStatus(null);
+                      setSkipped(true);
+                      setStep("email");
+                    }}
                   >
                     Skip for now
                   </button>
@@ -417,6 +423,7 @@ export function ClaimDialog({
                         statusGroupRef.current?.querySelector<HTMLElement>("button")?.focus();
                         return;
                       }
+                      setSkipped(false);
                       setStep("email");
                     }}
                   >
@@ -431,7 +438,7 @@ export function ClaimDialog({
                 className="mt-6"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  void submit();
+                  void submit(skipped);
                 }}
               >
                 <FieldLabel htmlFor="claim-email">Email</FieldLabel>
@@ -454,7 +461,14 @@ export function ClaimDialog({
                   </p>
                 )}
                 <div className="mt-6 flex gap-2">
-                  <button type="button" style={secondaryButton} onClick={() => setStep("status")}>
+                  <button
+                    type="button"
+                    style={secondaryButton}
+                    onClick={() => {
+                      setSkipped(false);
+                      setStep("status");
+                    }}
+                  >
                     Back
                   </button>
                   <button type="submit" style={{ ...primaryButton, opacity: busy ? 0.6 : 1 }} disabled={busy}>
