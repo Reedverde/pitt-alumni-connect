@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { useSessionPerson } from "@/lib/useSessionPerson";
-import pittClubUltimateLogo from "@/assets/pitt-club-ultimate-logo.png.asset.json";
 
 const linkStyle = { color: "var(--sterling)" } as const;
 const activeStyle = { color: "var(--pitt-royal)" } as const;
@@ -49,33 +48,33 @@ function IdentitySlot() {
 export function SiteNav(_props: { onClaim?: () => void }) {
   return (
     <nav
-      className="sticky top-0 z-30 flex h-14 items-center gap-3 px-5"
+      className="sticky top-0 z-30 flex h-[72px] items-center gap-3 px-5"
       style={{ background: "var(--pure-white)", borderBottom: "1px solid var(--chalk)" }}
     >
-      <Link to="/" className="flex items-center gap-3">
-        <img
-          src={pittClubUltimateLogo.url}
-          alt="Pitt Club Ultimate"
-          width={34}
-          height={34}
-          className="h-[34px] w-[34px] object-contain"
+      <Link to="/" className="flex items-center gap-[10px]" aria-label="Pitt Club Ultimate">
+        {/* Seal ring only. The shield PNG belongs to the footer. */}
+        <span
+          aria-hidden="true"
+          className="inline-flex h-8 w-8 shrink-0 rounded-full sm:h-10 sm:w-10"
+          style={{ border: "1.5px solid var(--sabah-black)" }}
         />
         <span
           className="hidden sm:inline"
           style={{
             fontFamily: '"Archivo", sans-serif',
             fontWeight: 800,
-            fontSize: 16,
+            fontSize: "clamp(16px, 2.4vw, 20px)",
             letterSpacing: "-0.02em",
             textTransform: "uppercase",
             color: "var(--pitt-royal)",
+            whiteSpace: "nowrap",
           }}
         >
           Pitt Club Ultimate
         </span>
       </Link>
 
-      <span className="ml-4 flex items-center gap-4">
+      <span className="ml-3 flex items-center gap-4 sm:ml-4">
         <Link to="/" className="label-caps" style={linkStyle} activeProps={{ style: activeStyle }} activeOptions={{ exact: true }}>
           Board
         </Link>

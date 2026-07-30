@@ -20,6 +20,7 @@ import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as EditionsYearRouteImport } from './routes/editions.$year'
 import { Route as ApiPhotosUploadRouteImport } from './routes/api/photos/upload'
 import { Route as ApiPublicCalendarDoticsRouteImport } from './routes/api/public/calendar[.]ics'
+import { Route as ApiPublicEventDoticsRouteImport } from './routes/api/public/event[.]ics'
 import { Route as ApiPublicHeadcountRouteImport } from './routes/api/public/headcount'
 import { Route as ApiPublicResendWebhookRouteImport } from './routes/api/public/resend-webhook'
 import { Route as ApiPublicUnsubscribeRouteImport } from './routes/api/public/unsubscribe'
@@ -79,6 +80,11 @@ const ApiPublicCalendarDoticsRoute = ApiPublicCalendarDoticsRouteImport.update({
   path: '/api/public/calendar.ics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicEventDoticsRoute = ApiPublicEventDoticsRouteImport.update({
+  id: '/api/public/event.ics',
+  path: '/api/public/event.ics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHeadcountRoute = ApiPublicHeadcountRouteImport.update({
   id: '/api/public/headcount',
   path: '/api/public/headcount',
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/editions/$year': typeof EditionsYearRoute
   '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
+  '/api/public/event.ics': typeof ApiPublicEventDoticsRoute
   '/api/public/headcount': typeof ApiPublicHeadcountRoute
   '/api/public/resend-webhook': typeof ApiPublicResendWebhookRoute
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/editions/$year': typeof EditionsYearRoute
   '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
+  '/api/public/event.ics': typeof ApiPublicEventDoticsRoute
   '/api/public/headcount': typeof ApiPublicHeadcountRoute
   '/api/public/resend-webhook': typeof ApiPublicResendWebhookRoute
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/editions/$year': typeof EditionsYearRoute
   '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
+  '/api/public/event.ics': typeof ApiPublicEventDoticsRoute
   '/api/public/headcount': typeof ApiPublicHeadcountRoute
   '/api/public/resend-webhook': typeof ApiPublicResendWebhookRoute
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/editions/$year'
     | '/api/photos/upload'
     | '/api/public/calendar.ics'
+    | '/api/public/event.ics'
     | '/api/public/headcount'
     | '/api/public/resend-webhook'
     | '/api/public/unsubscribe'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/editions/$year'
     | '/api/photos/upload'
     | '/api/public/calendar.ics'
+    | '/api/public/event.ics'
     | '/api/public/headcount'
     | '/api/public/resend-webhook'
     | '/api/public/unsubscribe'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/editions/$year'
     | '/api/photos/upload'
     | '/api/public/calendar.ics'
+    | '/api/public/event.ics'
     | '/api/public/headcount'
     | '/api/public/resend-webhook'
     | '/api/public/unsubscribe'
@@ -212,6 +224,7 @@ export interface RootRouteChildren {
   EditionsYearRoute: typeof EditionsYearRoute
   ApiPhotosUploadRoute: typeof ApiPhotosUploadRoute
   ApiPublicCalendarDoticsRoute: typeof ApiPublicCalendarDoticsRoute
+  ApiPublicEventDoticsRoute: typeof ApiPublicEventDoticsRoute
   ApiPublicHeadcountRoute: typeof ApiPublicHeadcountRoute
   ApiPublicResendWebhookRoute: typeof ApiPublicResendWebhookRoute
   ApiPublicUnsubscribeRoute: typeof ApiPublicUnsubscribeRoute
@@ -297,6 +310,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCalendarDoticsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/event.ics': {
+      id: '/api/public/event.ics'
+      path: '/api/public/event.ics'
+      fullPath: '/api/public/event.ics'
+      preLoaderRoute: typeof ApiPublicEventDoticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/headcount': {
       id: '/api/public/headcount'
       path: '/api/public/headcount'
@@ -351,6 +371,7 @@ const rootRouteChildren: RootRouteChildren = {
   EditionsYearRoute: EditionsYearRoute,
   ApiPhotosUploadRoute: ApiPhotosUploadRoute,
   ApiPublicCalendarDoticsRoute: ApiPublicCalendarDoticsRoute,
+  ApiPublicEventDoticsRoute: ApiPublicEventDoticsRoute,
   ApiPublicHeadcountRoute: ApiPublicHeadcountRoute,
   ApiPublicResendWebhookRoute: ApiPublicResendWebhookRoute,
   ApiPublicUnsubscribeRoute: ApiPublicUnsubscribeRoute,
