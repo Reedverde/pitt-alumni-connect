@@ -1,0 +1,2 @@
+ALTER VIEW public.person_board_placement SET (security_invoker = off);
+COMMENT ON VIEW public.person_board_placement IS 'Derived board placement. Intentionally owner-run (security definer) because the public board_people view depends on it; exposes only person id, board year, board division and stint count.';

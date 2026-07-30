@@ -61,8 +61,37 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/*
+ * Pitt Ultimate Alumni brand tokens.
+ * Gold (--ink-gold) means ONE thing: a person is coming. Never use it for
+ * hovers, headings, dividers, links, focus rings or team badges.
+ */
+@theme inline {
+  --font-display: "Archivo", system-ui, sans-serif;
+  --font-sans: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+  --color-sabah-black: var(--sabah-black);
+  --color-pitt-royal: var(--pitt-royal);
+  --color-pitt-gold: var(--pitt-gold);
+  --color-steel-ink: var(--steel-ink);
+  --color-sterling: var(--sterling);
+  --color-chalk: var(--chalk);
+  --color-concrete: var(--concrete);
+  --color-field-white: var(--field-white);
+  --color-pure-white: var(--pure-white);
+}
+
 :root {
   --radius: 0.625rem;
+  --sabah-black: #0B0B0C;
+  --pitt-royal: #003594;
+  --pitt-gold: #FFB81C;
+  --steel-ink: #1C2536;
+  --sterling: #6B7280;
+  --chalk: #D5DAE2;
+  --concrete: #E9ECF1;
+  --field-white: #FBFBFC;
+  --pure-white: #FFFFFF;
   --background: oklch(0.99 0.005 264.695);
   --foreground: oklch(0.18 0.055 264.695);
   --card: oklch(1 0 0);
@@ -140,5 +169,88 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background-color: var(--field-white);
+    color: var(--steel-ink);
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--pitt-royal);
+    outline-offset: 2px;
+  }
+}
+
+/* Archivo 800 display type — headings only, never body copy. */
+@utility display-88 {
+  font-family: "Archivo", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 48px;
+  line-height: 0.92;
+  letter-spacing: -0.045em;
+  @media (min-width: 768px) {
+    font-size: 88px;
+  }
+}
+@utility display-64 {
+  font-family: "Archivo", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 38px;
+  line-height: 0.94;
+  letter-spacing: -0.045em;
+  @media (min-width: 768px) {
+    font-size: 64px;
+  }
+}
+@utility display-48 {
+  font-family: "Archivo", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 0.96;
+  letter-spacing: -0.035em;
+  @media (min-width: 768px) {
+    font-size: 48px;
+  }
+}
+@utility display-30 {
+  font-family: "Archivo", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+@utility label-caps {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+@utility year-numeral {
+  font-family: "Space Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  @media (min-width: 768px) {
+    font-size: 38px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
