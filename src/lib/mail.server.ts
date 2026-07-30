@@ -26,11 +26,104 @@ export function unsubscribeTokenValid(email: string, token: string) {
   return expected.length === got.length && timingSafeEqual(expected, got);
 }
 
-function safeOrigin(origin: string | null | undefined) {
-  if (typeof origin === "string" && /^https?:\/\/[^\s/]+$/.test(origin)) return origin;
-  const fallback = process.env.PUBLIC_SITE_URL?.trim();
-  if (fallback && /^https?:\/\/[^\s/]+$/.test(fallback)) return fallback;
+/** Every URL that appears in an email is built from this and nothing else.
+ *  Not the request host, not a preview host, not a literal in the code. When
+ *  the site moves to its permanent address that is a secret change. */
+export function siteUrl(): string | null {
+  const raw = process.env.PUBLIC_SITE_URL?.trim().replace(/\/+$/, "");
+  if (raw && /^https?:\/\/[^\s/]+$/.test(raw)) return raw;
   return null;
+}
+
+function fromDomain(address: string | null) {
+  const at = address?.lastIndexOf("@") ?? -1;
+  return at > -1 && address ? address.slice(at + 1).toLowerCase() : null;
+}
+
+type DomainCheck = { ok: boolean; domain: string | null; detail: string };
+
+let domainCache: { at: number; value: DomainCheck } | null = null;
+
+/** Asks Resend which domains are verified and compares that to the domain in
+ *  the from address. Sending from an unverified domain lands in spam quietly,
+ *  so we would rather refuse and say why. */
+export async function checkSendingDomain(force = false): Promise<DomainCheck> {
+  const { apiKey, fromAddress } = mailConfig();
+  const domain = fromDomain(fromAddress);
+  if (!apiKey) return { ok: false, domain, detail: "RESEND_API_KEY is not set." };
+  if (!domain) return { ok: false, domain: null, detail: "MAIL_FROM_ADDRESS is not set." };
+
+  if (!force && domainCache && Date.now() - domainCache.at < 5 * 60 * 1000) {
+    return domainCache.value;
+  }
+
+  let value: DomainCheck;
+  try {
+    const res = await fetch("https://api.resend.com/domains", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    const payload = (await res.json().catch(() => null)) as
+      | { data?: { name?: string; status?: string }[]; message?: string }
+      | null;
+    if (!res.ok) {
+      value = {
+        ok: false,
+        domain,
+        detail: `Resend refused the domain list [${res.status}]: ${payload?.message ?? "unknown error"}`,
+      };
+    } else {
+      const list = payload?.data ?? [];
+      const match = list.find((d) => (d.name ?? "").toLowerCase() === domain);
+      if (!match) {
+        value = {
+          ok: false,
+          domain,
+          detail: `${domain} is not a domain on this Resend account. Verified: ${
+            list.map((d) => d.name).filter(Boolean).join(", ") || "none"
+          }.`,
+        };
+      } else if ((match.status ?? "").toLowerCase() !== "verified") {
+        value = { ok: false, domain, detail: `${domain} reads ${match.status ?? "unknown"} in Resend, not verified.` };
+      } else {
+        value = { ok: true, domain, detail: `${domain} verifies in Resend.` };
+      }
+    }
+  } catch (err) {
+    value = {
+      ok: false,
+      domain,
+      detail: `Could not reach Resend: ${err instanceof Error ? err.message : "unknown error"}`,
+    };
+  }
+
+  domainCache = { at: Date.now(), value };
+  return value;
+}
+
+/** One line an organizer can read without opening a settings screen. */
+export async function mailStatus() {
+  const { apiKey, fromAddress, fromName, replyTo } = mailConfig();
+  const check = await checkSendingDomain(true);
+  return {
+    fromAddress,
+    fromName,
+    replyTo,
+    siteUrl: siteUrl(),
+    hasApiKey: Boolean(apiKey),
+    domain: check.domain,
+    verified: check.ok,
+    detail: check.detail,
+  };
+}
+
+function unsubscribeHeaders(to: string) {
+  const base = siteUrl();
+  if (!base) return {} as Record<string, string>;
+  const url = `${base}/api/public/unsubscribe?e=${encodeURIComponent(to)}&t=${unsubscribeToken(to)}`;
+  return {
+    "List-Unsubscribe": `<${url}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+  } as Record<string, string>;
 }
 
 export async function isSuppressed(email: string) {
@@ -158,16 +251,20 @@ export async function sendMagicLinkEmail(opts: {
   personId: string | null;
   firstName: string | null;
   status: string;
-  origin: string | null | undefined;
+  /** Accepted for call-site compatibility and deliberately ignored: every
+   *  link is built from PUBLIC_SITE_URL. */
+  origin?: string | null | undefined;
+  kind?: string;
 }): Promise<MagicLinkResult> {
   const to = opts.to.trim().toLowerCase();
   const { apiKey, fromAddress, fromName, replyTo } = mailConfig();
+  const kind = opts.kind ?? "magic_link";
 
   try {
     if (await isSuppressed(to)) {
       await logSend({
         personId: opts.personId,
-        kind: "magic_link",
+        kind,
         toEmail: to,
         provider: "none",
         providerMessageId: null,
@@ -184,10 +281,10 @@ export async function sendMagicLinkEmail(opts: {
       console.warn(
         `[mail] ${missing} not set — falling back to the built-in mailer, which is capped at a few messages an hour. Set the secret to deliver reliably.`,
       );
-      const fallback = await fallbackOtp(to, opts.origin);
+      const fallback = await fallbackOtp(to);
       await logSend({
         personId: opts.personId,
-        kind: "magic_link",
+        kind,
         toEmail: to,
         provider: "supabase",
         providerMessageId: null,
@@ -197,12 +294,33 @@ export async function sendMagicLinkEmail(opts: {
       return { sent: fallback, provider: "supabase", messageId: null, reason: `missing ${missing}` };
     }
 
-    const origin = safeOrigin(opts.origin);
+    const domainCheck = await checkSendingDomain();
+    if (!domainCheck.ok) {
+      console.error(`[mail] refusing to send from an unverified domain: ${domainCheck.detail}`);
+      const fallback = await fallbackOtp(to);
+      await logSend({
+        personId: opts.personId,
+        kind,
+        toEmail: to,
+        provider: "supabase",
+        providerMessageId: null,
+        status: fallback ? "sent" : "failed",
+        error: domainCheck.detail,
+      });
+      return {
+        sent: fallback,
+        provider: "supabase",
+        messageId: null,
+        reason: domainCheck.detail,
+      };
+    }
+
+    const origin = siteUrl();
     const link = await generateMagicLink(to, origin);
     if (!link) {
       await logSend({
         personId: opts.personId,
-        kind: "magic_link",
+        kind,
         toEmail: to,
         provider: "resend",
         providerMessageId: null,
@@ -222,15 +340,7 @@ export async function sendMagicLinkEmail(opts: {
       dates,
     });
 
-    const unsubUrl = origin
-      ? `${origin}/api/public/unsubscribe?e=${encodeURIComponent(to)}&t=${unsubscribeToken(to)}`
-      : null;
-
-    const headers: Record<string, string> = {};
-    if (unsubUrl) {
-      headers["List-Unsubscribe"] = `<${unsubUrl}>`;
-      headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
-    }
+    const headers = unsubscribeHeaders(to);
 
     const res = await fetch(RESEND_ENDPOINT, {
       method: "POST",
@@ -255,7 +365,7 @@ export async function sendMagicLinkEmail(opts: {
       console.error(`[mail] ${message}`);
       await logSend({
         personId: opts.personId,
-        kind: "magic_link",
+        kind,
         toEmail: to,
         provider: "resend",
         providerMessageId: null,
@@ -267,7 +377,7 @@ export async function sendMagicLinkEmail(opts: {
 
     await logSend({
       personId: opts.personId,
-      kind: "magic_link",
+      kind,
       toEmail: to,
       provider: "resend",
       providerMessageId: payload?.id ?? null,
@@ -281,7 +391,7 @@ export async function sendMagicLinkEmail(opts: {
     try {
       await logSend({
         personId: opts.personId,
-        kind: "magic_link",
+        kind,
         toEmail: to,
         provider: "resend",
         providerMessageId: null,
@@ -335,15 +445,22 @@ export async function sendPlainEmail(opts: {
       return { sent: false, provider: "none", messageId: null, reason: "not configured" };
     }
 
-    const origin = safeOrigin(null);
-    const unsubUrl = origin
-      ? `${origin}/api/public/unsubscribe?e=${encodeURIComponent(to)}&t=${unsubscribeToken(to)}`
-      : null;
-    const headers: Record<string, string> = {};
-    if (unsubUrl) {
-      headers["List-Unsubscribe"] = `<${unsubUrl}>`;
-      headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+    const domainCheck = await checkSendingDomain();
+    if (!domainCheck.ok) {
+      console.error(`[mail] refusing to send from an unverified domain: ${domainCheck.detail}`);
+      await logSend({
+        personId: opts.personId,
+        kind: opts.kind,
+        toEmail: to,
+        provider: "none",
+        providerMessageId: null,
+        status: "failed",
+        error: domainCheck.detail,
+      });
+      return { sent: false, provider: "none", messageId: null, reason: domainCheck.detail };
     }
+
+    const headers = unsubscribeHeaders(to);
 
     const res = await fetch(RESEND_ENDPOINT, {
       method: "POST",
@@ -393,11 +510,11 @@ export async function sendPlainEmail(opts: {
 }
 
 /** The pre-existing path: the built-in mailer. Kept only as a fallback. */
-async function fallbackOtp(to: string, origin: string | null | undefined) {
+async function fallbackOtp(to: string) {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return false;
-  const target = safeOrigin(origin);
+  const target = siteUrl();
   const res = await fetch(`${url}/auth/v1/otp`, {
     method: "POST",
     headers: { apikey: key, "Content-Type": "application/json" },

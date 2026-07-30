@@ -34,7 +34,7 @@ async function adminAddresses() {
 
 /** One digest an hour at most, to every admin who has an address on file.
  *  Never throws: a failed notice must not fail the requester's submission. */
-export async function notifyAdminsOfPendingSuggestions(origin?: string | null) {
+export async function notifyAdminsOfPendingSuggestions(_origin?: string | null) {
   try {
     const since = new Date(Date.now() - DIGEST_WINDOW_MS).toISOString();
     const { count: recentDigests } = await supabaseAdmin
@@ -59,10 +59,9 @@ export async function notifyAdminsOfPendingSuggestions(origin?: string | null) {
     const recipients = await adminAddresses();
     if (recipients.length === 0) return;
 
-    const base =
-      (typeof origin === "string" && /^https?:\/\/[^\s/]+$/.test(origin) ? origin : null) ??
-      process.env.PUBLIC_SITE_URL?.trim() ??
-      "";
+    // Links in mail come from PUBLIC_SITE_URL and nowhere else.
+    const { siteUrl } = await import("./mail.server");
+    const base = siteUrl() ?? "";
     const link = `${base}/admin`;
 
     const names = rows.slice(0, 40).map((r) => nameFromPayload(r.payload));
