@@ -161,6 +161,7 @@ export type Database = {
           ends_at: string | null
           event_year: number
           id: string
+          is_placeholder: boolean
           location: string | null
           notes: string | null
           sort_order: number
@@ -174,6 +175,7 @@ export type Database = {
           ends_at?: string | null
           event_year: number
           id?: string
+          is_placeholder?: boolean
           location?: string | null
           notes?: string | null
           sort_order?: number
@@ -187,6 +189,7 @@ export type Database = {
           ends_at?: string | null
           event_year?: number
           id?: string
+          is_placeholder?: boolean
           location?: string | null
           notes?: string | null
           sort_order?: number

@@ -1,24 +1,43 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 
 import { getBoard, type BoardPerson } from "@/lib/board.functions";
+import { getWeekendPage } from "@/lib/schedule.functions";
 import { buildYearGroups, claimedCount, type YearGroup } from "@/lib/board-grouping";
 import { NameChip } from "@/components/board/NameChip";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
 import { SiteNav } from "@/components/SiteNav";
+import { SiteFooter } from "@/components/SiteFooter";
+import { PhotoSlot } from "@/components/media/PhotoSlot";
+import { ScheduleSummary, ghostButton, primaryButton } from "@/components/schedule/ScheduleSummary";
 import { SidelineLoop } from "@/components/board/SidelineLoop";
-import { countdown, editionEyebrow, nextOctoberYear, resolveSeason } from "@/lib/edition-format";
+import {
+  countdown,
+  editionShortDates,
+  nextOctoberYear,
+  resolveSeason,
+} from "@/lib/edition-format";
 
 const boardQuery = queryOptions({
   queryKey: ["board"],
   queryFn: () => getBoard(),
 });
 
+const weekendQuery = queryOptions({
+  queryKey: ["weekend-page"],
+  queryFn: () => getWeekendPage(),
+});
+
 export const Route = createFileRoute("/")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(boardQuery),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(boardQuery),
+      context.queryClient.ensureQueryData(weekendQuery),
+    ]),
   head: () => ({
     meta: [
       { title: "Pitt Club Ultimate Alumni — Find your year" },
@@ -57,6 +76,7 @@ const DIVISION_CHIP_LABELS: Record<string, string> = {
 
 function BoardPage() {
   const { data } = useSuspenseQuery(boardQuery);
+  const { data: weekend } = useSuspenseQuery(weekendQuery);
   const queryClient = useQueryClient();
   const filters = useMemo(
     () =>
@@ -130,6 +150,7 @@ function BoardPage() {
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
       <SiteNav onClaim={() => openClaim()} />
+      <Hero season={season} clock={clock} countdownLive={countdownLive} onClaim={() => openClaim()} />
       <CounterBar
         claimed={data.totals.claimed}
         going={data.totals.going}
@@ -140,18 +161,21 @@ function BoardPage() {
       />
 
       <main className="mx-auto w-full max-w-[1320px] px-5 pb-24">
-        <header className="pt-10 pb-8 md:pt-14">
-          <SlashEyebrow>
-            {season.edition
-              ? editionEyebrow(season.edition)
-              : `Alumni Weekend · Next: first weekend of October, ${nextOctoberYear()}`}
-          </SlashEyebrow>
-          <h1 className="display-64 mt-3" style={{ color: "var(--sabah-black)" }}>
+        {season.edition && (
+          <ScheduleSummary
+            edition={season.edition}
+            events={weekend.events}
+            divisions={data.divisions}
+          />
+        )}
+
+        <header className="pt-6 pb-8">
+          <SlashEyebrow>The board</SlashEyebrow>
+          <h2 className="display-48 mt-3" style={{ color: "var(--sabah-black)" }}>
             FIND YOUR YEAR
-          </h1>
-          <p className="mt-4 max-w-[560px] text-left" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
-            Every Pitt Club Ultimate alum we know of, on one wall, by year.{" "}
-            {goldLive ? "Gold means they are coming." : "Claim your name any time of year."}
+          </h2>
+          <p className="mt-3 max-w-[560px] text-left" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
+            Every person who ever played. Grey until they say they are coming.
           </p>
         </header>
 
@@ -176,7 +200,10 @@ function BoardPage() {
             <YearRow key={group.key} group={group} isDimmed={isDimmed} onClaim={openClaim} />
           ))}
         </div>
+
+        <WhyTeaser />
       </main>
+      <SiteFooter />
 
       <ClaimDialog
         open={claimOpen}
@@ -185,6 +212,102 @@ function BoardPage() {
         onClaimed={() => queryClient.invalidateQueries({ queryKey: ["board"] })}
       />
     </div>
+  );
+}
+
+/** Compact event hero. No gold: nobody is coming in a hero. */
+function Hero({
+  season,
+  clock,
+  countdownLive,
+  onClaim,
+}: {
+  season: ReturnType<typeof resolveSeason>;
+  clock: { value: string; label: string };
+  countdownLive: boolean;
+  onClaim: () => void;
+}) {
+  const edition = season.edition;
+  const dates = edition ? editionShortDates(edition) : null;
+  return (
+    <section className="mx-auto w-full max-w-[1320px] px-5 pt-8 pb-8 md:pt-10">
+      <div className="grid items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+        <div>
+          <SlashEyebrow>Alumni Weekend</SlashEyebrow>
+          {dates ? (
+            <>
+              <h1
+                className="display-xl mt-3"
+                style={{
+                  fontFamily: '"Space Mono", monospace',
+                  fontWeight: 700,
+                  fontSize: "clamp(48px, 8vw, 96px)",
+                  color: "var(--sabah-black)",
+                }}
+              >
+                {dates.range}
+              </h1>
+              <p
+                className="mt-2"
+                style={{
+                  fontFamily: '"Space Mono", monospace',
+                  fontWeight: 700,
+                  fontSize: 24,
+                  letterSpacing: "-0.02em",
+                  color: "var(--steel-ink)",
+                }}
+              >
+                {dates.year}
+                {countdownLive && (
+                  <span className="label-caps ml-4" style={{ color: "var(--sterling)" }}>
+                    {clock.value} {clock.label.toLowerCase()}
+                  </span>
+                )}
+              </p>
+            </>
+          ) : (
+            <h1 className="display-48 mt-3" style={{ color: "var(--sabah-black)" }}>
+              THE FIRST WEEKEND OF OCTOBER, {nextOctoberYear()}
+            </h1>
+          )}
+          <p className="mt-4 max-w-[560px]" style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 20, color: "var(--steel-ink)" }}>
+            Pittsburgh and Oakland. Three days. Four programs.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button type="button" style={primaryButton} onClick={onClaim}>
+              Say you're coming
+            </button>
+            <Link to="/weekend" style={ghostButton}>
+              See the schedule
+            </Link>
+          </div>
+        </div>
+        <PhotoSlot
+          ratio="16 / 9"
+          index="01"
+          corners={["tl", "br"]}
+          label="Group shot, past alumni weekend"
+          slotKey="weekend_hero"
+        />
+      </div>
+    </section>
+  );
+}
+
+function WhyTeaser() {
+  return (
+    <section className="pt-14">
+      <SlashEyebrow>Why now</SlashEyebrow>
+      <p className="mt-4 max-w-[560px]" style={{ fontSize: 20, color: "var(--sabah-black)" }}>
+        Pitt went to Nationals every year from 2005 through 2024. In 2025 it did not. Alumni turned
+        up after the miss, not after the titles.
+      </p>
+      <div className="mt-6">
+        <Link to="/why" style={ghostButton}>
+          Read the story
+        </Link>
+      </div>
+    </section>
   );
 }
 
