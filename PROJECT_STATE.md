@@ -154,3 +154,54 @@ Session: sessions are not time boxed (`auth.sessions.not_after` is null), refres
 9 events. Friday: Pitt football watch party 7 PM East Liberty, exact bar TBD, followed by an Oakland bar crawl at 9 PM. Both times are provisional and awaiting planner confirmation. The two overlap the ESPN broadcast window and the two venues are in different neighbourhoods; this reintroduces the split night that a single bar was chosen to solve.
 Saturday BBQ at Schenley Overlook Shelter is booked and paid but still carries time_tbd, so it renders as TBD to every visitor. Needs a time.
 Four division events remain placeholders: Sabah alumni gathering, Sabah alumni game, Pressure and BITT alumni gathering, Pressure and BITT alumni game. Confirm or delete.
+
+## Known holes by year, accepted not blocking
+
+These are visible on purpose. A visible hole recruits a correction, a hidden one does not. Do not hold launch for any of them. Nine belong to Brody and go out as one message.
+
+| Year | Hole | Owner |
+| --- | --- | --- |
+| 1978 | 7 records, 20 years before the founding, unexplained. Team name span is null | Brody |
+| 1979-1997 | Zero people. Unknown whether there is history here at all | Brody |
+| 1998-1999 | Founding year and the year after are empty rows on the board | Brody |
+| 1998-2005 | Pansy span, confidence assumed | Reed, then Nick |
+| 2001, 2003, 2004, 2005 | 4, 3, 2 and 1 person. All under the 6 person thin-year threshold. Confirm the merge rule fires in the browser | Reed |
+| 2005 | Men's B start year, Sabah B span, assumed | Jared |
+| 2006 | Danger start year, assumed | Nick |
+| 2006-2013 | Danger has no records across eight years | Nick |
+| 2009/2010 | Sabah B to BITT changeover, assumed. One row update | Jared, then Brody |
+| 2014 | 5 people, under threshold | Reed |
+| 2019-2024 | 8, 6, 7, 20, 4, 5. The alumni page thins here. Missing records, not real squad sizes | Brody |
+| 2026 | 48 names, 1 email, no stints, publicly visible before cuts land | Micah |
+| No year | 5 records with null grad_year, hidden from the board | Brody |
+
+## Annual edition runbook
+
+The weekend repeats the first weekend of October. Anchored on the Friday. Every row needs an owner or it gets read in September.
+
+| When | Task | Owner |
+| --- | --- | --- |
+| T-180 | Pitt football schedule that weekend, home or away and the TV window. Nothing Friday can be planned before it | Nick |
+| T-150 | Open the next editions row, is_current false, published false | Reed |
+| T-120 | Book the shelter. Minimum 11 days out, season ends the second Sunday of October, first come, no lottery | Unassigned |
+| T-120 | Confirm the weather backup | Unassigned |
+| T-100 | Name a hotel and hold a block, write lodging_note | Unassigned |
+| T-90 | Confirm the Saturday campus anchor | Nick |
+| T-90 | Sunday field permit | Unassigned |
+| T-75 | Current roster and emails from the sitting captain | Captain |
+| T-70 | Confirm the cut date and decide whether the current cohort shows on the board | Reed |
+| T-60 | Anchor pre-send | Nick |
+| T-60 | Refresh channel links: GroupMe, Discord, Google Group | Unassigned |
+| T-45 | Publish the edition, flip is_current | Reed |
+| T-45 to T-2 | Drip sequences run on the seeded offsets | Automatic |
+| T-30 | Verify memorial flags before any mass send | Admins |
+| T-7 | Lock every time, clear time_tbd on all events | Nick |
+| T+3 | Wrap-up send with photos and headcount, and next year's date named inside it | Reed |
+
+## Catch-up email for late approvals
+
+Archived sends are never replayed. T-60 is a personal pre-send from Nick written for anchors before anything is public, and it reads as a form letter out of sequence. Replaying any send also breaks the rule that every send carries new information.
+
+Instead there is one catch-up template, composed from current state at the moment it sends: where the weekend stands read live from events, lodging_note and travel_note as they read that day, how many people from the person's own years have said yes, and their claim link. After it lands the person enters the sequence at their real T-minus and gets the next scheduled send like everyone else.
+
+Guardrails: it counts against the one email per person per 10 days global cap, and it is suppressed entirely if the person's status is already not_this_year. Dormant like everything else while outbound_email_mode is transactional_only.
