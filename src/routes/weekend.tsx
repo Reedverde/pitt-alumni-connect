@@ -21,7 +21,7 @@ import { LabelRow } from "@/components/board/LabelRow";
 import { ActionRail } from "@/components/board/ActionRail";
 import { PhotoSlot } from "@/components/media/PhotoSlot";
 import { NotchedBox } from "@/components/media/NotchedBox";
-import { NOTCH_LG, NOTCH_SM, type NotchCorner } from "@/components/media/notch";
+import { NOTCH_ALL, NOTCH_LG, NOTCH_SM, type NotchCorner } from "@/components/media/notch";
 import { DivisionMark } from "@/components/schedule/DivisionMark";
 
 const weekendQuery = queryOptions({
@@ -295,7 +295,7 @@ function WhereToStay({ edition }: { edition: EditionSummary }) {
       </h2>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         {lodging && (
-          <NotchedBox corners={["tl"]} notch={NOTCH_SM} stroke="var(--chalk)" fill="var(--pure-white)" style={tileStyle}>
+          <NotchedBox corners={NOTCH_ALL} notch={NOTCH_SM} stroke="var(--chalk)" dashed style={tileStyle}>
             <p className="label-caps" style={{ color: "var(--sterling)" }}>
               Lodging
             </p>
@@ -305,7 +305,7 @@ function WhereToStay({ edition }: { edition: EditionSummary }) {
           </NotchedBox>
         )}
         {travel && (
-          <NotchedBox corners={["br"]} notch={NOTCH_SM} stroke="var(--chalk)" fill="var(--pure-white)" style={tileStyle}>
+          <NotchedBox corners={NOTCH_ALL} notch={NOTCH_SM} stroke="var(--chalk)" dashed style={tileStyle}>
             <p className="label-caps" style={{ color: "var(--sterling)" }}>
               Travel and parking
             </p>
