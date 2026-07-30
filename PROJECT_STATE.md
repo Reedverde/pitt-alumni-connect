@@ -5,9 +5,9 @@
 | # | Module | Intensity | Status |
 |---|--------|-----------|--------|
 | 1 | Stability | Standard | In place: root errorComponent and notFoundComponent, error-capture.ts, error-page.ts, lovable-error-reporting.ts, SSR fallback in server.ts |
-| 2 | Security | Standard | In place: RLS on every table, current_person_id() and is_admin() helpers, service role key server side only, 8 security fixes shipped 2026-07-30. Gap: no re-audit of public board views since |
+| 2 | Security | Standard | In place: RLS on every table, current_person_id() and is_admin() helpers, service role key server side only, 8 security fixes shipped 2026-07-30, anon email leak on identities closed and verified by impersonating anon and a real non-admin, admin privilege scoped to /admin only. Gap: no standing access-verification script, rsvps.party_size still readable by ordinary signed-in alumni |
 | 3 | Accessibility | Standard | Partial: DESIGN.md sets aria-label on every chip, 2px Pitt Royal focus rings, real checkbox filters, prefers-reduced-motion. Not verified in code |
-| 4 | Data & Backend | Standard | In place: 16 migrations, typed Supabase client, TanStack Query v5, derived board views. Gap: database still holds sample- prefixed rows, the real 468 person import has not run |
+| 4 | Data & Backend | Standard | In place: 16 migrations, typed Supabase client, TanStack Query v5, derived board views, real person import complete. 368 people (367 real plus one test account), zero sample- rows remaining, 125 identities, 890 stints. Gap: no women's division rows exist yet, that import is deferred |
 | 5 | Auth & Accounts | Standard | In place: magic link first with Google second, server side link generation via auth admin API, _authenticated route guard, three seeded admins |
 | 6 | Design System | Standard | In place: full token set in styles.css, Archivo / Space Grotesk / Space Mono, one accent rule where gold means attending |
 | 7 | Performance | Light | Gap: the board renders every chip with no virtualization. 468 people today |
@@ -55,7 +55,7 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 - Resend outbound with send log, suppressions and unsubscribe: built
 - Calendar .ics export: built
 - Peer verification within plus or minus 3 years: built, never exercised against real data
-- Real 468 person seed import: not run. Sample rows still live
+- Real person import: complete. 368 rows, 362 on the board, 6 hidden (test account plus the five records with no grad year). Women's divisions hold zero rows, import deferred
 - Drip sequences: seeded dormant, awaiting a verified sending domain
 - RSVP rate limiting: built. Three dimensions, soft and hard tiers
 - Unmatched names as review requests with an hourly admin digest: built
@@ -80,7 +80,8 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 
 ## KNOWN ISSUES
 
-- High: the database still holds roughly 50 sample- prefixed rows. The real 468 person import has not run
+- High: no standing access-verification script. Three bugs on 2026-07-30 were reported as fixed and were not. Nothing asserts per-role read and write on every table before publish
+- Medium: rsvps.party_size is readable by any signed-in alum. It must be admin only
 - Medium: og:image in __root.tsx points at a Lovable R2 preview screenshot URL that is tied to a preview build and will rot
 - Medium: no privacy policy on a site holding 468 real names and 120 email addresses
 - Medium: `throttle_events` has no pruning job. It grows forever and the count queries slow as it fills. Needs a pg_cron delete of rows older than 48 hours
@@ -108,15 +109,15 @@ Server side, status unconfirmed:
 
 ## ROADMAP
 
-NOW: delete the sample rows and run the real 468 person import. Run 005_verify.sql and confirm all 29 checks PASS. Add a pg_cron job pruning `throttle_events` older than 48 hours. Replace the og:image with a stable hosted asset. Publish a privacy policy and link it in the footer.
+NOW: write the standing access-verification script that runs as anon and as a non-admin and asserts per-role read and write on every table plus what can leave the mail system while paused. Narrow rsvps so party_size is admin only. Confirm or delete the remaining placeholder events. Add a pg_cron job pruning throttle_events older than 48 hours. Replace the og:image with a stable hosted asset. Publish a privacy policy and link it in the footer. Reconcile CONTEXT.md, BUILD_SPEC.md, DESIGN.md and URL_MANIFEST.md, all four now describe a site that does not exist.
 
-NEXT: activate the eight drip sequences once the sending domain verifies. Import the 2026 roster of 48 names. Import the two women's division rosters. Discord, GroupMe and Facebook syndication with src tracking. Analytics on claim and RSVP conversion. Virtualize the board.
+NEXT: activate the eight drip sequences once the sending domain verifies. Import the 2026 roster of 48 names. Discord, GroupMe and Facebook syndication with src tracking. Analytics on claim and RSVP conversion. Virtualize the board. Women's division import, roughly 102 people, only after Christie Lawry and Bailey Moorhead have been contacted.
 
 LATER: tournament tracker. Alumni job network built on the open_to_network consent flag. Edition rollover so the weekend repeats every year without a migration. Per year photo library.
 
 ## MASTER OS
 
-- Retrofitted: 2026-07-30. Last synced 2026-07-30 after the rate limiting and review request work
+- Retrofitted: 2026-07-30. Last synced 2026-07-30
 - Hub card: pitt-alumni-connect in project 45df6587-f345-46bd-bccc-3c2fa55467a7
 - Hub article file: src/data/pitt-alumni-connect-articles.ts
 - Lovable project ID: da83b43b-b24b-4b80-b9ec-619b1b431cbb
@@ -148,3 +149,8 @@ Leak: `src/lib/rsvp.server.ts:201` called `sendMagicLinkEmail` with no `kind`, a
 Repeats: every accepted `submitRsvpServer` call sent unconditionally, including the verified-owner branch that writes nothing. New `confirmation_sends` table (unique person_id + event_year + status) claims a row before the send and releases it only when the send never left, so one confirmation per person per edition per status change.
 `sends.outcome` ('sent' | 'blocked' | 'failed' | 'suppressed') plus `blocked_reason`; every delivery count filters `outcome = 'sent'`.
 Session: sessions are not time boxed (`auth.sessions.not_after` is null), refresh tokens rotate on use and the generated client persists and auto refreshes, so a sliding session outlasts 90 days. Access token JWT stays at the 3600s default; that value is a project auth setting with no tool exposed to change it. Sign out on /me uses `scope: "global"`.
+
+## Schedule, 2026-07-30
+9 events. Friday: Pitt football watch party 7 PM East Liberty, exact bar TBD, followed by an Oakland bar crawl at 9 PM. Both times are provisional and awaiting planner confirmation. The two overlap the ESPN broadcast window and the two venues are in different neighbourhoods; this reintroduces the split night that a single bar was chosen to solve.
+Saturday BBQ at Schenley Overlook Shelter is booked and paid but still carries time_tbd, so it renders as TBD to every visitor. Needs a time.
+Four division events remain placeholders: Sabah alumni gathering, Sabah alumni game, Pressure and BITT alumni gathering, Pressure and BITT alumni game. Confirm or delete.
