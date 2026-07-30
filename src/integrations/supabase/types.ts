@@ -228,6 +228,7 @@ export type Database = {
           id: string
           is_primary: boolean
           person_id: string
+          primary_set_manually_at: string | null
           provider: string
           verified_at: string | null
         }
@@ -238,6 +239,7 @@ export type Database = {
           id?: string
           is_primary?: boolean
           person_id: string
+          primary_set_manually_at?: string | null
           provider: string
           verified_at?: string | null
         }
@@ -248,6 +250,7 @@ export type Database = {
           id?: string
           is_primary?: boolean
           person_id?: string
+          primary_set_manually_at?: string | null
           provider?: string
           verified_at?: string | null
         }
@@ -1107,6 +1110,10 @@ export type Database = {
       current_edition_year: { Args: never; Returns: number }
       current_person_id: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
+      promote_verified_primary: {
+        Args: { _identity_id: string }
+        Returns: boolean
+      }
       set_current_edition: { Args: { _event_year: number }; Returns: undefined }
     }
     Enums: {

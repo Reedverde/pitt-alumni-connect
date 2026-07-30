@@ -162,11 +162,12 @@ export const setPrimaryEmail = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await context.supabase
       .from("identities")
-      .update({ is_primary: false })
+      .update({ is_primary: false, primary_set_manually_at: null })
       .eq("person_id", data.personId);
     const { error } = await context.supabase
       .from("identities")
-      .update({ is_primary: true })
+      // Stamping the manual choice stops a later verification from moving it.
+      .update({ is_primary: true, primary_set_manually_at: new Date().toISOString() })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
