@@ -10,6 +10,7 @@ import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
 import { SiteNav } from "@/components/SiteNav";
 import { SidelineLoop } from "@/components/board/SidelineLoop";
+import { countdown, editionEyebrow } from "@/lib/edition-format";
 
 const boardQuery = queryOptions({
   queryKey: ["board"],
@@ -24,13 +25,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Every Pitt Club Ultimate alum on one wall, by year. See who has claimed their name and who is coming to Alumni Weekend, October 2–4, 2026.",
+          "Every Pitt Club Ultimate alum on one wall, by year. See who has claimed their name and who is coming to Alumni Weekend.",
       },
       { property: "og:title", content: "Pitt Club Ultimate Alumni — Find your year" },
       {
         property: "og:description",
         content:
-          "Every Pitt Club Ultimate alum on one wall, by year. See who is coming to Alumni Weekend, October 2–4, 2026.",
+          "Every Pitt Club Ultimate alum on one wall, by year. See who is coming to Alumni Weekend.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -53,14 +54,6 @@ const DIVISION_CHIP_LABELS: Record<string, string> = {
   WOMENS_A: "Danger",
   WOMENS_B: "Danger B",
 };
-
-const DECADES = [
-  { label: "1998–2009", from: 1998, to: 2009 },
-  { label: "2010–2019", from: 2010, to: 2019 },
-  { label: "2020–2026", from: 2020, to: 2026 },
-];
-
-const WEEKEND_START = Date.UTC(2026, 9, 2);
 
 function BoardPage() {
   const { data } = useSuspenseQuery(boardQuery);
@@ -107,10 +100,8 @@ function BoardPage() {
     [groups, newestFirst],
   );
 
-  const daysOut = Math.max(
-    0,
-    Math.ceil((WEEKEND_START - Date.now()) / (1000 * 60 * 60 * 24)),
-  );
+  // Countdown comes from the current edition row, never a literal date.
+  const clock = countdown(data.edition, data.nextEdition);
 
   const toggle = (code: string) =>
     setActive((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
@@ -121,11 +112,11 @@ function BoardPage() {
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
       <SiteNav onClaim={() => openClaim()} />
-      <CounterBar claimed={data.totals.claimed} going={data.totals.going} daysOut={daysOut} />
+      <CounterBar claimed={data.totals.claimed} going={data.totals.going} clock={clock} />
 
       <main className="mx-auto w-full max-w-[1320px] px-5 pb-24">
         <header className="pt-10 pb-8 md:pt-14">
-          <SlashEyebrow>Alumni Weekend · Oct 2–4, 2026</SlashEyebrow>
+          <SlashEyebrow>{editionEyebrow(data.edition)}</SlashEyebrow>
           <h1 className="display-64 mt-3" style={{ color: "var(--sabah-black)" }}>
             FIND YOUR YEAR
           </h1>
@@ -167,11 +158,19 @@ function BoardPage() {
   );
 }
 
-function CounterBar({ claimed, going, daysOut }: { claimed: number; going: number; daysOut: number }) {
+function CounterBar({
+  claimed,
+  going,
+  clock,
+}: {
+  claimed: number;
+  going: number;
+  clock: { value: string; label: string };
+}) {
   const figures = [
-    { value: claimed, label: "Claimed", color: "var(--pitt-royal)", dot: false },
-    { value: going, label: "Going", color: "var(--sabah-black)", dot: true },
-    { value: daysOut, label: "Days out", color: "var(--steel-ink)", dot: false },
+    { value: String(claimed), label: "Claimed", color: "var(--pitt-royal)", dot: false },
+    { value: String(going), label: "Going", color: "var(--sabah-black)", dot: true },
+    { value: clock.value, label: clock.label, color: "var(--steel-ink)", dot: false },
   ];
   return (
     <div
@@ -202,7 +201,9 @@ function CounterBar({ claimed, going, daysOut }: { claimed: number; going: numbe
           {going} going
         </span>
         <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
-        <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}>{daysOut} days out</span>
+        <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}>
+          {clock.value} {clock.label.toLowerCase()}
+        </span>
       </div>
     </div>
   );
