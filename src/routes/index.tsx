@@ -514,14 +514,19 @@ function DecadeRail({ groups }: { groups: YearGroup[] }) {
 function AnchorRow({
   people,
   onClaim,
+  photos,
+  rowIndex,
 }: {
   people: BoardPerson[];
   onClaim: (person: BoardPerson) => void;
+  photos: Record<string, BoardPhoto>;
+  rowIndex: number;
 }) {
   const sorted = [...people].sort((a, b) =>
     `${a.last_name ?? a.first_name}`.localeCompare(`${b.last_name ?? b.first_name}`),
   );
   const claimed = claimedCount(sorted);
+  const shot = pickPhoto(photos, [...new Set(sorted.map((p) => p.board_year))]);
   return (
     <section
       className="flex flex-col gap-4 py-7 md:flex-row md:gap-8"
@@ -537,6 +542,9 @@ function AnchorRow({
             {claimed} of {sorted.length} claimed
           </div>
         </div>
+        {shot && (
+          <YearPhoto photo={shot.photo} year={shot.year} corners={cornersForRow(rowIndex)} />
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap content-start items-start gap-2">
@@ -570,12 +578,17 @@ function YearRow({
   group,
   isDimmed,
   onClaim,
+  photos,
+  rowIndex,
 }: {
   group: YearGroup;
   isDimmed: (p: BoardPerson) => boolean;
   onClaim: (person: BoardPerson) => void;
+  photos: Record<string, BoardPhoto>;
+  rowIndex: number;
 }) {
   const claimed = claimedCount(group.people);
+  const shot = pickPhoto(photos, group.years);
   return (
     <section
       id={group.key}
@@ -592,6 +605,9 @@ function YearRow({
             {claimed} of {group.people.length} claimed
           </div>
         </div>
+        {shot && (
+          <YearPhoto photo={shot.photo} year={shot.year} corners={cornersForRow(rowIndex)} />
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap content-start items-start gap-2">
