@@ -365,9 +365,22 @@ function Hero({
             </p>
           )}
           <div className="mt-6 flex flex-wrap gap-3">
-            <button type="button" style={primaryButton} onClick={onClaim}>
-              Say you're coming
-            </button>
+            {heroQuiet ? (
+              <span
+                style={{
+                  fontFamily: '"Space Grotesk", sans-serif',
+                  fontSize: 15,
+                  color: "var(--sterling)",
+                  alignSelf: "center",
+                }}
+              >
+                {heroQuiet}
+              </span>
+            ) : (
+              <button type="button" style={primaryButton} onClick={onClaim}>
+                Say you're coming
+              </button>
+            )}
             <Link to="/weekend" style={{ ...ghostButton, color: "var(--pure-white)", border: "1px solid var(--steel-ink)" }}>
               See the schedule
             </Link>
