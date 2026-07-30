@@ -32,8 +32,11 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
     starts_on: "",
     ends_on: "",
   });
-  const [editing, setEditing] = useState<Record<number, { title: string; starts_on: string; ends_on: string }>>({});
+  const [editing, setEditing] = useState<
+    Record<number, { title: string; starts_on: string; ends_on: string; lodging_note: string; travel_note: string }>
+  >({});
   const [eventYear, setEventYear] = useState<number | null>(null);
+  const [placeholdersOnly, setPlaceholdersOnly] = useState(false);
   const [eventDraft, setEventDraft] = useState({
     title: "",
     day_number: "1",
@@ -189,11 +192,13 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
                             onClick={() =>
                               setEditing((s) => ({
                                 ...s,
-                                [row.event_year]: {
-                                  title: row.title,
-                                  starts_on: row.starts_on,
-                                  ends_on: row.ends_on,
-                                },
+                                 [row.event_year]: {
+                                   title: row.title,
+                                   starts_on: row.starts_on,
+                                   ends_on: row.ends_on,
+                                   lodging_note: row.lodging_note ?? "",
+                                   travel_note: row.travel_note ?? "",
+                                 },
                               }))
                             }
                           >
