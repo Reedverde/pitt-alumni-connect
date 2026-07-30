@@ -278,6 +278,44 @@ function WeekendPage() {
   );
 }
 
+/** Two plain-text notes the organizers keep current. Hidden when empty, so an
+ *  edition with nothing decided shows nothing rather than an empty promise. */
+function WhereToStay({ edition }: { edition: EditionSummary }) {
+  const lodging = edition.lodging_note?.trim();
+  const travel = edition.travel_note?.trim();
+  if (!lodging && !travel) return null;
+  return (
+    <section id="where-to-stay" className="mt-16 scroll-mt-24">
+      <SlashEyebrow>Where to stay</SlashEyebrow>
+      <h2 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
+        GETTING HERE
+      </h2>
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        {lodging && (
+          <NotchedBox corners={["tl"]} notch={NOTCH_SM} stroke="var(--chalk)" fill="var(--pure-white)" style={tileStyle}>
+            <p className="label-caps" style={{ color: "var(--sterling)" }}>
+              Lodging
+            </p>
+            <p className="mt-2 max-w-[560px] whitespace-pre-line" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
+              {lodging}
+            </p>
+          </NotchedBox>
+        )}
+        {travel && (
+          <NotchedBox corners={["br"]} notch={NOTCH_SM} stroke="var(--chalk)" fill="var(--pure-white)" style={tileStyle}>
+            <p className="label-caps" style={{ color: "var(--sterling)" }}>
+              Travel and parking
+            </p>
+            <p className="mt-2 max-w-[560px] whitespace-pre-line" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
+              {travel}
+            </p>
+          </NotchedBox>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function OffSeason({
   archive,
 }: {
