@@ -12,7 +12,6 @@ import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { PhotoSlot } from "@/components/media/PhotoSlot";
 import heroPeak from "@/assets/hero-peak.png.asset.json";
 import { NotchedBox } from "@/components/media/NotchedBox";
 import { NOTCH_ALL } from "@/components/media/notch";
