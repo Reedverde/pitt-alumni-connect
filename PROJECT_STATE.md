@@ -5,9 +5,9 @@
 | # | Module | Intensity | Status |
 |---|--------|-----------|--------|
 | 1 | Stability | Standard | In place: root errorComponent and notFoundComponent, error-capture.ts, error-page.ts, lovable-error-reporting.ts, SSR fallback in server.ts |
-| 2 | Security | Standard | In place: RLS on every table, current_person_id() and is_admin() helpers, service role key server side only, 8 security fixes shipped 2026-07-30. Gap: no re-audit of public board views since |
+| 2 | Security | Standard | In place: RLS on every table, current_person_id() and is_admin() helpers, service role key server side only, 8 security fixes shipped 2026-07-30, anon email leak on identities closed and verified by impersonating anon and a real non-admin, admin privilege scoped to /admin only. Gap: no standing access-verification script, rsvps.party_size still readable by ordinary signed-in alumni |
 | 3 | Accessibility | Standard | Partial: DESIGN.md sets aria-label on every chip, 2px Pitt Royal focus rings, real checkbox filters, prefers-reduced-motion. Not verified in code |
-| 4 | Data & Backend | Standard | In place: 16 migrations, typed Supabase client, TanStack Query v5, derived board views. Gap: database still holds sample- prefixed rows, the real 468 person import has not run |
+| 4 | Data & Backend | Standard | In place: 16 migrations, typed Supabase client, TanStack Query v5, derived board views, real person import complete. 368 people (367 real plus one test account), zero sample- rows remaining, 125 identities, 890 stints. Gap: no women's division rows exist yet, that import is deferred |
 | 5 | Auth & Accounts | Standard | In place: magic link first with Google second, server side link generation via auth admin API, _authenticated route guard, three seeded admins |
 | 6 | Design System | Standard | In place: full token set in styles.css, Archivo / Space Grotesk / Space Mono, one accent rule where gold means attending |
 | 7 | Performance | Light | Gap: the board renders every chip with no virtualization. 468 people today |
@@ -55,7 +55,7 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 - Resend outbound with send log, suppressions and unsubscribe: built
 - Calendar .ics export: built
 - Peer verification within plus or minus 3 years: built, never exercised against real data
-- Real 468 person seed import: not run. Sample rows still live
+- Real person import: complete. 368 rows, 362 on the board, 6 hidden (test account plus the five records with no grad year). Women's divisions hold zero rows, import deferred
 - Drip sequences: seeded dormant, awaiting a verified sending domain
 - RSVP rate limiting: built. Three dimensions, soft and hard tiers
 - Unmatched names as review requests with an hourly admin digest: built
