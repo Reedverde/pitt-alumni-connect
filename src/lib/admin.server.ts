@@ -1201,11 +1201,28 @@ export type MailStatus = {
   detail: string;
   clickTracking: boolean | null;
   openTracking: boolean | null;
+  outboundMode: "transactional_only" | "all";
+  outboundSentence: string;
 };
 
 export async function mailConfigStatus(): Promise<MailStatus> {
   const { mailStatus } = await import("./mail.server");
   return mailStatus();
+}
+
+/** The kill switch. Admin only, audited, and the only writer of this setting. */
+export async function setOutboundEmailMode(
+  actor: string,
+  mode: "transactional_only" | "all",
+): Promise<{ ok: boolean; mode: string; detail: string }> {
+  const { outboundEmailMode, outboundEmailModeSentence } = await import("./mail.server");
+  const before = await outboundEmailMode();
+  const { error } = await supabaseAdmin
+    .from("app_settings")
+    .upsert({ key: "outbound_email_mode", value: mode } as never, { onConflict: "key" });
+  if (error) return { ok: false, mode: before, detail: error.message };
+  await audit(actor, "outbound_email_mode", "app_settings", "outbound_email_mode", { mode: before }, { mode });
+  return { ok: true, mode, detail: outboundEmailModeSentence(mode) };
 }
 
 const TEST_SEND_LIMIT = 10;
