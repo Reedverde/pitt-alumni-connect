@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { nameScore } from "./fuzzy";
+import { currentEditionYear } from "./editions.server";
 import {
   RSVP_SOURCES,
   RSVP_STATUSES,
@@ -231,6 +232,8 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
   const email = input.email.trim().toLowerCase();
 
   if (await overRateLimit(ip)) throw new Error("Something went wrong. Try again later.");
+
+  const eventYear = await currentEditionYear();
 
   let person: PersonRow | null = null;
   let magicLinkEmail = email;

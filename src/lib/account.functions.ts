@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { EVENT_YEAR, type RsvpStatus } from "./rsvp-types";
+import type { RsvpStatus } from "./rsvp-types";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -20,6 +20,8 @@ export type MyProfile = {
   emails: { id: string; email: string; is_primary: boolean; verified: boolean }[];
   stints: { id: string; division: string; role: string; year: number }[];
   rsvp: RsvpStatus | null;
+  edition: { event_year: number; title: string; starts_on: string; ends_on: string } | null;
+  attended: number[];
 };
 
 export const finalizeLogin = createServerFn({ method: "POST" })
