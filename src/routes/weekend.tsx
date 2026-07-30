@@ -22,6 +22,7 @@ import { ActionRail } from "@/components/board/ActionRail";
 import { PhotoSlot } from "@/components/media/PhotoSlot";
 import { NotchedBox } from "@/components/media/NotchedBox";
 import { NOTCH_LG, NOTCH_SM, type NotchCorner } from "@/components/media/notch";
+import { DivisionMark } from "@/components/schedule/DivisionMark";
 
 const weekendQuery = queryOptions({
   queryKey: ["weekend-page"],
@@ -245,7 +246,8 @@ function WeekendPage() {
                 >
                   {lanes.map((lane) => (
                     <div key={lane.code} className="flex flex-col gap-4">
-                      <p className="label-caps" style={{ color: "var(--sterling)" }}>
+                      <p className="label-caps flex items-center gap-2" style={{ color: "var(--sterling)" }}>
+                        <DivisionMark code={lane.code} />
                         {DIVISION_LABELS[lane.code]}
                       </p>
                       {lane.events.map((event, i) => (
