@@ -464,21 +464,86 @@ export async function resolveSuggestion(
   let createdId: string | null = null;
 
   if (row.type === "new_person") {
+    // Only write what the submitter actually gave us. A missing grad year, a
+    // missing division and a missing playing year each stay missing: an
+    // invented one reads as fact forever after.
+    const firstName = String(payload.first_name ?? "").trim().slice(0, 80);
+    if (!firstName) throw new Error("That request has no first name to write.");
+
+    const insert: Record<string, unknown> = {
+      first_name: firstName,
+      needs_review: false,
+      // Approval gates one thing only: whether the name appears on the board.
+      show_on_board: true,
+    };
+    if (typeof payload.last_name === "string" && payload.last_name.trim())
+      insert.last_name = payload.last_name.trim().slice(0, 80);
+    if (typeof payload.played_as === "string" && payload.played_as.trim())
+      insert.played_as = payload.played_as.trim().slice(0, 80);
+    if (typeof payload.grad_year === "number") insert.grad_year = payload.grad_year;
+    if (typeof payload.division === "string" && payload.division.trim())
+      insert.seed_division = payload.division.trim();
+
     // member_no is assigned by the database identity column, never by hand.
     const { data: created, error } = await supabaseAdmin
       .from("people")
-      .insert({
-        first_name: String(payload.first_name ?? "").slice(0, 80) || "Unknown",
-        last_name: (payload.last_name as string | null) ?? null,
-        played_as: (payload.played_as as string | null) ?? null,
-        grad_year: typeof payload.grad_year === "number" ? payload.grad_year : null,
-        seed_division: typeof payload.division === "string" ? payload.division : null,
-        needs_review: false,
-      })
+      .insert(insert as never)
       .select("id")
       .single();
     if (error || !created) throw new Error(error?.message ?? "Couldn't create that record.");
     createdId = created.id as string;
+
+    // A stint is a claim about a season someone actually played. It is written
+    // only when the submitter named both the division and the year.
+    const stintYear =
+      typeof payload.stint_year === "number"
+        ? payload.stint_year
+        : typeof payload.start_year === "number"
+          ? payload.start_year
+          : null;
+    if (typeof insert.seed_division === "string" && stintYear !== null) {
+      await supabaseAdmin.from("stints").insert({
+        person_id: createdId,
+        division: insert.seed_division as string,
+        year: stintYear,
+        source: "self",
+      } as never);
+    }
+
+    // The email the submitter typed, unverified. Signing in verifies it.
+    if (typeof payload.email === "string" && payload.email.includes("@")) {
+      await supabaseAdmin
+        .from("identities")
+        .insert({
+          person_id: createdId,
+          email: payload.email.trim().toLowerCase(),
+          is_primary: true,
+        } as never)
+        .select("id")
+        .maybeSingle();
+    }
+
+    // Saying you are coming IS the signup, so the answer survives review. It is
+    // carried onto the new record here and is never contingent on approval.
+    const requested = payload.requested_status;
+    if (requested === "going" || requested === "maybe" || requested === "not_this_year") {
+      const eventYear = (await loadCurrentEdition()).event_year;
+      const { data: already } = await supabaseAdmin
+        .from("rsvps")
+        .select("id")
+        .eq("person_id", createdId)
+        .eq("event_year", eventYear)
+        .maybeSingle();
+      if (!already) {
+        await supabaseAdmin.from("rsvps").insert({
+          person_id: createdId,
+          event_year: eventYear,
+          status: requested,
+          src: "self_add",
+          ...(typeof payload.party_size === "number" ? { party_size: payload.party_size } : {}),
+        } as never);
+      }
+    }
   }
 
   if (row.type === "edit" && typeof payload.person_id === "string") {
