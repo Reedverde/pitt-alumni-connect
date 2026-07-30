@@ -17,7 +17,6 @@ import { ScheduleSummary, ghostButton, primaryButton } from "@/components/schedu
 import { SidelineLoop } from "@/components/board/SidelineLoop";
 import {
   countdown,
-  editionDateRange,
   editionShortDates,
   nextOctoberYear,
   resolveSeason,
