@@ -408,6 +408,7 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
       matched_existing_email: Boolean(existingIdentity),
       matched_other_person: Boolean(existingIdentity && existingIdentity.person_id !== person.id),
       ...(verifiedOwner ? { refused_verified_overwrite: true } : {}),
+      ...(verdict.level === "soft" ? { mail_held_by_throttle: true } : {}),
     },
   });
 
@@ -419,16 +420,32 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
 
   const boardYear = (pl?.board_year as number | null) ?? person.grad_year ?? null;
 
-  await sendMagicLink({
-    to: magicLinkEmail,
-    personId: person.id,
-    firstName: person.first_name,
-    status: effectiveStatus,
-    origin: input.origin,
-  });
+  if (verdict.level === "soft") {
+    // The record is saved. The mail is held back, and the hold is visible to
+    // the organizers. The caller cannot tell the difference.
+    const { logSend } = await import("./mail.server");
+    await logSend({
+      personId: person.id,
+      kind: "magic_link",
+      toEmail: magicLinkEmail,
+      provider: "none",
+      providerMessageId: null,
+      status: "throttled",
+      error: `held back by the ${verdict.reason}`,
+    });
+  } else {
+    await sendMagicLink({
+      to: magicLinkEmail,
+      personId: person.id,
+      firstName: person.first_name,
+      status: effectiveStatus,
+      origin: input.origin,
+    });
+  }
 
   return {
     ok: true,
+    outcome: "recorded",
     person: {
       first_name: person.first_name,
       last_name: person.last_name,
