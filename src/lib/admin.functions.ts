@@ -259,3 +259,30 @@ export const adminDeleteEditionEvent = createServerFn({ method: "POST" })
     return mod.deleteEditionEvent(actor, data.id);
   });
 
+// ---------------------------------------------------------------- mail
+
+export const adminMailStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<MailStatus | null> => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return null;
+    return mod.mailConfigStatus();
+  });
+
+export const adminTestSend = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { email: string }) => input)
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ ok: boolean; messageId: string | null; provider: string; detail: string }> => {
+      const mod = await import("./admin.server");
+      const actor = await mod.adminActor(context.supabase);
+      if (!actor)
+        return { ok: false, messageId: null, provider: "none", detail: "Not permitted." };
+      return mod.sendTestMagicLink(actor, String(data.email ?? "").slice(0, 200));
+    },
+  );
+
