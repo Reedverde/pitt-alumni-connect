@@ -67,6 +67,8 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
     starts_on: current.starts_on,
     ends_on: current.ends_on,
     published: current.published,
+    lodging_note: current.lodging_note,
+    travel_note: current.travel_note,
   };
 
   return {
