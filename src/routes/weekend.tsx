@@ -37,12 +37,12 @@ export const Route = createFileRoute("/weekend")({
       {
         name: "description",
         content:
-          "Three days in Pittsburgh: watch party, family BBQ, women's soccer and the alumni games. Add any of it to your calendar.",
+          "Three days in Pittsburgh. Everybody who ever played. The full schedule, plus calendar files for every event.",
       },
       { property: "og:title", content: "Alumni Weekend Schedule — Pitt Club Ultimate" },
       {
         property: "og:description",
-        content: "Three days in Pittsburgh. The full schedule, plus calendar files for every event.",
+        content: "Three days in Pittsburgh. Everybody who ever played. Add any of it to your calendar.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
