@@ -1,0 +1,1029 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { Database } from "@/integrations/supabase/types";
+import { nameScore, normalize } from "./fuzzy";
+import { teamLabel } from "./rsvp.server";
+import { EVENT_YEAR } from "./rsvp-types";
+
+export type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
+
+export const CURRENT_SEASON = new Date().getFullYear();
+
+export type Actor = { personId: string | null };
+
+/** Returns the acting admin's person_id, or null when the caller is not an
+ *  admin. Every read and write in this module goes through this first, so a
+ *  signed-in non-admin gets an empty payload rather than data or an error. */
+export async function adminActor(
+  supabase: SupabaseClient<Database>,
+): Promise<string | null> {
+  const [adminRes, personRes] = await Promise.all([
+    supabase.rpc("is_admin"),
+    supabase.rpc("current_person_id"),
+  ]);
+  if (adminRes.error || adminRes.data !== true) return null;
+  return (personRes.data as string | null) ?? null;
+}
+
+async function audit(
+  actor: string | null,
+  action: string,
+  table: string,
+  recordId: string | null,
+  before: unknown,
+  after: unknown,
+) {
+  await supabaseAdmin.from("audit_log").insert({
+    actor_person_id: actor,
+    action,
+    table_name: table,
+    record_id: recordId,
+    before: (before ?? null) as never,
+    after: (after ?? null) as never,
+  });
+}
+
+// ---------------------------------------------------------------- shared
+
+export type PersonRow = {
+  id: string;
+  member_no: number;
+  seed_id: string | null;
+  first_name: string;
+  last_name: string | null;
+  played_as: string | null;
+  current_city: string | null;
+  grad_year: number | null;
+  seed_division: string | null;
+  deceased: boolean;
+  deceased_note: string | null;
+  deceased_confirmed_by: string | null;
+  deceased_confirmed_at: string | null;
+  show_on_board: boolean;
+  share_email: boolean;
+  open_to_network: boolean;
+  needs_review: boolean;
+  is_anchor: boolean;
+};
+
+const PERSON_COLUMNS =
+  "id, member_no, seed_id, first_name, last_name, played_as, current_city, grad_year, seed_division, deceased, deceased_note, deceased_confirmed_by, deceased_confirmed_at, show_on_board, share_email, open_to_network, needs_review, is_anchor";
+
+export type AdminPerson = PersonRow & {
+  board_year: number | null;
+  board_division: string | null;
+  team_label: string | null;
+  stint_count: number;
+  state: "unclaimed" | "claimed" | "going" | "maybe" | "not_this_year" | "memorial";
+};
+
+type Context = {
+  placement: Map<string, { board_year: number | null; board_division: string | null }>;
+  stints: Map<string, number>;
+  rsvp: Map<string, string>;
+  verified: Set<string>;
+};
+
+async function loadContext(): Promise<Context> {
+  const [placeRes, stintRes, rsvpRes, identRes] = await Promise.all([
+    supabaseAdmin.from("person_board_placement").select("person_id, board_year, board_division"),
+    supabaseAdmin.from("stints").select("person_id"),
+    supabaseAdmin.from("rsvps").select("person_id, status").eq("event_year", EVENT_YEAR),
+    supabaseAdmin.from("identities").select("person_id, verified_at"),
+  ]);
+  const placement = new Map<string, { board_year: number | null; board_division: string | null }>();
+  for (const row of placeRes.data ?? [])
+    placement.set(row.person_id as string, {
+      board_year: row.board_year as number | null,
+      board_division: row.board_division as string | null,
+    });
+  const stints = new Map<string, number>();
+  for (const row of stintRes.data ?? [])
+    stints.set(row.person_id as string, (stints.get(row.person_id as string) ?? 0) + 1);
+  const rsvp = new Map<string, string>();
+  for (const row of rsvpRes.data ?? []) rsvp.set(row.person_id as string, row.status as string);
+  const verified = new Set<string>();
+  for (const row of identRes.data ?? [])
+    if (row.verified_at) verified.add(row.person_id as string);
+  return { placement, stints, rsvp, verified };
+}
+
+function decorate(person: PersonRow, ctx: Context, label: string | null): AdminPerson {
+  const place = ctx.placement.get(person.id);
+  const status = ctx.rsvp.get(person.id);
+  const state: AdminPerson["state"] = person.deceased
+    ? "memorial"
+    : status === "going"
+      ? "going"
+      : status === "maybe"
+        ? "maybe"
+        : status === "not_this_year"
+          ? "not_this_year"
+          : ctx.verified.has(person.id)
+            ? "claimed"
+            : "unclaimed";
+  return {
+    ...person,
+    board_year: place?.board_year ?? person.grad_year,
+    board_division: place?.board_division ?? person.seed_division,
+    team_label: label,
+    stint_count: ctx.stints.get(person.id) ?? 0,
+    state,
+  };
+}
+
+async function decorateAll(rows: PersonRow[], ctx: Context) {
+  const out: AdminPerson[] = [];
+  for (const row of rows) {
+    const place = ctx.placement.get(row.id);
+    const label = await teamLabel(
+      place?.board_division ?? row.seed_division,
+      place?.board_year ?? row.grad_year,
+    );
+    out.push(decorate(row, ctx, label));
+  }
+  return out;
+}
+
+function fullName(p: { first_name: string; last_name?: string | null }) {
+  return [p.first_name, p.last_name].filter(Boolean).join(" ");
+}
+
+// ---------------------------------------------------------------- people
+
+export type PeopleFilter =
+  | "all"
+  | "needs_review"
+  | "no_grad_year"
+  | "no_stints"
+  | "is_anchor"
+  | "deceased";
+
+export async function listPeople(opts: {
+  query: string;
+  filter: PeopleFilter;
+  division: string | null;
+}): Promise<AdminPerson[]> {
+  const { data } = await supabaseAdmin
+    .from("people")
+    .select(PERSON_COLUMNS)
+    .order("member_no", { ascending: true })
+    .limit(2000);
+  const ctx = await loadContext();
+  let rows = (data ?? []) as PersonRow[];
+
+  if (opts.filter === "needs_review") rows = rows.filter((r) => r.needs_review);
+  if (opts.filter === "no_grad_year") rows = rows.filter((r) => r.grad_year === null);
+  if (opts.filter === "no_stints") rows = rows.filter((r) => (ctx.stints.get(r.id) ?? 0) === 0);
+  if (opts.filter === "is_anchor") rows = rows.filter((r) => r.is_anchor);
+  if (opts.filter === "deceased") rows = rows.filter((r) => r.deceased);
+
+  if (opts.division)
+    rows = rows.filter(
+      (r) => (ctx.placement.get(r.id)?.board_division ?? r.seed_division) === opts.division,
+    );
+
+  const q = normalize(opts.query ?? "");
+  if (q)
+    rows = rows.filter(
+      (r) =>
+        normalize(`${fullName(r)} ${r.played_as ?? ""}`).includes(q) ||
+        nameScore(q, fullName(r)) > 0.78,
+    );
+
+  return decorateAll(rows.slice(0, 400), ctx);
+}
+
+const EDITABLE_FIELDS = [
+  "first_name",
+  "last_name",
+  "played_as",
+  "current_city",
+  "grad_year",
+  "seed_division",
+  "show_on_board",
+  "needs_review",
+  "is_anchor",
+  "share_email",
+  "open_to_network",
+  "deceased_note",
+] as const;
+
+export async function updatePerson(
+  actor: string | null,
+  personId: string,
+  patch: Record<string, unknown>,
+) {
+  const { data: before } = await supabaseAdmin
+    .from("people")
+    .select(PERSON_COLUMNS)
+    .eq("id", personId)
+    .maybeSingle();
+  if (!before) throw new Error("No such person.");
+
+  const clean: Record<string, unknown> = {};
+  for (const key of EDITABLE_FIELDS) {
+    if (!(key in patch)) continue;
+    const value = patch[key];
+    if (key === "grad_year")
+      clean[key] = value === null || value === "" ? null : Number(value) || null;
+    else if (typeof value === "boolean") clean[key] = value;
+    else clean[key] = typeof value === "string" ? value.trim().slice(0, 400) || null : null;
+  }
+  if (typeof clean.first_name === "string" && !clean.first_name) delete clean.first_name;
+  if (Object.keys(clean).length === 0) return { ok: true };
+
+  const { error } = await supabaseAdmin.from("people").update(clean as never).eq("id", personId);
+  if (error) throw new Error(error.message);
+  await audit(actor, "admin_person_update", "people", personId, before, clean);
+  return { ok: true };
+}
+
+/** The ONLY path to deceased = true. Requires an admin to type the name of the
+ *  person who confirmed it off site and the date they confirmed it. */
+export async function recordMemorialConfirmation(
+  actor: string | null,
+  input: {
+    personId: string;
+    suggestionId: string | null;
+    note: string;
+    confirmedByName: string;
+    confirmedAt: string;
+    markDeceased: boolean;
+  },
+) {
+  const note = input.note.trim().slice(0, 2000);
+  const confirmedBy = input.confirmedByName.trim().slice(0, 120);
+  const confirmedAt = input.confirmedAt.trim();
+
+  const { data: before } = await supabaseAdmin
+    .from("people")
+    .select(PERSON_COLUMNS)
+    .eq("id", input.personId)
+    .maybeSingle();
+  if (!before) throw new Error("No such person.");
+
+  const patch: Record<string, unknown> = {};
+  if (note) patch.deceased_note = note;
+
+  if (input.markDeceased) {
+    if (!confirmedBy || !confirmedAt)
+      throw new Error(
+        "Type who confirmed it and the date they confirmed it before marking a record.",
+      );
+    const when = new Date(`${confirmedAt}T12:00:00Z`);
+    if (Number.isNaN(when.getTime())) throw new Error("That date isn't readable.");
+    patch.deceased = true;
+    patch.deceased_confirmed_at = when.toISOString();
+    patch.deceased_confirmed_by = actor;
+    patch.deceased_note = `${note}${note ? "\n" : ""}Confirmed by ${confirmedBy} on ${confirmedAt}.`;
+    patch.show_on_board = true;
+  }
+
+  if (Object.keys(patch).length === 0) return { ok: true };
+  const { error } = await supabaseAdmin.from("people").update(patch as never).eq("id", input.personId);
+  if (error) throw new Error(error.message);
+
+  if (input.suggestionId) {
+    await supabaseAdmin
+      .from("suggestions")
+      .update({
+        payload: {
+          person_id: input.personId,
+          note,
+          private: true,
+          confirmed_by_name: confirmedBy || null,
+          confirmed_at: confirmedAt || null,
+        } as never,
+        reviewed_by: actor,
+        reviewed_at: new Date().toISOString(),
+        status: input.markDeceased ? "approved" : "pending",
+      })
+      .eq("id", input.suggestionId);
+  }
+
+  await audit(
+    actor,
+    input.markDeceased ? "memorial_confirmed" : "memorial_note",
+    "people",
+    input.personId,
+    before,
+    patch,
+  );
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------- queue
+
+export type QueueItem = {
+  id: string;
+  type: "new_person" | "edit" | "memorial" | "roster_import";
+  status: string;
+  created_at: string | null;
+  submitter: string | null;
+  peer_vouched: boolean;
+  payload: Record<string, Json>;
+  proposedName: string | null;
+  matches: { id: string; name: string; grad_year: number | null; score: number }[];
+  diff: { field: string; before: string; after: string }[];
+  person: { id: string; name: string; grad_year: number | null; team_label: string | null } | null;
+  stale: boolean;
+};
+
+export async function reviewQueue(): Promise<QueueItem[]> {
+  const { data } = await supabaseAdmin
+    .from("suggestions")
+    .select("id, type, status, payload, created_at, submitted_by, peer_verified_by")
+    .order("created_at", { ascending: true })
+    .limit(500);
+  const rows = data ?? [];
+  if (rows.length === 0) return [];
+
+  const { data: peopleRows } = await supabaseAdmin
+    .from("people")
+    .select(PERSON_COLUMNS)
+    .limit(3000);
+  const people = (peopleRows ?? []) as PersonRow[];
+  const byId = new Map(people.map((p) => [p.id, p]));
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+  const out: QueueItem[] = [];
+  for (const row of rows) {
+    const payload = (row.payload ?? {}) as Record<string, Json>;
+    const submitter = byId.get(row.submitted_by as string);
+    const item: QueueItem = {
+      id: row.id as string,
+      type: row.type as QueueItem["type"],
+      status: row.status as string,
+      created_at: (row.created_at as string | null) ?? null,
+      submitter: submitter ? fullName(submitter) : null,
+      peer_vouched: Boolean(row.peer_verified_by),
+      payload,
+      proposedName: null,
+      matches: [],
+      diff: [],
+      person: null,
+      stale: false,
+    };
+
+    if (row.type === "new_person") {
+      const name = [payload.first_name, payload.last_name].filter(Boolean).join(" ");
+      item.proposedName = name || null;
+      item.matches = people
+        .map((p) => ({
+          id: p.id,
+          name: fullName(p),
+          grad_year: p.grad_year,
+          score: nameScore(name, fullName(p)),
+        }))
+        .filter((m) => m.score >= 0.72)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 4);
+      item.stale =
+        row.status === "pending" &&
+        !row.peer_verified_by &&
+        new Date((row.created_at as string) ?? Date.now()).getTime() < cutoff;
+    }
+
+    const targetId = typeof payload.person_id === "string" ? payload.person_id : null;
+    const target = targetId ? byId.get(targetId) : undefined;
+    if (target) {
+      item.person = {
+        id: target.id,
+        name: fullName(target),
+        grad_year: target.grad_year,
+        team_label: await teamLabel(target.seed_division, target.grad_year),
+      };
+    }
+
+    if (row.type === "edit" && target) {
+      const fields = (payload.fields ?? payload.changes ?? {}) as Record<string, unknown>;
+      for (const [field, value] of Object.entries(fields)) {
+        const current = (target as unknown as Record<string, unknown>)[field];
+        item.diff.push({
+          field,
+          before: current === null || current === undefined ? "—" : String(current),
+          after: value === null || value === undefined ? "—" : String(value),
+        });
+      }
+    }
+
+    out.push(item);
+  }
+
+  const rank = (s: string) => (s === "pending" ? 0 : 1);
+  return out.sort(
+    (a, b) => rank(a.status) - rank(b.status) || a.type.localeCompare(b.type),
+  );
+}
+
+export async function resolveSuggestion(
+  actor: string | null,
+  suggestionId: string,
+  action: "approve" | "reject",
+) {
+  const { data: row } = await supabaseAdmin
+    .from("suggestions")
+    .select("id, type, status, payload, submitted_by")
+    .eq("id", suggestionId)
+    .maybeSingle();
+  if (!row || row.status !== "pending") throw new Error("That item is no longer open.");
+  if (row.type === "memorial")
+    throw new Error("A memorial is never approved with a button.");
+
+  const payload = (row.payload ?? {}) as Record<string, unknown>;
+
+  if (action === "reject") {
+    await supabaseAdmin
+      .from("suggestions")
+      .update({ status: "rejected", reviewed_by: actor, reviewed_at: new Date().toISOString() })
+      .eq("id", suggestionId);
+    await audit(actor, "admin_suggestion_reject", "suggestions", suggestionId, payload, {
+      status: "rejected",
+    });
+    return { ok: true, createdId: null as string | null };
+  }
+
+  let createdId: string | null = null;
+
+  if (row.type === "new_person") {
+    // member_no is assigned by the database identity column, never by hand.
+    const { data: created, error } = await supabaseAdmin
+      .from("people")
+      .insert({
+        first_name: String(payload.first_name ?? "").slice(0, 80) || "Unknown",
+        last_name: (payload.last_name as string | null) ?? null,
+        played_as: (payload.played_as as string | null) ?? null,
+        grad_year: typeof payload.grad_year === "number" ? payload.grad_year : null,
+        seed_division: typeof payload.division === "string" ? payload.division : null,
+        needs_review: false,
+      })
+      .select("id")
+      .single();
+    if (error || !created) throw new Error(error?.message ?? "Couldn't create that record.");
+    createdId = created.id as string;
+  }
+
+  if (row.type === "edit" && typeof payload.person_id === "string") {
+    const fields = (payload.fields ?? payload.changes ?? {}) as Record<string, unknown>;
+    await updatePerson(actor, payload.person_id, fields);
+  }
+
+  await supabaseAdmin
+    .from("suggestions")
+    .update({ status: "approved", reviewed_by: actor, reviewed_at: new Date().toISOString() })
+    .eq("id", suggestionId);
+  await audit(actor, "admin_suggestion_approve", "suggestions", suggestionId, payload, {
+    status: "approved",
+    created_person_id: createdId,
+  });
+  return { ok: true, createdId };
+}
+
+// ---------------------------------------------------------------- roster
+
+export type RosterLine = {
+  raw: string;
+  parsed: string;
+  bucket: "matched" | "new" | "ambiguous";
+  candidates: { id: string; name: string; grad_year: number | null; score: number }[];
+  personId: string | null;
+};
+
+export function parseRosterName(line: string) {
+  const trimmed = line.replace(/\s+/g, " ").trim();
+  if (!trimmed) return "";
+  if (trimmed.includes(",")) {
+    const [last, first] = trimmed.split(",");
+    return `${(first ?? "").trim()} ${last.trim()}`.trim();
+  }
+  return trimmed;
+}
+
+export async function rosterDryRun(text: string): Promise<{
+  lines: RosterLine[];
+  summary: { matched: number; created: number; ambiguous: number; total: number };
+}> {
+  const { data } = await supabaseAdmin
+    .from("people")
+    .select("id, first_name, last_name, played_as, grad_year")
+    .limit(3000);
+  const people = (data ?? []) as {
+    id: string;
+    first_name: string;
+    last_name: string | null;
+    played_as: string | null;
+    grad_year: number | null;
+  }[];
+
+  const lines: RosterLine[] = [];
+  for (const raw of text.split(/\r?\n/)) {
+    const parsed = parseRosterName(raw);
+    if (!parsed) continue;
+    const scored = people
+      .map((p) => ({
+        id: p.id,
+        name: fullName(p),
+        grad_year: p.grad_year,
+        score: Math.max(nameScore(parsed, fullName(p)), p.played_as ? nameScore(parsed, p.played_as) : 0),
+      }))
+      .filter((c) => c.score >= 0.7)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+
+    let bucket: RosterLine["bucket"] = "new";
+    let personId: string | null = null;
+    if (scored.length === 0) bucket = "new";
+    else if (scored.length === 1 || scored[0].score - scored[1].score >= 0.12) {
+      bucket = "matched";
+      personId = scored[0].id;
+    } else bucket = "ambiguous";
+
+    lines.push({ raw: raw.trim(), parsed, bucket, candidates: scored, personId });
+  }
+
+  return {
+    lines,
+    summary: {
+      matched: lines.filter((l) => l.bucket === "matched").length,
+      created: lines.filter((l) => l.bucket === "new").length,
+      ambiguous: lines.filter((l) => l.bucket === "ambiguous").length,
+      total: lines.length,
+    },
+  };
+}
+
+/** The only path that writes a current-year stint. Alumni self-inserts of a
+ *  current-year stint stay blocked by RLS; this runs with elevated rights. */
+export async function rosterCommit(
+  actor: string | null,
+  input: {
+    division: string;
+    year: number;
+    lines: { parsed: string; personId: string | null; create: boolean }[];
+  },
+) {
+  const year = input.year;
+  let matched = 0;
+  let created = 0;
+  let skipped = 0;
+
+  for (const line of input.lines) {
+    let personId = line.personId;
+    if (!personId) {
+      if (!line.create) {
+        skipped++;
+        continue;
+      }
+      const parts = line.parsed.split(" ");
+      const first = parts.shift() ?? line.parsed;
+      const { data: person, error } = await supabaseAdmin
+        .from("people")
+        .insert({
+          first_name: first.slice(0, 80),
+          last_name: parts.join(" ").slice(0, 80) || null,
+          seed_division: input.division,
+          needs_review: false,
+        })
+        .select("id")
+        .single();
+      if (error || !person) {
+        skipped++;
+        continue;
+      }
+      personId = person.id as string;
+      created++;
+    } else matched++;
+
+    const { data: existing } = await supabaseAdmin
+      .from("stints")
+      .select("id")
+      .eq("person_id", personId)
+      .eq("division", input.division)
+      .eq("year", year)
+      .maybeSingle();
+    if (existing) continue;
+
+    await supabaseAdmin.from("stints").insert({
+      person_id: personId,
+      division: input.division,
+      year,
+      role: "player",
+      source: "roster_import",
+      confirmed_by: actor,
+      confirmed_at: new Date().toISOString(),
+    });
+  }
+
+  await audit(actor, "roster_import", "stints", null, null, {
+    division: input.division,
+    year,
+    matched,
+    created,
+    skipped,
+  });
+  return { ok: true, matched, created, skipped };
+}
+
+// ---------------------------------------------------------------- merge
+
+export type DuplicatePair = {
+  key: string;
+  a: AdminPerson;
+  b: AdminPerson;
+  score: number;
+};
+
+export async function duplicateCandidates(): Promise<DuplicatePair[]> {
+  const { data } = await supabaseAdmin.from("people").select(PERSON_COLUMNS).limit(3000);
+  const ctx = await loadContext();
+  const rows = (data ?? []) as PersonRow[];
+  const pairs: { a: PersonRow; b: PersonRow; score: number }[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    for (let j = i + 1; j < rows.length; j++) {
+      const a = rows[i];
+      const b = rows[j];
+      const score = nameScore(fullName(a), fullName(b));
+      if (score < 0.86) continue;
+      const ya = ctx.placement.get(a.id)?.board_year ?? a.grad_year;
+      const yb = ctx.placement.get(b.id)?.board_year ?? b.grad_year;
+      const overlap = ya === null || yb === null || Math.abs(ya - yb) <= 5;
+      if (!overlap) continue;
+      pairs.push({ a, b, score });
+    }
+  }
+
+  pairs.sort((x, y) => y.score - x.score);
+  const top = pairs.slice(0, 30);
+  const decorated = await decorateAll(
+    top.flatMap((p) => [p.a, p.b]),
+    ctx,
+  );
+  const byId = new Map(decorated.map((p) => [p.id, p]));
+  return top.map((p) => ({
+    key: `${p.a.id}:${p.b.id}`,
+    a: byId.get(p.a.id)!,
+    b: byId.get(p.b.id)!,
+    score: p.score,
+  }));
+}
+
+export async function mergePeople(
+  actor: string | null,
+  input: { survivorId: string; loserId: string; playedAs: string | null },
+) {
+  if (input.survivorId === input.loserId) throw new Error("Pick two different records.");
+  const [survivorRes, loserRes] = await Promise.all([
+    supabaseAdmin.from("people").select(PERSON_COLUMNS).eq("id", input.survivorId).maybeSingle(),
+    supabaseAdmin.from("people").select(PERSON_COLUMNS).eq("id", input.loserId).maybeSingle(),
+  ]);
+  const survivor = survivorRes.data as PersonRow | null;
+  const loser = loserRes.data as PersonRow | null;
+  if (!survivor || !loser) throw new Error("One of those records is gone.");
+
+  const before = { survivor, loser };
+
+  // Repoint every child row before the delete so nothing is orphaned.
+  await supabaseAdmin.from("stints").update({ person_id: input.survivorId }).eq("person_id", input.loserId);
+  await supabaseAdmin
+    .from("identities")
+    .update({ person_id: input.survivorId, is_primary: false })
+    .eq("person_id", input.loserId);
+  await supabaseAdmin.from("verifications").update({ person_id: input.survivorId }).eq("person_id", input.loserId);
+  await supabaseAdmin.from("verifications").update({ verified_by: input.survivorId }).eq("verified_by", input.loserId);
+  await supabaseAdmin.from("suggestions").update({ submitted_by: input.survivorId }).eq("submitted_by", input.loserId);
+  await supabaseAdmin.from("suggestions").update({ peer_verified_by: input.survivorId }).eq("peer_verified_by", input.loserId);
+  await supabaseAdmin.from("suggestions").update({ reviewed_by: input.survivorId }).eq("reviewed_by", input.loserId);
+  await supabaseAdmin.from("sends").update({ person_id: input.survivorId }).eq("person_id", input.loserId);
+
+  // rsvps are one row per person per year; keep the survivor's, move the rest.
+  const { data: survivorRsvps } = await supabaseAdmin
+    .from("rsvps")
+    .select("event_year")
+    .eq("person_id", input.survivorId);
+  const heldYears = new Set((survivorRsvps ?? []).map((r) => r.event_year as number));
+  const { data: loserRsvps } = await supabaseAdmin
+    .from("rsvps")
+    .select("id, event_year")
+    .eq("person_id", input.loserId);
+  for (const row of loserRsvps ?? []) {
+    if (heldYears.has(row.event_year as number))
+      await supabaseAdmin.from("rsvps").delete().eq("id", row.id as string);
+    else
+      await supabaseAdmin
+        .from("rsvps")
+        .update({ person_id: input.survivorId })
+        .eq("id", row.id as string);
+  }
+
+  const playedAs = input.playedAs?.trim().slice(0, 80) || survivor.played_as;
+  await supabaseAdmin
+    .from("people")
+    .update({
+      played_as: playedAs,
+      grad_year: survivor.grad_year ?? loser.grad_year,
+      current_city: survivor.current_city ?? loser.current_city,
+      seed_division: survivor.seed_division ?? loser.seed_division,
+      is_anchor: survivor.is_anchor || loser.is_anchor,
+    })
+    .eq("id", input.survivorId);
+
+  const { error } = await supabaseAdmin.from("people").delete().eq("id", input.loserId);
+  if (error) throw new Error(error.message);
+
+  const { data: after } = await supabaseAdmin
+    .from("people")
+    .select(PERSON_COLUMNS)
+    .eq("id", input.survivorId)
+    .maybeSingle();
+  await audit(actor, "admin_merge_people", "people", input.survivorId, before, {
+    survivor: after,
+    deleted_person_id: input.loserId,
+  });
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------- export
+
+export async function exportCsv(actor: string | null) {
+  const { data } = await supabaseAdmin.from("people").select(PERSON_COLUMNS).limit(3000);
+  const ctx = await loadContext();
+  const rows = await decorateAll((data ?? []) as PersonRow[], ctx);
+
+  const { data: identities } = await supabaseAdmin
+    .from("identities")
+    .select("person_id, email, is_primary, verified_at")
+    .order("is_primary", { ascending: false });
+  const primary = new Map<string, string>();
+  for (const row of identities ?? [])
+    if (!primary.has(row.person_id as string)) primary.set(row.person_id as string, row.email as string);
+
+  const header = [
+    "member_no",
+    "first_name",
+    "last_name",
+    "played_as",
+    "board_year",
+    "board_division",
+    "team_label",
+    "state",
+    "is_anchor",
+    "needs_review",
+    "primary_email",
+  ];
+  const esc = (v: unknown) => {
+    const s = v === null || v === undefined ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const body = rows.map((r) =>
+    [
+      r.member_no,
+      r.first_name,
+      r.last_name,
+      r.played_as,
+      r.board_year,
+      r.board_division,
+      r.team_label,
+      r.state,
+      r.is_anchor,
+      r.needs_review,
+      primary.get(r.id) ?? "",
+    ]
+      .map(esc)
+      .join(","),
+  );
+  const csv = [header.join(","), ...body].join("\n");
+  const date = new Date().toISOString().slice(0, 10);
+  await audit(actor, "admin_csv_export", "people", null, null, { rows: rows.length, date });
+  return { filename: `pitt-alumni-export-${date}.csv`, csv, rows: rows.length };
+}
+
+// ---------------------------------------------------------------- panels
+
+export type TeamNameRow = {
+  id: string;
+  division: string;
+  name: string | null;
+  start_year: number | null;
+  end_year: number | null;
+  confidence: string;
+};
+
+export async function updateTeamName(
+  actor: string | null,
+  input: { id: string; name: string | null; start_year: number | null; end_year: number | null; confidence: string },
+) {
+  const { data: before } = await supabaseAdmin
+    .from("team_names")
+    .select("id, division, name, start_year, end_year, confidence")
+    .eq("id", input.id)
+    .maybeSingle();
+  if (!before) throw new Error("No such span.");
+  const confidence = ["verified", "assumed", "unknown"].includes(input.confidence)
+    ? input.confidence
+    : "assumed";
+  const patch = {
+    name: input.name?.trim().slice(0, 80) || null,
+    start_year: input.start_year ?? null,
+    end_year: input.end_year ?? null,
+    confidence,
+  };
+  const { error } = await supabaseAdmin.from("team_names").update(patch).eq("id", input.id);
+  if (error) throw new Error(error.message);
+  await audit(actor, "admin_team_name_update", "team_names", input.id, before, patch);
+  return { ok: true };
+}
+
+export type DigestCohort = {
+  admin: string;
+  from: number;
+  to: number;
+  counts: { claimed: number; maybe: number; going: number; never_opened: number };
+  going: string[];
+  maybe: string[];
+  claimed: string[];
+  never_opened: string[];
+};
+
+async function cohortRange(personId: string, ctx: Context, person: PersonRow | undefined) {
+  const { data: stints } = await supabaseAdmin.from("stints").select("year").eq("person_id", personId);
+  const years = (stints ?? []).map((s) => s.year as number);
+  if (years.length > 0) return { from: Math.min(...years) - 3, to: Math.max(...years) + 3 };
+  const anchor = ctx.placement.get(personId)?.board_year ?? person?.grad_year ?? null;
+  if (anchor === null) return null;
+  return { from: anchor - 3, to: anchor + 3 };
+}
+
+export async function organizerDigest(): Promise<DigestCohort[]> {
+  const { data: adminRows } = await supabaseAdmin.from("admins").select("person_id");
+  const { data: peopleRows } = await supabaseAdmin.from("people").select(PERSON_COLUMNS).limit(3000);
+  const ctx = await loadContext();
+  const people = (peopleRows ?? []) as PersonRow[];
+  const byId = new Map(people.map((p) => [p.id, p]));
+
+  const out: DigestCohort[] = [];
+  for (const row of adminRows ?? []) {
+    const personId = row.person_id as string;
+    const admin = byId.get(personId);
+    const range = await cohortRange(personId, ctx, admin);
+    if (!range) continue;
+
+    const cohort: DigestCohort = {
+      admin: admin ? fullName(admin) : "Admin",
+      from: range.from,
+      to: range.to,
+      counts: { claimed: 0, maybe: 0, going: 0, never_opened: 0 },
+      going: [],
+      maybe: [],
+      claimed: [],
+      never_opened: [],
+    };
+
+    for (const person of people) {
+      if (person.deceased) continue;
+      const year = ctx.placement.get(person.id)?.board_year ?? person.grad_year;
+      if (year === null || year < range.from || year > range.to) continue;
+      const status = ctx.rsvp.get(person.id);
+      const name = fullName(person);
+      if (status === "going") {
+        cohort.going.push(name);
+        cohort.counts.going++;
+      } else if (status === "maybe") {
+        cohort.maybe.push(name);
+        cohort.counts.maybe++;
+      } else if (ctx.verified.has(person.id)) {
+        cohort.claimed.push(name);
+        cohort.counts.claimed++;
+      } else if (status !== "not_this_year") {
+        cohort.never_opened.push(name);
+        cohort.counts.never_opened++;
+      }
+    }
+    out.push(cohort);
+  }
+  return out;
+}
+
+export type DataGaps = {
+  no_stints: number;
+  no_grad_year: number;
+  thin_years: { year: number; count: number }[];
+  mens_a_recent: { year: number; count: number }[];
+};
+
+export async function dataGaps(): Promise<DataGaps> {
+  const { data } = await supabaseAdmin.from("people").select("id, grad_year, deceased").limit(3000);
+  const ctx = await loadContext();
+  const people = data ?? [];
+  const yearCounts = new Map<number, number>();
+  let noStints = 0;
+  let noGrad = 0;
+  for (const person of people) {
+    const id = person.id as string;
+    if ((ctx.stints.get(id) ?? 0) === 0) noStints++;
+    if (person.grad_year === null) noGrad++;
+    const year = ctx.placement.get(id)?.board_year ?? (person.grad_year as number | null);
+    if (year !== null && year !== undefined) yearCounts.set(year, (yearCounts.get(year) ?? 0) + 1);
+  }
+
+  const { data: mensA } = await supabaseAdmin
+    .from("stints")
+    .select("year")
+    .eq("division", "MENS_A")
+    .in("year", [2023, 2024, 2025]);
+  const mensCounts = new Map<number, number>([
+    [2023, 0],
+    [2024, 0],
+    [2025, 0],
+  ]);
+  for (const row of mensA ?? [])
+    mensCounts.set(row.year as number, (mensCounts.get(row.year as number) ?? 0) + 1);
+
+  return {
+    no_stints: noStints,
+    no_grad_year: noGrad,
+    thin_years: [...yearCounts.entries()]
+      .filter(([, count]) => count < 6)
+      .sort((a, b) => a[0] - b[0])
+      .map(([year, count]) => ({ year, count })),
+    mens_a_recent: [...mensCounts.entries()].map(([year, count]) => ({ year, count })),
+  };
+}
+
+export type DripData = {
+  sequences: {
+    id: string;
+    key: string;
+    offset_days: number;
+    audience_states: string[];
+    anchors_only: boolean;
+    active: boolean;
+  }[];
+  suppressions: { email: string; reason: string; created_at: string | null }[];
+  bounces: { hard: number; soft: number; complaints: number };
+};
+
+export async function dripData(): Promise<DripData> {
+  const [seqRes, supRes, sendRes] = await Promise.all([
+    supabaseAdmin
+      .from("sequences")
+      .select("id, key, offset_days, audience_states, anchors_only, active")
+      .order("offset_days", { ascending: true }),
+    supabaseAdmin.from("suppressions").select("email, reason, created_at").limit(500),
+    supabaseAdmin.from("sends").select("bounced, bounce_type, complained").limit(5000),
+  ]);
+
+  let hard = 0;
+  let soft = 0;
+  let complaints = 0;
+  for (const row of sendRes.data ?? []) {
+    if (row.complained) complaints++;
+    if (!row.bounced) continue;
+    if (row.bounce_type === "hard") hard++;
+    else soft++;
+  }
+
+  return {
+    sequences: (seqRes.data ?? []) as DripData["sequences"],
+    suppressions: (supRes.data ?? []) as DripData["suppressions"],
+    bounces: { hard, soft, complaints },
+  };
+}
+
+export type AdminDashboard = {
+  isAdmin: true;
+  queue: QueueItem[];
+  teamNames: TeamNameRow[];
+  gaps: DataGaps;
+  digest: DigestCohort[];
+  drip: DripData;
+  duplicates: DuplicatePair[];
+  seasonYear: number;
+};
+
+export async function dashboard(): Promise<AdminDashboard> {
+  const [queue, teamRes, gaps, digest, drip, duplicates] = await Promise.all([
+    reviewQueue(),
+    supabaseAdmin
+      .from("team_names")
+      .select("id, division, name, start_year, end_year, confidence")
+      .order("division")
+      .order("start_year"),
+    dataGaps(),
+    organizerDigest(),
+    dripData(),
+    duplicateCandidates(),
+  ]);
+  return {
+    isAdmin: true,
+    queue,
+    teamNames: (teamRes.data ?? []) as TeamNameRow[],
+    gaps,
+    digest,
+    drip,
+    duplicates,
+    seasonYear: CURRENT_SEASON,
+  };
+}
