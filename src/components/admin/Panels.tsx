@@ -2,9 +2,70 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { adminExportCsv, adminUpdateTeamName } from "@/lib/admin.functions";
-import type { DataGaps, DigestCohort, DripData, TeamNameRow } from "@/lib/admin.server";
+import { adminExportCsv, adminSetDivisionVisible, adminUpdateTeamName } from "@/lib/admin.functions";
+import type { DataGaps, DigestCohort, DivisionRow, DripData, TeamNameRow } from "@/lib/admin.server";
 import { Empty, Num, Section, cellStyle, hairline, headStyle, inputStyle, primaryButton, secondaryButton } from "./ui";
+
+export function DivisionsPanel({ rows, onSaved }: { rows: DivisionRow[]; onSaved: () => void }) {
+  const setVisible = useServerFn(adminSetDivisionVisible);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const toggle = async (row: DivisionRow) => {
+    setBusy(row.code);
+    try {
+      await setVisible({ data: { code: row.code, visible: !row.visible } });
+      toast.success(`${row.code} is now ${row.visible ? "hidden from" : "visible on"} the board.`);
+      onSaved();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't save.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="overflow-x-auto" style={{ borderBottom: hairline }}>
+      <table className="w-full" style={{ borderCollapse: "collapse", minWidth: 520 }}>
+        <thead>
+          <tr>
+            {["Division", "Label", "Public board", ""].map((h) => (
+              <th key={h} style={headStyle}>
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.code}>
+              <td style={cellStyle}>{row.code}</td>
+              <td style={cellStyle}>{row.label ?? "—"}</td>
+              <td style={cellStyle}>
+                <span style={{ color: row.visible ? "var(--sabah-black)" : "var(--sterling)" }}>
+                  {row.visible ? "Visible" : "Hidden"}
+                </span>
+              </td>
+              <td style={cellStyle}>
+                <button
+                  type="button"
+                  onClick={() => toggle(row)}
+                  disabled={busy === row.code}
+                  style={secondaryButton}
+                >
+                  {row.visible ? "Hide" : "Show"}
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="px-1 py-3" style={{ fontSize: 12, color: "var(--sterling)" }}>
+        Hiding a division only affects the public board, counts and name search. Admin views always
+        show every division and every person.
+      </p>
+    </div>
+  );
+}
 
 export function ConfidencePanel({ rows, onSaved }: { rows: TeamNameRow[]; onSaved: () => void }) {
   const update = useServerFn(adminUpdateTeamName);
