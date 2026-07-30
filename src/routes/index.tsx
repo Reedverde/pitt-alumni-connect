@@ -3,7 +3,7 @@ import { useSuspenseQuery, queryOptions, useQueryClient } from "@tanstack/react-
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 
-import { getBoard, type BoardPerson } from "@/lib/board.functions";
+import { getBoard, type BoardPerson, type BoardPhoto } from "@/lib/board.functions";
 import { getWeekendPage } from "@/lib/schedule.functions";
 import { buildYearGroups, claimedCount, type YearGroup } from "@/lib/board-grouping";
 import { NameChip } from "@/components/board/NameChip";
@@ -14,6 +14,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PhotoSlot } from "@/components/media/PhotoSlot";
 import { NotchedBox } from "@/components/media/NotchedBox";
+import { YearPhoto, cornersForRow } from "@/components/board/YearPhoto";
 import { ScheduleSummary, ghostButton, primaryButton } from "@/components/schedule/ScheduleSummary";
 import { SidelineLoop } from "@/components/board/SidelineLoop";
 import {
@@ -31,6 +32,15 @@ const boardQuery = queryOptions({
 /** A year ending in 00 shows all four digits: "00" reads as a placeholder. */
 function sealLabel(year: number) {
   return year % 100 === 0 ? String(year) : String(year).slice(-2);
+}
+
+/** A merged row uses a photograph from any year it covers, latest first. */
+function pickPhoto(photos: Record<string, BoardPhoto>, years: number[]) {
+  for (const year of [...years].sort((a, b) => b - a)) {
+    const photo = photos[String(year)];
+    if (photo) return { photo, year };
+  }
+  return null;
 }
 
 const weekendQuery = queryOptions({
