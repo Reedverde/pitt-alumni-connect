@@ -447,10 +447,28 @@ export async function sendMagicLinkEmail(opts: {
   kind?: string;
 }): Promise<MagicLinkResult> {
   const to = opts.to.trim().toLowerCase();
-  const { apiKey, fromAddress, fromName, replyTo } = mailConfig();
+  const { apiKey, fromAddress } = mailConfig();
   const kind = opts.kind ?? "magic_link";
 
   try {
+    // The built-in mailer below is a second way out of the building, so the
+    // same one switch is consulted before any of it runs. The decision itself
+    // lives in outboundEmailMode(); this is not a second policy.
+    if (!TRANSACTIONAL_KINDS.has(kind) && (await outboundEmailMode()) !== "all") {
+      const reason = `outbound email is paused (transactional_only); "${kind}" is not a sign-in link`;
+      await logSend({
+        personId: opts.personId,
+        kind,
+        toEmail: to,
+        provider: "none",
+        providerMessageId: null,
+        status: "blocked",
+        error: reason,
+      });
+      await logAuthAttempt({ email: to, personId: opts.personId, outcome: "blocked", detail: reason });
+      return { sent: false, provider: "none", messageId: null, reason };
+    }
+
     if (await isSuppressed(to)) {
       await logSend({
         personId: opts.personId,
