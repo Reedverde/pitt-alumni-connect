@@ -1135,6 +1135,74 @@ export async function recentSends(): Promise<SendRow[]> {
   }));
 }
 
+// ---------------------------------------------------------------- mail
+
+export type MailStatus = {
+  fromAddress: string | null;
+  fromName: string | null;
+  replyTo: string | null;
+  siteUrl: string | null;
+  hasApiKey: boolean;
+  domain: string | null;
+  verified: boolean;
+  detail: string;
+};
+
+export async function mailConfigStatus(): Promise<MailStatus> {
+  const { mailStatus } = await import("./mail.server");
+  return mailStatus();
+}
+
+const TEST_SEND_LIMIT = 10;
+
+/** Admin only proof of the whole path. Ten an hour, every use audited, and it
+ *  counts against the same global bucket the alumni path uses. */
+export async function sendTestMagicLink(
+  actor: string | null,
+  rawEmail: string,
+): Promise<{ ok: boolean; messageId: string | null; provider: string; detail: string }> {
+  const email = String(rawEmail ?? "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email))
+    return { ok: false, messageId: null, provider: "none", detail: "That address is not readable." };
+
+  const { countRecent, recordThrottleEvent, HOUR } = await import("./throttle.server");
+  const used = await countRecent("rsvp_global", "admin_test_send", HOUR);
+  if (used >= TEST_SEND_LIMIT)
+    return {
+      ok: false,
+      messageId: null,
+      provider: "none",
+      detail: `Ten test sends an hour. Try again later.`,
+    };
+  await recordThrottleEvent("rsvp_global", "admin_test_send");
+  await recordThrottleEvent("rsvp_global", "all");
+
+  const { sendMagicLinkEmail } = await import("./mail.server");
+  const result = await sendMagicLinkEmail({
+    to: email,
+    personId: actor,
+    firstName: "Hello",
+    status: "",
+    kind: "admin_test",
+  });
+
+  await audit(actor, "admin_test_send", "sends", null, null, {
+    to_email: email,
+    provider: result.provider,
+    provider_message_id: result.messageId,
+    sent: result.sent,
+    reason: result.reason,
+  });
+
+  return {
+    ok: result.sent,
+    messageId: result.messageId,
+    provider: result.provider,
+    detail: result.sent
+      ? `Sent through ${result.provider}.`
+      : (result.reason ?? "The send did not go out."),
+  };
+}
 
 // ---------------------------------------------------------------- editions
 
