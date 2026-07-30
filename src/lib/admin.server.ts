@@ -89,6 +89,8 @@ type Context = {
   stints: Map<string, number>;
   rsvp: Map<string, string>;
   verified: Set<string>;
+  /** Any identity row at all, verified or not. A claim in progress still counts. */
+  hasIdentity: Set<string>;
 };
 
 async function loadContext(): Promise<Context> {
@@ -111,9 +113,12 @@ async function loadContext(): Promise<Context> {
   const rsvp = new Map<string, string>();
   for (const row of rsvpRes.data ?? []) rsvp.set(row.person_id as string, row.status as string);
   const verified = new Set<string>();
-  for (const row of identRes.data ?? [])
+  const hasIdentity = new Set<string>();
+  for (const row of identRes.data ?? []) {
+    hasIdentity.add(row.person_id as string);
     if (row.verified_at) verified.add(row.person_id as string);
-  return { placement, stints, rsvp, verified };
+  }
+  return { placement, stints, rsvp, verified, hasIdentity };
 }
 
 function decorate(person: PersonRow, ctx: Context, label: string | null): AdminPerson {
@@ -964,7 +969,7 @@ export async function dataGaps(): Promise<DataGaps> {
     if (person.grad_year === null) noGrad++;
     const year = ctx.placement.get(id)?.board_year ?? (person.grad_year as number | null);
     if (year !== null && year !== undefined) yearCounts.set(year, (yearCounts.get(year) ?? 0) + 1);
-    if (!person.deceased && ctx.verified.has(id) && !ctx.rsvp.has(id)) {
+    if (!person.deceased && ctx.hasIdentity.has(id) && !ctx.rsvp.has(id)) {
       claimedNoAnswer.push({
         id,
         // Names, year and division only. No addresses on this panel.
