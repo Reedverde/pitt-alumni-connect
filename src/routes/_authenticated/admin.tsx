@@ -14,6 +14,7 @@ import {
   DripPanel,
   ExportPanel,
   GapsPanel,
+  HeadcountPanel,
 } from "@/components/admin/Panels";
 import { EditionsPanel } from "@/components/admin/EditionsPanel";
 import { PhotosPanel } from "@/components/admin/PhotosPanel";
@@ -96,6 +97,7 @@ function AdminPage() {
       <ExportPanel />
       <MailPanel />
       <AuthAttemptsPanel />
+      <HeadcountPanel headcount={data.headcount} />
       <SendsPanel rows={data.sends} />
 
       <Section eyebrow="Data confidence" title="What we actually know">
