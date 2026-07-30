@@ -260,9 +260,12 @@ export const suggestNewPerson = createServerFn({ method: "POST" })
 export const reportMemorial = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { submittedBy: string; personId: string; note: string }) => input)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    // Never trust a client-supplied submittedBy: resolve the acting person server-side.
+    const { data: actingPersonId } = await context.supabase.rpc("current_person_id");
+    if (!actingPersonId) throw new Error("Forbidden");
     const { fileMemorialReport } = await import("./account.server");
-    return fileMemorialReport(data.submittedBy, data.personId, data.note.slice(0, 1000));
+    return fileMemorialReport(actingPersonId, data.personId, data.note.slice(0, 1000));
   });
 
 export const getPendingVerifications = createServerFn({ method: "POST" })
@@ -276,9 +279,12 @@ export const getPendingVerifications = createServerFn({ method: "POST" })
 export const vouchForPerson = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { suggestionId: string; personId: string }) => input)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    // The voucher is always the signed-in member, never a client-supplied id.
+    const { data: actingPersonId } = await context.supabase.rpc("current_person_id");
+    if (!actingPersonId) throw new Error("Forbidden");
     const { vouchForSuggestion } = await import("./account.server");
-    return vouchForSuggestion(data.suggestionId, data.personId);
+    return vouchForSuggestion(data.suggestionId, actingPersonId);
   });
 
 /** Read by the (not yet built) admin page: anything unverified after 7 days. */
