@@ -419,7 +419,15 @@ function EventTile({
           }}
         />
       )}
-      <p style={{ fontFamily: '"Space Mono", monospace', fontSize: 13, fontWeight: 700, color: "var(--steel-ink)" }}>
+      <p
+        style={{
+          fontFamily: '"Space Mono", monospace',
+          fontSize: 14,
+          fontWeight: 700,
+          fontVariantNumeric: "tabular-nums",
+          color: event.time_tbd ? "var(--sterling)" : "var(--sabah-black)",
+        }}
+      >
         {timeLabel(event)}
       </p>
       <h3 className="mt-2" style={{ fontFamily: '"Archivo", sans-serif', fontWeight: 800, fontSize: 22, letterSpacing: "-0.025em", color: "var(--sabah-black)" }}>
