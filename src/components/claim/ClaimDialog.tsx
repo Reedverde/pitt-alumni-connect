@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
-import { searchPeople, submitRsvp } from "@/lib/rsvp.functions";
+import { answerAfterClaim, searchPeople, submitRsvp } from "@/lib/rsvp.functions";
 import {
   personDisplayName,
   STATUS_LABELS,
@@ -38,6 +38,7 @@ export function ClaimDialog({
   const eyebrow = useEditionEyebrow();
   const runSearch = useServerFn(searchPeople);
   const runSubmit = useServerFn(submitRsvp);
+  const runAnswer = useServerFn(answerAfterClaim);
 
   const [step, setStep] = useState<Step>("name");
   const [query, setQuery] = useState("");
@@ -52,7 +53,11 @@ export function ClaimDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stamp, setStamp] = useState<{ year: number | null; team: string | null } | null>(null);
+  const [claimedPersonId, setClaimedPersonId] = useState<string | null>(null);
+  const [lateStatus, setLateStatus] = useState<RsvpStatus | null>(null);
+  const [lateDismissed, setLateDismissed] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const statusGroupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -61,6 +66,9 @@ export function ClaimDialog({
     setEmail("");
     setStatus(null);
     setStamp(null);
+    setClaimedPersonId(null);
+    setLateStatus(null);
+    setLateDismissed(false);
     if (target) {
       setSelected(target);
       setAddingNew(false);
@@ -129,8 +137,9 @@ export function ClaimDialog({
     setStep("status");
   };
 
-  const submit = async () => {
-    if (!status) return;
+  const submit = async (skipped = false) => {
+    if (!skipped && !status) return;
+    const sending = skipped ? null : status;
     setBusy(true);
     setError(null);
     try {
@@ -139,7 +148,7 @@ export function ClaimDialog({
           personId: selected?.id ?? null,
           firstName: addingNew ? firstName : null,
           lastName: addingNew ? lastName : null,
-          status,
+          status: sending,
           email,
           src: "email",
           origin: window.location.origin,
@@ -149,6 +158,7 @@ export function ClaimDialog({
         setStep("requested");
         return;
       }
+      setClaimedPersonId(sending === null ? (selected?.id ?? null) : null);
       setStamp({
         year: result.person?.board_year ?? selected?.board_year ?? null,
         team: result.person?.team_label ?? selected?.team_label ?? null,
@@ -157,6 +167,16 @@ export function ClaimDialog({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Try again.");
       setBusy(false);
+    }
+  };
+
+  const answerLate = async (s: RsvpStatus) => {
+    if (!claimedPersonId) return;
+    setLateStatus(s);
+    try {
+      await runAnswer({ data: { personId: claimedPersonId, email, status: s } });
+    } catch {
+      setLateStatus(null);
     }
   };
 
