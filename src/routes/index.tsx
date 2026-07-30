@@ -338,8 +338,7 @@ function WhyTeaser() {
         You do not stop being Pitt Ultimate when you graduate. The roster just gets longer.
       </p>
       <p className="mt-3 max-w-[560px]" style={{ fontSize: 20, color: "var(--sabah-black)" }}>
-        Three days to find your year, find the people hiring, and find the ones who were freshmen
-        when you were seniors.
+        Three days to find your year, and to meet the ones who were freshmen when you were seniors.
       </p>
       <div className="mt-6">
         <Link to="/alumni" style={ghostButton}>

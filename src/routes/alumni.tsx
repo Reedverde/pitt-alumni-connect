@@ -141,25 +141,26 @@ function AlumniPage() {
             corners={["tl", "bl"]}
             slotKey="why_statement_card"
           >
-            ALUMNI HIRE ALUMNI.
+            THE ROSTER JUST GETS LONGER.
           </StatementCard>
         </div>
 
         <section className="mt-12">
           <Measure>
-            <SlashEyebrow>The network</SlashEyebrow>
+            <SlashEyebrow>The roster</SlashEyebrow>
             <h2 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
               Get plugged in.
             </h2>
             <p className="mt-4" style={body}>
-              Alumni here hire alumni. Somebody in your year knows about a job you would want.
-              Somebody two years behind you needs the introduction you needed.
+              The people you played with are still around. So are the ones who came before you and
+              the ones who came after, and most of them you have never met.
             </p>
             <p className="mt-4" style={body}>
               Come find them. That is most of what this weekend actually is.
             </p>
             <p className="mt-4" style={body}>
-              If you are still playing: these are the people who get you hired after. Show up.
+              If you are still playing: these are the people you will know for the next thirty
+              years. Show up.
             </p>
           </Measure>
         </section>
