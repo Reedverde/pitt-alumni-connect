@@ -223,6 +223,30 @@ export function GapsPanel({ gaps }: { gaps: DataGaps }) {
           Those are missing records, not real squad sizes. A visible hole recruits corrections.
         </p>
       </div>
+      <div className="sm:col-span-2">
+        <h3 className="label-caps mb-2" style={{ color: "var(--sterling)" }}>
+          Claimed, no answer: <Num>{gaps.claimed_no_answer.length}</Num>
+        </h3>
+        <p style={{ fontSize: 13, color: "var(--sterling)" }}>
+          They claimed their name but never said whether they are coming. Chase them personally.
+        </p>
+        {gaps.claimed_no_answer.length > 0 ? (
+          <ul className="mt-3 flex flex-col gap-1">
+            {gaps.claimed_no_answer.map((p) => (
+              <li
+                key={p.id}
+                className="flex flex-wrap items-baseline justify-between gap-3"
+                style={{ fontSize: 14, color: "var(--steel-ink)" }}
+              >
+                <span>{p.name}</span>
+                <span className="label-caps" style={{ color: "var(--sterling)" }}>
+                  {[p.division, p.year].filter(Boolean).join(" · ")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
     </div>
   );
 }
