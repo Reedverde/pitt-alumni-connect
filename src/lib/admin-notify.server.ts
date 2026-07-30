@@ -40,6 +40,7 @@ export async function notifyAdminsOfPendingSuggestions(_origin?: string | null) 
       .from("sends")
       .select("id", { count: "exact", head: true })
       .eq("kind", DIGEST_KIND)
+      .eq("outcome", "sent")
       .gte("created_at", since);
     if ((recentDigests ?? 0) > 0) return;
 

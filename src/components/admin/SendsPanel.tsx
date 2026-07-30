@@ -1,4 +1,4 @@
-import type { SendRow } from "@/lib/admin.server";
+import type { SendRow, SendTotals } from "@/lib/admin.server";
 import { Empty, Section, cellStyle, headStyle, mono } from "./ui";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -21,9 +21,23 @@ function when(iso: string | null) {
   });
 }
 
-export function SendsPanel({ rows }: { rows: SendRow[] }) {
+const OUTCOME_LABEL: Record<string, string> = {
+  sent: "Delivered",
+  blocked: "Blocked",
+  failed: "Failed",
+  suppressed: "Held back",
+};
+
+export function SendsPanel({ rows, totals }: { rows: SendRow[]; totals: SendTotals }) {
   return (
     <Section eyebrow="Outbound mail" title="Last fifty messages">
+      <p className="mb-4" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
+        <span style={mono}>{totals.sent}</span> actually delivered ·{" "}
+        <span style={mono}>{totals.blocked}</span> blocked by the pause ·{" "}
+        <span style={mono}>{totals.failed}</span> failed ·{" "}
+        <span style={mono}>{totals.suppressed}</span> held back. Only the first number
+        counts as mail that left the building.
+      </p>
       {rows.length === 0 ? (
         <Empty>Nothing has been sent yet.</Empty>
       ) : (
@@ -35,6 +49,7 @@ export function SendsPanel({ rows }: { rows: SendRow[] }) {
                 <th style={headStyle}>Who</th>
                 <th style={headStyle}>Address</th>
                 <th style={headStyle}>Type</th>
+                <th style={headStyle}>Outcome</th>
                 <th style={headStyle}>Status</th>
                 <th style={headStyle}>Message id</th>
               </tr>
@@ -48,6 +63,16 @@ export function SendsPanel({ rows }: { rows: SendRow[] }) {
                   <td style={cellStyle}>{row.name ?? "—"}</td>
                   <td style={{ ...cellStyle, ...mono }}>{row.to_email ?? "—"}</td>
                   <td style={cellStyle}>{row.kind}</td>
+                  <td style={cellStyle}>
+                    <span
+                      className="label-caps"
+                      style={{
+                        color: row.outcome === "sent" ? "var(--steel-ink)" : "var(--sterling)",
+                      }}
+                    >
+                      {OUTCOME_LABEL[row.outcome] ?? row.outcome}
+                    </span>
+                  </td>
                   <td
                     style={{
                       ...cellStyle,
@@ -56,11 +81,11 @@ export function SendsPanel({ rows }: { rows: SendRow[] }) {
                     }}
                   >
                     {row.status}
-                    {row.error ? (
+                    {row.blocked_reason ?? row.error ? (
                       <span
                         style={{ display: "block", fontSize: 12, color: "var(--sterling)", fontWeight: 400 }}
                       >
-                        {row.error}
+                        {row.blocked_reason ?? row.error}
                       </span>
                     ) : null}
                   </td>

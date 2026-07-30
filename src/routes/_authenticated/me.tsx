@@ -399,7 +399,9 @@ function MePage() {
           type="button"
           style={secondaryButton}
           onClick={async () => {
-            await supabase.auth.signOut();
+            // Global scope revokes the refresh token server side, so the
+            // ninety day sliding session cannot be resumed from this device.
+            await supabase.auth.signOut({ scope: "global" });
             navigate({ to: "/" });
           }}
         >

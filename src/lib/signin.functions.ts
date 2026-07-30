@@ -68,6 +68,7 @@ export const requestSignInLink = createServerFn({ method: "POST" })
       firstName: (person?.first_name as string | null) ?? null,
       status: (rsvp?.status as string | null) ?? "",
       origin: data?.origin ?? null,
+      kind: "magic_link",
     });
     return { ok: true };
   });

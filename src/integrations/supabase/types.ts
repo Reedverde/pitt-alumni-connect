@@ -173,6 +173,55 @@ export type Database = {
           },
         ]
       }
+      confirmation_sends: {
+        Row: {
+          created_at: string
+          event_year: number
+          id: string
+          person_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_year: number
+          id?: string
+          person_id: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_year?: number
+          id?: string
+          person_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confirmation_sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "confirmation_sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "confirmation_sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
       divisions: {
         Row: {
           code: string
@@ -665,6 +714,7 @@ export type Database = {
       }
       sends: {
         Row: {
+          blocked_reason: string | null
           bounce_type: string | null
           bounced: boolean
           complained: boolean
@@ -673,6 +723,7 @@ export type Database = {
           id: string
           kind: string
           opened_at: string | null
+          outcome: string
           person_id: string | null
           provider: string | null
           provider_message_id: string | null
@@ -682,6 +733,7 @@ export type Database = {
           to_email: string | null
         }
         Insert: {
+          blocked_reason?: string | null
           bounce_type?: string | null
           bounced?: boolean
           complained?: boolean
@@ -690,6 +742,7 @@ export type Database = {
           id?: string
           kind?: string
           opened_at?: string | null
+          outcome?: string
           person_id?: string | null
           provider?: string | null
           provider_message_id?: string | null
@@ -699,6 +752,7 @@ export type Database = {
           to_email?: string | null
         }
         Update: {
+          blocked_reason?: string | null
           bounce_type?: string | null
           bounced?: boolean
           complained?: boolean
@@ -707,6 +761,7 @@ export type Database = {
           id?: string
           kind?: string
           opened_at?: string | null
+          outcome?: string
           person_id?: string | null
           provider?: string | null
           provider_message_id?: string | null

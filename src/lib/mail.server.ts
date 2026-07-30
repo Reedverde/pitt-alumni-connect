@@ -326,9 +326,19 @@ type LogInput = {
   error: string | null;
 };
 
+/** status is the fine grained provider story; outcome is the four way split
+ *  every count must filter on. Derived in one place so they cannot drift. */
+function outcomeFor(status: string): "sent" | "blocked" | "failed" | "suppressed" {
+  if (status === "sent" || status === "delivered") return "sent";
+  if (status === "blocked") return "blocked";
+  if (status === "suppressed" || status === "throttled") return "suppressed";
+  return "failed";
+}
+
 /** Every outbound message lands here, delivered or not, so a failure shows up
  *  on a screen instead of in a log nobody reads. */
 export async function logSend(input: LogInput) {
+  const outcome = outcomeFor(input.status);
   await supabaseAdmin.from("sends").insert({
     person_id: input.personId,
     sequence_id: null,
@@ -338,6 +348,8 @@ export async function logSend(input: LogInput) {
     provider_message_id: input.providerMessageId,
     status: input.status,
     error: input.error,
+    outcome,
+    blocked_reason: outcome === "sent" ? null : input.error,
     sent_at: input.status === "sent" ? new Date().toISOString() : null,
   } as never);
 }
@@ -447,11 +459,13 @@ export async function sendMagicLinkEmail(opts: {
   /** Accepted for call-site compatibility and deliberately ignored: every
    *  link is built from PUBLIC_SITE_URL. */
   origin?: string | null | undefined;
-  kind?: string;
+  /** Required, never defaulted. A caller that forgets to say what this message
+   *  is must NOT inherit the one kind that is allowed while paused. */
+  kind: string;
 }): Promise<MagicLinkResult> {
   const to = opts.to.trim().toLowerCase();
   const { apiKey, fromAddress } = mailConfig();
-  const kind = opts.kind ?? "magic_link";
+  const kind = opts.kind;
 
   try {
     // The built-in mailer below is a second way out of the building, so the
