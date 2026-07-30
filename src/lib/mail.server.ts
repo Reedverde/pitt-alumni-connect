@@ -679,36 +679,34 @@ export async function sendPlainEmail(opts: {
       return { sent: false, provider: "none", messageId: null, reason: domainCheck.detail };
     }
 
-    const headers = unsubscribeHeaders(to);
-
-    const res = await fetch(RESEND_ENDPOINT, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: `${fromName} <${fromAddress}>`,
-        to: [to],
-        subject: opts.subject,
-        text: opts.text,
-        html: opts.html,
-        ...(replyTo ? { reply_to: replyTo } : {}),
-        ...(Object.keys(headers).length ? { headers } : {}),
-      }),
+    const delivery = await resendDeliver({
+      kind: opts.kind,
+      to,
+      personId: opts.personId,
+      subject: opts.subject,
+      text: opts.text,
+      html: opts.html,
     });
 
-    const payload = (await res.json().catch(() => null)) as { id?: string; message?: string } | null;
-
-    if (!res.ok) {
-      const message = `Resend refused [${res.status}]: ${payload?.message ?? "unknown error"}`;
-      await logSend({
-        personId: opts.personId,
-        kind: opts.kind,
-        toEmail: to,
-        provider: "resend",
-        providerMessageId: null,
-        status: "failed",
-        error: message,
-      });
-      return { sent: false, provider: "resend", messageId: null, reason: message };
+    if (!delivery.ok) {
+      const message = delivery.error ?? "the send did not go out";
+      if (!delivery.blocked) {
+        await logSend({
+          personId: opts.personId,
+          kind: opts.kind,
+          toEmail: to,
+          provider: "resend",
+          providerMessageId: null,
+          status: "failed",
+          error: message,
+        });
+      }
+      return {
+        sent: false,
+        provider: delivery.blocked ? "none" : "resend",
+        messageId: null,
+        reason: message,
+      };
     }
 
     await logSend({
@@ -716,11 +714,11 @@ export async function sendPlainEmail(opts: {
       kind: opts.kind,
       toEmail: to,
       provider: "resend",
-      providerMessageId: payload?.id ?? null,
+      providerMessageId: delivery.messageId,
       status: "sent",
       error: null,
     });
-    return { sent: true, provider: "resend", messageId: payload?.id ?? null, reason: null };
+    return { sent: true, provider: "resend", messageId: delivery.messageId, reason: null };
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown error";
     console.error(`[mail] plain send threw: ${message}`);
