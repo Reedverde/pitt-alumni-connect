@@ -8,6 +8,7 @@ import {
   type PersonMatch,
   type RsvpStatus,
 } from "@/lib/rsvp-types";
+import { useEditionEyebrow } from "@/lib/useEdition";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimStamp } from "./ClaimStamp";
 import { FieldLabel, Notice, fieldStyle, primaryButton, secondaryButton } from "./ui";
@@ -34,6 +35,7 @@ export function ClaimDialog({
   onClose: () => void;
   onClaimed: () => void;
 }) {
+  const eyebrow = useEditionEyebrow();
   const runSearch = useServerFn(searchPeople);
   const runSubmit = useServerFn(submitRsvp);
 
@@ -191,7 +193,7 @@ export function ClaimDialog({
           <>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <SlashEyebrow>Alumni Weekend · Oct 2–4, 2026</SlashEyebrow>
+                <SlashEyebrow>{eyebrow}</SlashEyebrow>
                 <h2 className="display-30 mt-2" style={{ color: "var(--sabah-black)" }}>
                   {heading}
                 </h2>

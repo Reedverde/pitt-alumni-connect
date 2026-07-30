@@ -4,7 +4,13 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
 import { nameScore, normalize } from "./fuzzy";
 import { teamLabel } from "./rsvp.server";
-import { EVENT_YEAR } from "./rsvp-types";
+import {
+  firstOctoberWeekend,
+  goingCounts,
+  loadCurrentEdition,
+  loadEditions,
+  type Edition,
+} from "./editions.server";
 
 export type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
 
@@ -86,10 +92,11 @@ type Context = {
 };
 
 async function loadContext(): Promise<Context> {
+  const currentYear = (await loadCurrentEdition()).event_year;
   const [placeRes, stintRes, rsvpRes, identRes] = await Promise.all([
     supabaseAdmin.from("person_board_placement").select("person_id, board_year, board_division"),
     supabaseAdmin.from("stints").select("person_id"),
-    supabaseAdmin.from("rsvps").select("person_id, status").eq("event_year", EVENT_YEAR),
+    supabaseAdmin.from("rsvps").select("person_id, status").eq("event_year", currentYear),
     supabaseAdmin.from("identities").select("person_id, verified_at"),
   ]);
   const placement = new Map<string, { board_year: number | null; board_division: string | null }>();
@@ -985,12 +992,15 @@ export type DripData = {
     audience_states: string[];
     anchors_only: boolean;
     active: boolean;
+    send_on: string;
   }[];
+  anchorDate: string;
   suppressions: { email: string; reason: string; created_at: string | null }[];
   bounces: { hard: number; soft: number; complaints: number };
 };
 
 export async function dripData(): Promise<DripData> {
+  const edition = await loadCurrentEdition();
   const [seqRes, supRes, sendRes] = await Promise.all([
     supabaseAdmin
       .from("sequences")
@@ -1011,7 +1021,16 @@ export async function dripData(): Promise<DripData> {
   }
 
   return {
-    sequences: (seqRes.data ?? []) as DripData["sequences"],
+    anchorDate: edition.starts_on,
+    sequences: ((seqRes.data ?? []) as Omit<DripData["sequences"][number], "send_on">[]).map((seq) => ({
+      ...seq,
+      // Offsets resolve against the current edition, never a fixed date.
+      send_on: new Date(
+        Date.parse(`${edition.starts_on}T00:00:00Z`) + seq.offset_days * 86400000,
+      )
+        .toISOString()
+        .slice(0, 10),
+    })),
     suppressions: (supRes.data ?? []) as DripData["suppressions"],
     bounces: { hard, soft, complaints },
   };
@@ -1027,10 +1046,11 @@ export type AdminDashboard = {
   drip: DripData;
   duplicates: DuplicatePair[];
   seasonYear: number;
+  editions: EditionRow[];
 };
 
 export async function dashboard(): Promise<AdminDashboard> {
-  const [queue, teamRes, divisionRes, gaps, digest, drip, duplicates] = await Promise.all([
+  const [queue, teamRes, divisionRes, gaps, digest, drip, duplicates, editions] = await Promise.all([
     reviewQueue(),
     supabaseAdmin
       .from("team_names")
@@ -1042,6 +1062,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     organizerDigest(),
     dripData(),
     duplicateCandidates(),
+    listEditions(),
   ]);
   return {
     isAdmin: true,
@@ -1052,6 +1073,153 @@ export async function dashboard(): Promise<AdminDashboard> {
     digest,
     drip,
     duplicates,
+    editions,
     seasonYear: CURRENT_SEASON,
   };
+}
+
+
+// ---------------------------------------------------------------- editions
+
+export type EditionRow = Edition & { going: number; event_count: number };
+
+export async function listEditions(): Promise<EditionRow[]> {
+  const [editions, counts, eventsRes] = await Promise.all([
+    loadEditions(),
+    goingCounts(),
+    supabaseAdmin.from("events").select("event_year"),
+  ]);
+  const eventCounts = new Map<number, number>();
+  for (const row of eventsRes.data ?? []) {
+    const y = row.event_year as number;
+    eventCounts.set(y, (eventCounts.get(y) ?? 0) + 1);
+  }
+  return editions.map((e) => ({
+    ...e,
+    going: counts.get(e.event_year) ?? 0,
+    event_count: eventCounts.get(e.event_year) ?? 0,
+  }));
+}
+
+export function defaultEditionDates(eventYear: number) {
+  return firstOctoberWeekend(eventYear);
+}
+
+/** Creating an edition never publishes it and never makes it current. */
+export async function createEdition(
+  actor: string | null,
+  input: { event_year: number; title: string; starts_on?: string | null; ends_on?: string | null },
+) {
+  const year = Math.trunc(input.event_year);
+  if (!Number.isInteger(year) || year < 2000 || year > 2200) throw new Error("That year isn't valid.");
+  const fallback = firstOctoberWeekend(year);
+  const row = {
+    event_year: year,
+    title: input.title.trim().slice(0, 120) || `Alumni Weekend ${year}`,
+    starts_on: input.starts_on || fallback.starts_on,
+    ends_on: input.ends_on || fallback.ends_on,
+    is_current: false,
+    published: false,
+  };
+  if (row.ends_on < row.starts_on) throw new Error("The end date is before the start date.");
+  const { error } = await supabaseAdmin.from("editions").insert(row);
+  if (error) throw new Error(error.message);
+  await audit(actor, "edition.create", "editions", String(year), null, row);
+  return { ok: true };
+}
+
+export async function updateEditionDates(
+  actor: string | null,
+  input: { event_year: number; title: string; starts_on: string; ends_on: string },
+) {
+  if (input.ends_on < input.starts_on) throw new Error("The end date is before the start date.");
+  const before = await listEditions();
+  const { error } = await supabaseAdmin
+    .from("editions")
+    .update({
+      title: input.title.trim().slice(0, 120),
+      starts_on: input.starts_on,
+      ends_on: input.ends_on,
+    })
+    .eq("event_year", input.event_year);
+  if (error) throw new Error(error.message);
+  await audit(
+    actor,
+    "edition.update",
+    "editions",
+    String(input.event_year),
+    before.find((e) => e.event_year === input.event_year) ?? null,
+    input,
+  );
+  return { ok: true };
+}
+
+/** Publishing does not make an edition current. */
+export async function setEditionPublished(actor: string | null, eventYear: number, published: boolean) {
+  const { error } = await supabaseAdmin
+    .from("editions")
+    .update({ published })
+    .eq("event_year", eventYear);
+  if (error) throw new Error(error.message);
+  await audit(actor, "edition.publish", "editions", String(eventYear), null, { published });
+  return { ok: true };
+}
+
+/** Atomic: the database clears the previous current edition in the same call. */
+export async function setEditionCurrent(actor: string | null, eventYear: number) {
+  const previous = await loadCurrentEdition().catch(() => null);
+  const { error } = await supabaseAdmin.rpc("set_current_edition", { _event_year: eventYear });
+  if (error) throw new Error(error.message);
+  await audit(
+    actor,
+    "edition.set_current",
+    "editions",
+    String(eventYear),
+    previous ? { event_year: previous.event_year } : null,
+    { event_year: eventYear },
+  );
+  return { ok: true };
+}
+
+/** Events can be added to any edition, so next year is built before it goes live. */
+export async function createEditionEvent(
+  actor: string | null,
+  input: {
+    event_year: number;
+    title: string;
+    day_number: number;
+    division: string | null;
+    location: string | null;
+    notes: string | null;
+    time_tbd: boolean;
+    starts_at: string | null;
+  },
+) {
+  const title = input.title.trim().slice(0, 160);
+  if (!title) throw new Error("Give the event a name.");
+  const row = {
+    event_year: input.event_year,
+    title,
+    day_number: Math.min(7, Math.max(1, Math.trunc(input.day_number || 1))),
+    division: input.division || null,
+    location: input.location?.trim().slice(0, 160) || null,
+    notes: input.notes?.trim().slice(0, 400) || null,
+    time_tbd: input.time_tbd || !input.starts_at,
+    starts_at: input.time_tbd ? null : input.starts_at || null,
+    sort_order: 0,
+  };
+  const { data, error } = await supabaseAdmin.from("events").insert(row).select("id").single();
+  if (error) throw new Error(error.message);
+  await audit(actor, "edition.add_event", "events", (data?.id as string) ?? null, null, row);
+  return { ok: true };
+}
+
+export async function listEditionEvents(eventYear: number) {
+  const { data } = await supabaseAdmin
+    .from("events")
+    .select("id, title, day_number, starts_at, time_tbd, location, division")
+    .eq("event_year", eventYear)
+    .order("day_number")
+    .order("sort_order");
+  return data ?? [];
 }

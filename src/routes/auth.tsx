@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { finalizeLogin } from "@/lib/account.functions";
+import { useEditionEyebrow } from "@/lib/useEdition";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { FieldLabel, Notice, fieldStyle, primaryButton, secondaryButton } from "@/components/claim/ui";
 
@@ -72,6 +73,8 @@ function AuthPage() {
     else setSent(true);
   };
 
+  const eyebrow = useEditionEyebrow();
+
   const google = async () => {
     setError(null);
     const result = await lovable.auth.signInWithOAuth("google", {
@@ -82,7 +85,7 @@ function AuthPage() {
 
   return (
     <main className="mx-auto w-full max-w-[520px] px-5 py-16">
-      <SlashEyebrow>Alumni Weekend · Oct 2–4, 2026</SlashEyebrow>
+      <SlashEyebrow>{eyebrow}</SlashEyebrow>
       <h1 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
         SIGN IN
       </h1>

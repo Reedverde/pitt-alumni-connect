@@ -158,3 +158,85 @@ export const adminSetDivisionVisible = createServerFn({ method: "POST" })
     if (!actor) return { ok: false };
     return mod.setDivisionVisible(actor, data);
   });
+
+// ---------------------------------------------------------------- editions
+
+export const adminCreateEdition = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: {
+      event_year: number;
+      title: string;
+      starts_on?: string | null;
+      ends_on?: string | null;
+    }) => input,
+  )
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return { ok: false };
+    return mod.createEdition(actor, data);
+  });
+
+export const adminUpdateEdition = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: { event_year: number; title: string; starts_on: string; ends_on: string }) => input,
+  )
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return { ok: false };
+    return mod.updateEditionDates(actor, data);
+  });
+
+export const adminSetEditionPublished = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { event_year: number; published: boolean }) => input)
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return { ok: false };
+    return mod.setEditionPublished(actor, data.event_year, data.published);
+  });
+
+export const adminSetEditionCurrent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { event_year: number }) => input)
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return { ok: false };
+    return mod.setEditionCurrent(actor, data.event_year);
+  });
+
+export const adminAddEditionEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: {
+      event_year: number;
+      title: string;
+      day_number: number;
+      division: string | null;
+      location: string | null;
+      notes: string | null;
+      time_tbd: boolean;
+      starts_at: string | null;
+    }) => input,
+  )
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return { ok: false };
+    return mod.createEditionEvent(actor, data);
+  });
+
+export const adminDefaultEditionDates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { event_year: number }) => input)
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return null;
+    return mod.defaultEditionDates(data.event_year);
+  });
