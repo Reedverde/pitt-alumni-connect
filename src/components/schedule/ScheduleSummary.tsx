@@ -76,7 +76,15 @@ function EventTile({
           }}
         />
       )}
-      <p style={{ fontFamily: '"Space Mono", monospace', fontSize: 13, fontWeight: 700, color: "var(--steel-ink)" }}>
+      <p
+        style={{
+          fontFamily: '"Space Mono", monospace',
+          fontSize: 14,
+          fontWeight: 700,
+          fontVariantNumeric: "tabular-nums",
+          color: timeLabel(event) === "TBD" ? "var(--sterling)" : "var(--sabah-black)",
+        }}
+      >
         {timeLabel(event)}
       </p>
       <h4
