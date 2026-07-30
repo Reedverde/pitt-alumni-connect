@@ -16,6 +16,7 @@ import { Route as WeekendRouteImport } from './routes/weekend'
 import { Route as WhyRouteImport } from './routes/why'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated/me'
+import { Route as EditionsYearRouteImport } from './routes/editions.$year'
 import { Route as ApiPublicCalendarDoticsRouteImport } from './routes/api/public/calendar[.]ics'
 
 const IndexRoute = IndexRouteImport.update({
@@ -52,6 +53,11 @@ const AuthenticatedMeRoute = AuthenticatedMeRouteImport.update({
   path: '/me',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const EditionsYearRoute = EditionsYearRouteImport.update({
+  id: '/editions/$year',
+  path: '/editions/$year',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCalendarDoticsRoute = ApiPublicCalendarDoticsRouteImport.update({
   id: '/api/public/calendar.ics',
   path: '/api/public/calendar.ics',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/why': typeof WhyRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
+  '/editions/$year': typeof EditionsYearRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
 }
 export interface FileRoutesByTo {
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/why': typeof WhyRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
+  '/editions/$year': typeof EditionsYearRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
 }
 export interface FileRoutesById {
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/why': typeof WhyRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/me': typeof AuthenticatedMeRoute
+  '/editions/$year': typeof EditionsYearRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
 }
 export interface FileRouteTypes {
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/why'
     | '/admin'
     | '/me'
+    | '/editions/$year'
     | '/api/public/calendar.ics'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/why'
     | '/admin'
     | '/me'
+    | '/editions/$year'
     | '/api/public/calendar.ics'
   id:
     | '__root__'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/why'
     | '/_authenticated/admin'
     | '/_authenticated/me'
+    | '/editions/$year'
     | '/api/public/calendar.ics'
   fileRoutesById: FileRoutesById
 }
@@ -124,6 +136,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   WeekendRoute: typeof WeekendRoute
   WhyRoute: typeof WhyRoute
+  EditionsYearRoute: typeof EditionsYearRoute
   ApiPublicCalendarDoticsRoute: typeof ApiPublicCalendarDoticsRoute
 }
 
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/editions/$year': {
+      id: '/editions/$year'
+      path: '/editions/$year'
+      fullPath: '/editions/$year'
+      preLoaderRoute: typeof EditionsYearRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/calendar.ics': {
       id: '/api/public/calendar.ics'
       path: '/api/public/calendar.ics'
@@ -207,6 +227,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   WeekendRoute: WeekendRoute,
   WhyRoute: WhyRoute,
+  EditionsYearRoute: EditionsYearRoute,
   ApiPublicCalendarDoticsRoute: ApiPublicCalendarDoticsRoute,
 }
 export const routeTree = rootRouteImport
