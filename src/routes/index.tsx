@@ -77,6 +77,7 @@ const DIVISION_CHIP_LABELS: Record<string, string> = {
 
 function BoardPage() {
   const { data } = useSuspenseQuery(boardQuery);
+  const { data: weekend } = useSuspenseQuery(weekendQuery);
   const queryClient = useQueryClient();
   const filters = useMemo(
     () =>
