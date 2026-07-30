@@ -5,6 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { nameScore, normalize } from "./fuzzy";
 import { teamLabel } from "./rsvp.server";
 import {
+  currentEditionYear,
   firstOctoberWeekend,
   goingCounts,
   loadCurrentEdition,
