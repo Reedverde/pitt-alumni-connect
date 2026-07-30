@@ -63,19 +63,21 @@ export const ROYAL_LIFT = "#6E9BF0";
  *  attributes below and stay white. */
 const DARK_CSS = `
 @media (prefers-color-scheme: dark) {
-  .e-bg, .e-bg td { background-color: ${SABAH_BLACK} !important; }
+  .e-bg, .e-bg > tbody > tr > td { background-color: ${SABAH_BLACK} !important; }
   .e-text, .e-text a { color: ${FIELD_WHITE} !important; }
   .e-muted { color: #9AA3B2 !important; }
   .e-rule { background-color: #2A2F3A !important; }
   .e-mark { color: ${ROYAL_LIFT} !important; }
-  .e-btn { background-color: ${ROYAL_LIFT} !important; }
-  .e-btn a { color: ${SABAH_BLACK} !important; }
+  table.e-btn, td.e-btn { background-color: ${ROYAL_LIFT} !important; }
+  td.e-btn a { color: ${SABAH_BLACK} !important; }
   .e-url a { color: ${ROYAL_LIFT} !important; }
 }
-[data-ogsc] .e-bg, [data-ogsc] .e-bg td { background-color: ${SABAH_BLACK} !important; }
+[data-ogsc] .e-bg, [data-ogsc] .e-bg > tbody > tr > td { background-color: ${SABAH_BLACK} !important; }
 [data-ogsc] .e-text, [data-ogsc] .e-text a { color: ${FIELD_WHITE} !important; }
 [data-ogsc] .e-muted { color: #9AA3B2 !important; }
 [data-ogsc] .e-mark { color: ${ROYAL_LIFT} !important; }
+[data-ogsc] td.e-btn { background-color: ${ROYAL_LIFT} !important; }
+[data-ogsc] td.e-btn a { color: ${SABAH_BLACK} !important; }
 `.trim();
 
 /** Wraps body HTML in the shell. Every cell carries an explicit bgcolor and an
