@@ -1,8 +1,11 @@
-import { createHash } from "crypto";
-
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { nameScore } from "./fuzzy";
 import { currentEditionYear } from "./editions.server";
+import {
+  evaluateRsvpThrottle,
+  hashIp,
+  recordThrottleEvent,
+} from "./throttle.server";
 import {
   RSVP_SOURCES,
   RSVP_STATUSES,
@@ -46,22 +49,6 @@ export function isValidEmail(value: unknown): value is string {
 export function cleanName(value: unknown, max = 80) {
   if (typeof value !== "string") return "";
   return value.replace(/\s+/g, " ").trim().slice(0, max);
-}
-
-function hashIp(ip: string) {
-  return createHash("sha256").update(`pitt-alumni:${ip}`).digest("hex").slice(0, 32);
-}
-
-/** Max 10 submissions per IP per hour, counted off audit_log. */
-export async function overRateLimit(ip: string) {
-  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const { count } = await supabaseAdmin
-    .from("audit_log")
-    .select("id", { count: "exact", head: true })
-    .eq("action", "rsvp_signup")
-    .gte("created_at", since)
-    .eq("after->>ip_hash", hashIp(ip));
-  return (count ?? 0) >= 10;
 }
 
 type PersonRow = {
