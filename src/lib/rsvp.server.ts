@@ -209,7 +209,7 @@ async function requestNewPerson(args: {
   firstName: string;
   lastName: string | null;
   email: string;
-  status: RsvpStatus;
+  status: RsvpStatus | null;
   src: RsvpSource;
   ipHash: string;
   origin: string | null | undefined;
