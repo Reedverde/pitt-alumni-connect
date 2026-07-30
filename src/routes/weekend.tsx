@@ -425,7 +425,7 @@ function EventTile({
           fontSize: 14,
           fontWeight: 700,
           fontVariantNumeric: "tabular-nums",
-          color: event.time_tbd ? "var(--sterling)" : "var(--sabah-black)",
+          color: timeLabel(event) === "TBD" ? "var(--sterling)" : "var(--sabah-black)",
         }}
       >
         {timeLabel(event)}
