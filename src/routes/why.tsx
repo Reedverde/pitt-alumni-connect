@@ -2,7 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { SiteNav } from "@/components/SiteNav";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
-import { PhotoSlot } from "@/components/media/PhotoSlot";
+import { LabelRow } from "@/components/board/LabelRow";
+import { IndexPills } from "@/components/board/IndexPills";
+import { ActionRail } from "@/components/board/ActionRail";
+import { PhotoSlot, StatementCard } from "@/components/media/PhotoSlot";
 import { primaryButton } from "@/components/claim/ui";
 
 export const Route = createFileRoute("/why")({
@@ -55,7 +58,33 @@ function WhyPage() {
               <span style={mono}>2024</span>, missed in <span style={mono}>2025</span> for the first
               time since <span style={mono}>2004</span>, and returned in <span style={mono}>2026</span>.
             </p>
-            <PhotoSlot className="mt-6" label="Team photo, 1998 — the first roster" />
+            <h2 className="display-xl mt-8">1998</h2>
+            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <PhotoSlot
+                className="sm:col-span-1 sm:row-span-2"
+                label="Team photo, 1998"
+                index="01"
+                ratio="3 / 4"
+                corners={["tl"]}
+              />
+              <PhotoSlot
+                className="sm:col-span-2"
+                label="Founding roster, spring"
+                index="02"
+                ratio="16 / 9"
+                corners={["br"]}
+              />
+              <StatementCard className="sm:col-span-1" index="03" ratio="1 / 1" corners={["tl", "br"]}>
+                Founded spring 1998. First Nationals 2005.
+              </StatementCard>
+              <PhotoSlot
+                className="sm:col-span-1"
+                label="Practice field"
+                index="04"
+                ratio="1 / 1"
+                corners={["tr"]}
+              />
+            </div>
           </section>
 
           <section className="mt-10">
@@ -68,7 +97,16 @@ function WhyPage() {
               asks nothing of you. A team on the way back up does, and that is a better reason to be
               here.
             </p>
-            <PhotoSlot className="mt-6" label="Sideline, 2012–2013 Nationals — back to back" />
+            <div className="mt-6">
+              <LabelRow label="Sideline, 2012–2013" right="Back to back" />
+              <PhotoSlot
+                className="mt-3"
+                label="Sideline, 2013 Nationals"
+                index="05"
+                ratio="21 / 9"
+                corners={["tl", "br"]}
+              />
+            </div>
           </section>
 
           <section className="mt-10">
@@ -76,6 +114,9 @@ function WhyPage() {
             <h2 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
               TWO THINGS THAT COMPOUND
             </h2>
+            <div className="mt-4">
+              <IndexPills count={2} active={1} />
+            </div>
             <p className="mt-4" style={body}>
               First: hire current players, or get them in front of someone who will. A roster full of
               people who graduate into work they want is a program that keeps recruiting itself.
@@ -102,7 +143,16 @@ function WhyPage() {
             <p className="mt-4" style={body}>
               All four sit under one umbrella here, at the same width, on the same wall.
             </p>
-            <PhotoSlot className="mt-6" label="Return to Nationals, 2026" />
+            <div className="mt-6">
+              <LabelRow label="Return to Nationals" right="2026" />
+              <PhotoSlot
+                className="mt-3"
+                label="Return to Nationals, 2026"
+                index="09"
+                ratio="4 / 3"
+                corners={["bl"]}
+              />
+            </div>
           </section>
 
           <section className="mt-12">
@@ -112,6 +162,7 @@ function WhyPage() {
           </section>
         </div>
       </main>
+      <ActionRail />
     </div>
   );
 }
