@@ -85,25 +85,6 @@ export const adminDeleteStint = createServerFn({ method: "POST" })
     return mod.deletePersonStint(actor, data.id);
   });
 
-const adminRecordMemorialUnused = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (input: {
-      personId: string;
-      suggestionId: string | null;
-      note: string;
-      confirmedByName: string;
-      confirmedAt: string;
-      markDeceased: boolean;
-    }) => input,
-  )
-  .handler(async ({ data, context }) => {
-    const mod = await import("./admin.server");
-    const actor = await mod.adminActor(context.supabase);
-    if (!actor) return { ok: false };
-    return mod.recordMemorialConfirmation(actor, data);
-  });
-
 export const adminResolveSuggestion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { suggestionId: string; action: "approve" | "reject" }) => input)
