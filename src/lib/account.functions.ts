@@ -71,12 +71,17 @@ export const getMyProfile = createServerFn({ method: "GET" })
         .eq("id", personId)
         .maybeSingle(),
       supabase.from("stints").select("id, division, role, year").eq("person_id", personId).order("year"),
-      supabase
-        .from("rsvps")
-        .select("status, party_size")
-        .eq("person_id", personId)
-        .eq("event_year", edition.event_year)
-        .maybeSingle(),
+      // party_size is not readable by the authenticated role any more, so the
+      // owner's own detail is read server side, scoped to the resolved person.
+      (async () => {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        return supabaseAdmin
+          .from("rsvps")
+          .select("status, party_size")
+          .eq("person_id", personId)
+          .eq("event_year", edition.event_year)
+          .maybeSingle();
+      })(),
       supabase
         .from("rsvps")
         .select("event_year, status")
@@ -380,7 +385,7 @@ export const getNavIdentity = createServerFn({ method: "GET" })
       context.supabase.from("people").select("first_name").eq("id", personId).maybeSingle(),
       context.supabase
         .from("rsvps")
-        .select("status, party_size")
+        .select("status")
         .eq("person_id", personId)
         .eq("event_year", eventYear)
         .maybeSingle(),
