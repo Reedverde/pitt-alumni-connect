@@ -225,6 +225,81 @@ export async function updatePerson(
   return { ok: true };
 }
 
+/** Roles live on stints because a role is a thing someone did in a season, not
+ *  a property of a person. A coach whose years nobody remembers gets a stint
+ *  with a null year rather than an invented one. */
+export const STINT_ROLES = ["player", "captain", "coach", "assistant_coach", "manager"] as const;
+export type StintRole = (typeof STINT_ROLES)[number];
+
+export type PersonStint = {
+  id: string;
+  division: string;
+  role: string;
+  year: number | null;
+  source: string | null;
+};
+
+export async function listPersonStints(personId: string): Promise<PersonStint[]> {
+  const { data } = await supabaseAdmin
+    .from("stints")
+    .select("id, division, role, year, source")
+    .eq("person_id", personId)
+    .order("year", { ascending: true, nullsFirst: false });
+  return (data ?? []) as PersonStint[];
+}
+
+export async function addPersonStint(
+  actor: string | null,
+  input: { personId: string; division: string; role: string; year: number | null },
+) {
+  const role = (STINT_ROLES as readonly string[]).includes(input.role)
+    ? (input.role as StintRole)
+    : null;
+  if (!role) throw new Error("Pick a role.");
+  if (!input.division) throw new Error("Pick a division.");
+
+  const year = input.year === null || Number.isNaN(input.year) ? null : Number(input.year);
+  if (year !== null && (year < 1970 || year > 2100)) throw new Error("That year is out of range.");
+
+  // A null year is only ever acceptable for the sidelines. A playing season is
+  // a claim about a specific year, so it must name one.
+  const onField = role === "player" || role === "captain";
+  if (onField && year === null) throw new Error("A playing season needs a year.");
+  // The current-season block stays exactly where it was: nobody currently on a
+  // roster is an alumnus, and this path does not get to say otherwise.
+  if (onField && year === CURRENT_SEASON)
+    throw new Error("The current season cannot be added here.");
+
+  const { error } = await supabaseAdmin.from("stints").insert({
+    person_id: input.personId,
+    division: input.division,
+    role,
+    year,
+    source: "admin",
+  } as never);
+  if (error) throw new Error(error.message);
+
+  await audit(actor, "admin_stint_add", "stints", input.personId, null, {
+    division: input.division,
+    role,
+    year,
+  });
+  return { ok: true };
+}
+
+export async function deletePersonStint(actor: string | null, id: string) {
+  const { data: before } = await supabaseAdmin
+    .from("stints")
+    .select("id, person_id, division, role, year, source")
+    .eq("id", id)
+    .maybeSingle();
+  if (!before) throw new Error("No such stint.");
+  const { error } = await supabaseAdmin.from("stints").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  await audit(actor, "admin_stint_delete", "stints", before.person_id as string, before, null);
+  return { ok: true };
+}
+
 /** The ONLY path to deceased = true. Requires an admin to type the name of the
  *  person who confirmed it off site and the date they confirmed it. */
 export async function recordMemorialConfirmation(

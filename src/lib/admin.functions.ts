@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AdminDashboard, AdminPerson, MailStatus, RosterLine } from "./admin.server";
+import type { AdminDashboard, AdminPerson, MailStatus, PersonStint, RosterLine } from "./admin.server";
 
 /** Every read below asks is_admin() before it touches a table, and returns an
  *  empty payload — not an error — when the caller is not an admin, so the
@@ -51,6 +51,38 @@ export const adminRecordMemorial = createServerFn({ method: "POST" })
     const actor = await mod.adminActor(context.supabase);
     if (!actor) return { ok: false };
     return mod.recordMemorialConfirmation(actor, data);
+  });
+
+export const adminPersonStints = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { personId: string }) => input)
+  .handler(async ({ data, context }): Promise<PersonStint[]> => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return [];
+    return mod.listPersonStints(data.personId);
+  });
+
+export const adminAddStint = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: { personId: string; division: string; role: string; year: number | null }) => input,
+  )
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return { ok: false };
+    return mod.addPersonStint(actor, data);
+  });
+
+export const adminDeleteStint = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return { ok: false };
+    return mod.deletePersonStint(actor, data.id);
   });
 
 export const adminResolveSuggestion = createServerFn({ method: "POST" })

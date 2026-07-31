@@ -13,7 +13,7 @@ export function SiteFooter() {
             alt="Pitt Club Ultimate"
             width={120}
             loading="lazy"
-            className="w-[68px] max-w-[120px] object-contain"
+            className="w-[120px] max-w-[120px] object-contain"
             style={{ height: "auto" }}
           />
           <span
@@ -40,20 +40,11 @@ export function SiteFooter() {
             Alumni
           </Link>
           <a
-            href="https://engage.pitt.edu/"
-            target="_blank"
-            rel="noreferrer noopener"
-            className="label-caps"
-            style={{ color: "var(--pitt-royal)", textDecoration: "none" }}
-          >
-            The endowment
-          </a>
-          <a
             href="https://www.esnultimate.org/endowment/"
             target="_blank"
             rel="noopener noreferrer"
             className="label-caps"
-            style={{ color: "var(--sterling)", textDecoration: "none" }}
+            style={{ color: "var(--pitt-royal)", textDecoration: "none" }}
           >
             Endowment
           </a>

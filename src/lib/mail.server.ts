@@ -403,8 +403,11 @@ async function generateMagicLink(email: string, origin: string | null): Promise<
   return typeof link === "string" ? link : null;
 }
 
-/** Secondary line only. It never becomes the subject, never gates the link and
- *  never changes the structure of the message. */
+/** Confirmation copy only. This never appears in a sign-in link message: a
+ *  sign-in link says one thing, here is your link. Carrying RSVP copy in the
+ *  one kind that is allowed through while outbound email is paused turned every
+ *  status change into a delivered email, which is exactly what the pause is
+ *  meant to prevent. */
 const STATUS_LINE: Record<string, string> = {
   going: "We have you down as coming this year.",
   maybe: "We have you down as a maybe this year.",
@@ -412,6 +415,7 @@ const STATUS_LINE: Record<string, string> = {
 };
 
 export const SIGNIN_SUBJECT = "Sign in to Pitt Club Ultimate Alumni";
+export const CONFIRMATION_SUBJECT = "Your Alumni Weekend answer is recorded";
 
 function formatRange(startsOn: string, endsOn: string) {
   const start = new Date(`${startsOn}T12:00:00Z`);
@@ -424,14 +428,13 @@ function formatRange(startsOn: string, endsOn: string) {
   return `${month(start)} ${start.getUTCDate()} – ${month(end)} ${end.getUTCDate()}, ${end.getUTCFullYear()}`;
 }
 
-/** One structure for every status. The sign-in link is the first thing under
- *  the greeting, above the fold on a phone, and what was recorded is a
- *  secondary line beneath it. No status suppresses or delays the link: the
- *  account IS the durable contact record, and the person who cannot come this
- *  year is exactly the person who must keep one. No gold anywhere. */
-export function buildBody(opts: { name: string; statusLine: string; link: string; dates: string }) {
+/** The sign-in link message. It says one thing and carries one thing. No RSVP
+ *  status line, no weekend dates, nothing that a status change could generate.
+ *  Anything about the weekend belongs in the confirmation below, where the
+ *  pause already refuses it. */
+export function buildBody(opts: { name: string; link: string }) {
   const purpose = "This link signs you in to your alumni record. No password.";
-  const change = "You can change your answer any time by signing in.";
+  const note = "If you did not ask to sign in, ignore this message.";
 
   const text = [
     `${opts.name},`,
@@ -440,9 +443,7 @@ export function buildBody(opts: { name: string; statusLine: string; link: string
     "",
     `Sign in: ${opts.link}`,
     "",
-    opts.statusLine,
-    change,
-    ...(opts.dates ? ["", opts.dates] : []),
+    note,
     "",
     "Pitt Club Ultimate Alumni",
   ].join("\n");
@@ -453,18 +454,84 @@ export function buildBody(opts: { name: string; statusLine: string; link: string
       emailParagraph(purpose),
       emailButton(opts.link, "Sign in"),
       emailPlainUrl(opts.link),
-      emailMuted(opts.statusLine),
-      emailMuted(change),
-      ...(opts.dates ? [emailMuted(opts.dates)] : []),
+      emailMuted(note),
       emailFooter([
         "Pitt Club Ultimate Alumni",
-        "You are receiving this because you answered for Alumni Weekend.",
+        "You are receiving this because you asked for a sign-in link.",
       ]),
     ].join("\n"),
     "Your sign-in link for Pitt Club Ultimate Alumni.",
   );
 
   return { text, html };
+}
+
+/** The RSVP confirmation. This is where what we recorded and the weekend dates
+ *  live, and it is not a sign-in link kind, so the pause refuses it. */
+export function buildConfirmationBody(opts: {
+  name: string;
+  statusLine: string;
+  link: string;
+  dates: string;
+}) {
+  const change = "You can change your answer any time by signing in.";
+
+  const text = [
+    `${opts.name},`,
+    "",
+    opts.statusLine,
+    ...(opts.dates ? ["", opts.dates] : []),
+    "",
+    change,
+    `Sign in: ${opts.link}`,
+    "",
+    "Pitt Club Ultimate Alumni",
+  ].join("\n");
+
+  const html = emailShell(
+    [
+      emailParagraph(`${opts.name},`),
+      emailParagraph(opts.statusLine),
+      ...(opts.dates ? [emailMuted(opts.dates)] : []),
+      emailButton(opts.link, "Sign in"),
+      emailPlainUrl(opts.link),
+      emailMuted(change),
+      emailFooter([
+        "Pitt Club Ultimate Alumni",
+        "You are receiving this because you answered for Alumni Weekend.",
+      ]),
+    ].join("\n"),
+    "Your Alumni Weekend answer is recorded.",
+  );
+
+  return { text, html };
+}
+
+/** One sign-in link per address per minute. A person clicking through three
+ *  answers in a row gets one email, not three, and the link they already hold
+ *  stays valid because we hand back the one we minted rather than issuing a new
+ *  token that would invalidate it. */
+const MAGIC_LINK_WINDOW_MS = 60_000;
+
+async function recentMagicLink(email: string) {
+  const { data } = await supabaseAdmin
+    .from("magic_link_issues")
+    .select("link, issued_at")
+    .eq("email", email)
+    .maybeSingle();
+  const row = data as { link: string; issued_at: string } | null;
+  if (!row) return null;
+  const age = Date.now() - new Date(row.issued_at).getTime();
+  return age >= 0 && age < MAGIC_LINK_WINDOW_MS ? row.link : null;
+}
+
+async function rememberMagicLink(email: string, personId: string | null, link: string) {
+  await supabaseAdmin
+    .from("magic_link_issues")
+    .upsert(
+      { email, person_id: personId, link, issued_at: new Date().toISOString() } as never,
+      { onConflict: "email" },
+    );
 }
 
 export type MagicLinkResult = {
@@ -584,6 +651,30 @@ export async function sendMagicLinkEmail(opts: {
     }
 
     const origin = siteUrl();
+
+    // Duplicate guard, sign-in links only. Inside the window we neither mint a
+    // token nor send: the person already has a live link in their inbox.
+    const reusable = kind === "magic_link" ? await recentMagicLink(to) : null;
+    if (reusable) {
+      const reason = "a sign-in link was already sent to this address in the last 60 seconds";
+      await logSend({
+        personId: opts.personId,
+        kind,
+        toEmail: to,
+        provider: "none",
+        providerMessageId: null,
+        status: "throttled",
+        error: reason,
+      });
+      await logAuthAttempt({
+        email: to,
+        personId: opts.personId,
+        outcome: "throttled",
+        detail: reason,
+      });
+      return { sent: false, provider: "none", messageId: null, reason };
+    }
+
     const link = await generateMagicLink(to, origin);
     if (!link) {
       await logSend({
@@ -604,23 +695,34 @@ export async function sendMagicLinkEmail(opts: {
       return { sent: false, provider: "resend", messageId: null, reason: "no link" };
     }
 
-    const edition = await loadCurrentEdition().catch(() => null);
-    const dates = edition ? formatRange(edition.starts_on, edition.ends_on) : "";
+    const name = opts.firstName?.trim() || "Hello";
+    const isSignIn = kind === "magic_link" || kind === "admin_test";
 
-    const { text, html } = buildBody({
-      name: opts.firstName?.trim() || "Hello",
-      statusLine: STATUS_LINE[opts.status] ?? "You answered for this year.",
-      link,
-      dates,
-    });
+    let body: { text: string; html: string };
+    let subject: string;
+    if (isSignIn) {
+      body = buildBody({ name, link });
+      subject = SIGNIN_SUBJECT;
+    } else {
+      const edition = await loadCurrentEdition().catch(() => null);
+      body = buildConfirmationBody({
+        name,
+        statusLine: STATUS_LINE[opts.status] ?? "Your answer is recorded.",
+        link,
+        dates: edition ? formatRange(edition.starts_on, edition.ends_on) : "",
+      });
+      subject = CONFIRMATION_SUBJECT;
+    }
+
+    if (kind === "magic_link") await rememberMagicLink(to, opts.personId, link);
 
     const delivery = await resendDeliver({
       kind,
       to,
       personId: opts.personId,
-      subject: SIGNIN_SUBJECT,
-      text,
-      html,
+      subject,
+      text: body.text,
+      html: body.html,
     });
 
     if (!delivery.ok) {

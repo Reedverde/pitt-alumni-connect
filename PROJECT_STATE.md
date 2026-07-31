@@ -210,3 +210,16 @@ Guardrails: it counts against the one email per person per 10 days global cap, a
 Five near-duplicate pairs were reviewed against the esnultimate.org alumni page and confirmed by Reed as separate people. Nothing was merged. Ryan Moore appears twice on that page as an exact string, so the two Ryan Moore records stay split. The other four pairs appear on the page under both spellings in separate tenure buckets with separate year ranges. No pair shares an email address.
 Rulings are stored in `duplicate_rulings` so they survive future imports. Keep separate is permanent, Clear stores nothing and the pair returns on the next scan.
 Two docs are now wrong and go on the reconcile list: BUILD_SPEC.md section 11 and CONTEXT.md section 5 both say the count is 468 and not 469 because dan-goldstein was folded into daniel-goldstein over a shared email address. That fold is not in this database and only Daniel carries an address. CONTEXT.md section 7 lists four duplicate-name pairs as open and owned by Brody. That item is closed.
+
+## Magic link content leak, 2026-07-30
+The sign-in email carried RSVP copy, the "we have you down as coming" line and the weekend dates. Because `magic_link` is the one kind the pause lets through, every status change minted a fresh link and delivered it. Three changes in one minute produced three emails, all sent, while the four matching `rsvp_confirmation` sends were correctly blocked. The kill switch never failed, the content walked around it.
+Fix, three parts. The magic link template now says one thing, here is your link. All status and date copy moved into the `rsvp_confirmation` template where the pause already refuses it. A person with a verified identity and a live session no longer triggers a link on an RSVP change at all, since they can already sign in. And a 60 second per address guard returns the existing unexpired link instead of minting a new one, recorded in `magic_link_issues` with outcome `throttled`.
+
+## duplicate_rulings grants, 2026-07-30
+Revoked all `anon` and `authenticated` table grants on `duplicate_rulings`, leaving `service_role` only, matching sends, suppressions, preapproved_emails, sequences and throttle_events. The four admin RLS policies are untouched. The admin UI reads through server functions, so nothing changed on screen. Verified against pg_class privileges.
+
+## stints.role, 2026-07-30
+`assistant_coach` added to the role check constraint, which now reads player, captain, coach, assistant_coach, manager. An admin can add a stint from the person editor with any of those roles. Coach, assistant coach and manager may carry a null year, a playing season may not, and the current-season block still refuses players. No years were invented and David Lionetti's yearless coach record was not touched. Coach and assistant coach stints show the role on the profile.
+
+## /admin is tabbed, 2026-07-30
+One tab per panel: Review queue, People, Duplicates, Roster import, Editions, Schedule, Photos, Mail, Sends, Auth attempts. Tab state lives in the `?tab=` search param so a refresh keeps the tab. Review queue and Duplicates carry a count badge when either has pending items. Schedule holds the weekend-planning panels: headcount, data confidence, digest, drip and export. No panel changed behavior.

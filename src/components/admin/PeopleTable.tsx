@@ -3,11 +3,145 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { adminUpdatePerson, getAdminPeople } from "@/lib/admin.functions";
+import {
+  adminAddStint,
+  adminDeleteStint,
+  adminPersonStints,
+  adminUpdatePerson,
+  getAdminPeople,
+} from "@/lib/admin.functions";
 import type { AdminPerson } from "@/lib/admin.server";
 import { Empty, Num, Section, cellStyle, hairline, headStyle, inputStyle, primaryButton, secondaryButton } from "./ui";
 
 const DIVISIONS = ["MENS_A", "MENS_B", "WOMENS_A", "WOMENS_B"];
+const ROLES = ["player", "captain", "coach", "assistant_coach", "manager"] as const;
+const SIDELINE_ROLES = new Set(["coach", "assistant_coach", "manager"]);
+const roleLabel = (role: string) => role.replace(/_/g, " ");
+
+/** Roles live here, on the season, never on the person. A sideline role may
+ *  carry no year at all: we do not invent one. */
+function StintEditor({ personId }: { personId: string }) {
+  const queryClient = useQueryClient();
+  const list = useServerFn(adminPersonStints);
+  const add = useServerFn(adminAddStint);
+  const drop = useServerFn(adminDeleteStint);
+  const [draft, setDraft] = useState({ division: "MENS_A", role: "player", year: "" });
+  const [busy, setBusy] = useState(false);
+
+  const { data: stints = [] } = useQuery({
+    queryKey: ["admin-stints", personId],
+    queryFn: () => list({ data: { personId } }),
+  });
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["admin-stints", personId] });
+    queryClient.invalidateQueries({ queryKey: ["admin-people"] });
+  };
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await add({
+        data: {
+          personId,
+          division: draft.division,
+          role: draft.role,
+          year: draft.year.trim() === "" ? null : Number(draft.year),
+        },
+      });
+      setDraft((d) => ({ ...d, year: "" }));
+      toast.success("Season added and logged.");
+      refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't add that season.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (id: string) => {
+    try {
+      await drop({ data: { id } });
+      toast.success("Season removed and logged.");
+      refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't remove that season.");
+    }
+  };
+
+  return (
+    <div className="mt-4" style={{ borderTop: hairline, paddingTop: 14 }}>
+      <p className="label-caps" style={{ color: "var(--sterling)" }}>
+        Seasons and roles
+      </p>
+      {stints.length === 0 ? (
+        <p className="mt-2" style={{ fontSize: 13, color: "var(--sterling)" }}>
+          No seasons on record.
+        </p>
+      ) : (
+        <ul className="mt-2 flex flex-wrap gap-2">
+          {stints.map((s) => (
+            <li
+              key={s.id}
+              className="flex items-center gap-2"
+              style={{ border: hairline, borderRadius: 6, padding: "5px 9px", fontSize: 13 }}
+            >
+              <span style={{ fontFamily: '"Space Mono", monospace' }}>{s.year ?? "year unknown"}</span>
+              <span style={{ color: "var(--sterling)" }}>{s.division}</span>
+              <span className="label-caps">{roleLabel(s.role)}</span>
+              <button
+                type="button"
+                className="label-caps"
+                style={{ color: "var(--pitt-royal)" }}
+                onClick={() => remove(s.id)}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-end gap-2">
+        <select
+          value={draft.division}
+          onChange={(e) => setDraft((d) => ({ ...d, division: e.target.value }))}
+          style={{ ...inputStyle, width: 150 }}
+        >
+          {DIVISIONS.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+        <select
+          value={draft.role}
+          onChange={(e) => setDraft((d) => ({ ...d, role: e.target.value }))}
+          style={{ ...inputStyle, width: 160 }}
+        >
+          {ROLES.map((r) => (
+            <option key={r} value={r}>
+              {roleLabel(r)}
+            </option>
+          ))}
+        </select>
+        <input
+          value={draft.year}
+          onChange={(e) => setDraft((d) => ({ ...d, year: e.target.value }))}
+          placeholder={SIDELINE_ROLES.has(draft.role) ? "year (optional)" : "year"}
+          inputMode="numeric"
+          style={{ ...inputStyle, width: 130 }}
+        />
+        <button type="button" style={secondaryButton} disabled={busy} onClick={save}>
+          Add season
+        </button>
+      </div>
+      <p className="mt-1" style={{ fontSize: 12, color: "var(--sterling)" }}>
+        A coach or assistant coach may be recorded with no year. A playing season must name one, and
+        the current season stays closed.
+      </p>
+    </div>
+  );
+}
 
 function Flag({ on, children }: { on: boolean; children: string }) {
   return (
@@ -141,6 +275,8 @@ function EditRow({ person, onSaved }: { person: AdminPerson; onSaved: () => void
             Save record
           </button>
         </div>
+
+        <StintEditor personId={person.id} />
       </td>
     </tr>
   );

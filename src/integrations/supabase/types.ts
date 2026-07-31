@@ -455,6 +455,49 @@ export type Database = {
           },
         ]
       }
+      magic_link_issues: {
+        Row: {
+          email: string
+          issued_at: string
+          link: string
+          person_id: string | null
+        }
+        Insert: {
+          email: string
+          issued_at?: string
+          link: string
+          person_id?: string | null
+        }
+        Update: {
+          email?: string
+          issued_at?: string
+          link?: string
+          person_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "magic_link_issues_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "magic_link_issues_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "magic_link_issues_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
       people: {
         Row: {
           created_at: string
