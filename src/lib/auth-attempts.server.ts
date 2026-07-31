@@ -7,6 +7,7 @@ export type AuthAttemptOutcome =
   | "invalid_format"
   | "send_failed"
   | "blocked"
+  | "throttled"
   | "suppressed";
 
 /** Exactly one row per sign-in link request, on every branch including the
