@@ -77,6 +77,8 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 - Mass sends go through the existing Google Group, which already has deliverability history. The app sends transactional only
 - A soft rate limit holds the mail but still saves the RSVP, because blocking the write would break invariant one for anyone behind shared campus or mobile wifi
 - The admin alert is an hourly digest and never per request, because three admins times one junk submission is three outbound messages, which would turn the alert into the amplifier
+- Board placement uses player and captain stints only. Coach, assistant coach and manager stints show on the profile and never move a person's chip, because an alum who comes back to coach would otherwise be moved out of the cohort that recognises their name and into the current year row
+- The current year stint block applies to player and captain only. Coaches, assistant coaches and managers can hold a current year stint, admin entered, because the block exists to protect people who get cut and a sitting coach is not one of them
 
 ## KNOWN ISSUES
 
@@ -89,6 +91,8 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 - Low: 005_verify.sql has 29 checks and has never been confirmed PASS in a browser
 - Accepted risk: an alum whose seeded name is misspelled now hits the review queue instead of getting a magic link. Three admins are the bottleneck, and it gets worse the week of the event
 - Accepted risk: two team_names spans are marked assumed. The men's B changeover year and the women's A early span. Each is a one row update when the answer arrives
+- Open: Nick Kaczmarek's coaching years are unknown. CONTEXT.md says longtime head coach, still coaching, with no start year. No coach stints have been created for him. Owner Nick
+- Open: Michael Van Ness's B coaching years are unknown. No coach stints created. Owner Mick
 
 ## ENV / SECRETS
 
