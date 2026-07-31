@@ -472,6 +472,11 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
       status: "throttled",
       error: `held back by the ${verdict.reason}`,
     });
+  } else if (verifiedOwner) {
+    // Nothing was written: this person owns their record and already has a
+    // verified address, so they can sign in whenever they like. An answer
+    // typed on the public board is not a request for a sign-in link, and it
+    // must never mint one.
   } else {
     await sendRsvpConfirmation({
       to: magicLinkEmail,
