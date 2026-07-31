@@ -282,7 +282,14 @@ function MePage() {
               >
                 <span style={{ fontSize: 15, color: "var(--steel-ink)" }}>
                   {DIVISIONS.find((d) => d.code === s.division)?.label ?? s.division}{" "}
-                  <span style={{ fontFamily: '"Space Mono", monospace' }}>{s.year}</span>
+                  <span style={{ fontFamily: '"Space Mono", monospace' }}>
+                    {s.year ?? "year unknown"}
+                  </span>
+                  {s.role === "coach" || s.role === "assistant_coach" ? (
+                    <span className="label-caps" style={{ marginLeft: 8, color: "var(--sterling)" }}>
+                      {s.role === "coach" ? "Coach" : "Assistant coach"}
+                    </span>
+                  ) : null}
                 </span>
                 {locked ? (
                   <span className="label-caps" style={{ color: "var(--sterling)" }}>
