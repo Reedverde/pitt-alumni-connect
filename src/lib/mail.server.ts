@@ -651,6 +651,30 @@ export async function sendMagicLinkEmail(opts: {
     }
 
     const origin = siteUrl();
+
+    // Duplicate guard, sign-in links only. Inside the window we neither mint a
+    // token nor send: the person already has a live link in their inbox.
+    const reusable = kind === "magic_link" ? await recentMagicLink(to) : null;
+    if (reusable) {
+      const reason = "a sign-in link was already sent to this address in the last 60 seconds";
+      await logSend({
+        personId: opts.personId,
+        kind,
+        toEmail: to,
+        provider: "none",
+        providerMessageId: null,
+        status: "throttled",
+        error: reason,
+      });
+      await logAuthAttempt({
+        email: to,
+        personId: opts.personId,
+        outcome: "throttled",
+        detail: reason,
+      });
+      return { sent: false, provider: "none", messageId: null, reason };
+    }
+
     const link = await generateMagicLink(to, origin);
     if (!link) {
       await logSend({
@@ -671,23 +695,34 @@ export async function sendMagicLinkEmail(opts: {
       return { sent: false, provider: "resend", messageId: null, reason: "no link" };
     }
 
-    const edition = await loadCurrentEdition().catch(() => null);
-    const dates = edition ? formatRange(edition.starts_on, edition.ends_on) : "";
+    const name = opts.firstName?.trim() || "Hello";
+    const isSignIn = kind === "magic_link" || kind === "admin_test";
 
-    const { text, html } = buildBody({
-      name: opts.firstName?.trim() || "Hello",
-      statusLine: STATUS_LINE[opts.status] ?? "You answered for this year.",
-      link,
-      dates,
-    });
+    let body: { text: string; html: string };
+    let subject: string;
+    if (isSignIn) {
+      body = buildBody({ name, link });
+      subject = SIGNIN_SUBJECT;
+    } else {
+      const edition = await loadCurrentEdition().catch(() => null);
+      body = buildConfirmationBody({
+        name,
+        statusLine: STATUS_LINE[opts.status] ?? "Your answer is recorded.",
+        link,
+        dates: edition ? formatRange(edition.starts_on, edition.ends_on) : "",
+      });
+      subject = CONFIRMATION_SUBJECT;
+    }
+
+    if (kind === "magic_link") await rememberMagicLink(to, opts.personId, link);
 
     const delivery = await resendDeliver({
       kind,
       to,
       personId: opts.personId,
-      subject: SIGNIN_SUBJECT,
-      text,
-      html,
+      subject,
+      text: body.text,
+      html: body.html,
     });
 
     if (!delivery.ok) {
