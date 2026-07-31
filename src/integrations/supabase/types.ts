@@ -1378,6 +1378,18 @@ export type Database = {
       }
     }
     Functions: {
+      admin_rsvp_detail: {
+        Args: { p_event_year?: number }
+        Returns: {
+          event_year: number
+          id: string
+          party_size: number
+          person_id: string
+          responded_at: string
+          src: string
+          status: string
+        }[]
+      }
       current_edition_year: { Args: never; Returns: number }
       current_person_id: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
