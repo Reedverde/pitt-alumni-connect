@@ -20,6 +20,7 @@ import { NOTCH_ALL } from "@/components/media/notch";
 import { YearPhoto, cornersForRow } from "@/components/board/YearPhoto";
 import { ScheduleSummary, ghostButton, primaryButton } from "@/components/schedule/ScheduleSummary";
 import { SidelineLoop } from "@/components/board/SidelineLoop";
+import { SITE_ORIGIN } from "@/lib/site-url";
 import {
   countdown,
   editionShortDates,
@@ -72,6 +73,7 @@ export const Route = createFileRoute("/")({
           "Every Pitt Club Ultimate alum on one wall, by year. See who has claimed their name and who is coming to Alumni Weekend.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: `${SITE_ORIGIN}/` },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
