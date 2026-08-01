@@ -3,6 +3,7 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useState, type CSSProperties } from "react";
 
 import { getWeekendPage, type ScheduleEvent } from "@/lib/schedule.functions";
+import { SITE_ORIGIN } from "@/lib/site-url";
 import {
   dayLabel,
   dayName,
@@ -47,6 +48,7 @@ export const Route = createFileRoute("/weekend")({
         content: "Three days in Pittsburgh. Everybody who ever played. Add any of it to your calendar.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: `${SITE_ORIGIN}/weekend` },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),

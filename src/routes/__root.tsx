@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { captureRsvpSource } from "../lib/rsvp-src";
+import { OG_IMAGE, SITE_ORIGIN } from "../lib/site-url";
 
 function NotFoundComponent() {
   return (
@@ -78,18 +79,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Pitt Club Ultimate Alumni — Find your year" },
-      { name: "description", content: "Every Pitt Club Ultimate alum on one wall, by year. See who has claimed their name and who is coming to Alumni Weekend." },
+      { title: "Pitt Club Ultimate Alumni Weekend" },
+      { name: "description", content: "October 2 to 4, 2026 in Pittsburgh. Find your name and tell us if you are coming." },
       { name: "author", content: "Pitt Ultimate Alumni" },
-      { property: "og:title", content: "Pitt Club Ultimate Alumni — Find your year" },
-      { property: "og:description", content: "Every Pitt Club Ultimate alum on one wall, by year. See who has claimed their name and who is coming to Alumni Weekend." },
+      { property: "og:title", content: "Pitt Club Ultimate Alumni Weekend" },
+      { property: "og:description", content: "October 2 to 4, 2026 in Pittsburgh. Find your name and tell us if you are coming." },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: `${SITE_ORIGIN}/` },
+      { property: "og:image", content: OG_IMAGE },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Pitt Club Ultimate Alumni Weekend, October 2 to 4, 2026" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@PittUltimate" },
-      { name: "twitter:title", content: "Pitt Club Ultimate Alumni — Find your year" },
-      { name: "twitter:description", content: "Every Pitt Club Ultimate alum on one wall, by year. See who has claimed their name and who is coming to Alumni Weekend." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7ea019a5-6fec-46c6-9673-6b272913c680/id-preview-6a466e11--da83b43b-b24b-4b80-b9ec-619b1b431cbb.lovable.app-1785424350494.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7ea019a5-6fec-46c6-9673-6b272913c680/id-preview-6a466e11--da83b43b-b24b-4b80-b9ec-619b1b431cbb.lovable.app-1785424350494.png" },
+      { name: "twitter:title", content: "Pitt Club Ultimate Alumni Weekend" },
+      { name: "twitter:description", content: "October 2 to 4, 2026 in Pittsburgh. Find your name and tell us if you are coming." },
+      { name: "twitter:image", content: OG_IMAGE },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
