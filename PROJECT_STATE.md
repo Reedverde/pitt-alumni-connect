@@ -140,9 +140,13 @@ KNOWN ISSUES TO RECORD:
 
 ## KNOWN ISSUES, OPEN
 
-- The four canonical docs (CONTEXT.md, BUILD_SPEC.md, DESIGN.md, URL_MANIFEST.md) describe a site that does not exist in at least six places. Not yet reconciled.
+- The four canonical docs (CONTEXT.md, BUILD_SPEC.md, DESIGN.md, URL_MANIFEST.md) describe a site that does not exist in at least six places. Not yet reconciled. Four of them still describe a `/why` route that does not exist; that content lives at `/alumni`.
 - The hotel now lives in two places, the HotelBlock component and editions.lodging_note. Two sources of truth for one fact.
 - No standing access-verification script exists. Ad hoc checks were run tonight against the live database.
+- Sequence key `t_minus_42` now carries offset `-45`. The key name was deliberately not renamed.
+- The hero shows the CLAIM YOUR NAME button to signed-in visitors. For someone who has already claimed this is a dead button and wrong.
+- The agent sandbox browser cannot render authenticated routes, so `/me` and the signed-in status bar are code-verified but not visually verified.
+
 
 ## ENV / SECRETS
 
