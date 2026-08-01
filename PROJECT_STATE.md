@@ -61,6 +61,28 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 - Unmatched names as review requests with an hourly admin digest: built
 - Privacy policy, analytics, automated tests: not started
 
+## RESOLVED TONIGHT (2026-07-31)
+
+**Critical bug, silent RSVP loss.** `submitRsvpServer` held an anonymous-overwrite guard: when a person record already had a verified identity, the server skipped the RSVP write, the identity write and the email, then returned `ok: true, outcome: "recorded"` anyway. The user saw a claim stamp and nothing persisted. Present since the pass that added the guard, not caused by this session. Evidence: three `refused_verified_overwrite: true` rows in `audit_log`. Fixed: ownership is decided by the address submitted rather than the record; a non-matching address returns `sign_in_required` with `ok: false` and writes an `rsvp_refused_unverified_email` audit row; the RSVP row is read back after every write and the stamp is gated on `ok && written === true && rsvp`; insert and update errors are checked instead of discarded; `logRsvpEvent` writes console plus audit on every failure branch.
+
+**Source tracking never worked.** `?src=` was never read anywhere. `ClaimDialog` passed a literal `"email"` and the server had a hardcoded `"email"` fallback, so all historic src values were meaningless and have been set to NULL. Now captured on first touch of any route in `__root.tsx`, held in sessionStorage, validated, written at insert only so first touch wins. Unknown or absent writes NULL, never a default.
+
+**Allowed src values** (constraint `rsvps_src_check`): text, discord, groupme_alumni, groupme_all, groupme, email, website, facebook. Tagged links are `https://pitt.everde.co/?src=<value>`.
+
+**Board read parity.** `rsvps` had an anon SELECT policy but no authenticated equivalent, so signing in emptied the board (0 going vs 8). Added `public board rsvps authenticated`. Column grants on `rsvps` narrowed to id, person_id, event_year, status for both roles; party_size, src and responded_at now only via the `admin_rsvp_detail` security definer function, execute granted to authenticated only.
+
+**RSVP confirmations enabled, forward only.** `app_settings.rsvp_confirmation_cutoff = 2026-08-01T02:59:07.702Z`, written once, never moves. Answers recorded before the cutoff are never confirmed. No catch-up or replay path exists and none may be built. Verified end to end: confirmation sent via Resend and received.
+
+**Interest-form RSVPs cleared.** 14 rows imported in bulk from the interest form were deleted. They were real answers but not given through the site, so those people will be asked again. The source CSV still holds them and they are the warmest anchor list available. Live RSVPs are now Reed Verdesoto (going), Ben Morgenstern (going), Test Account (going, hidden from board).
+
+**Schedule locked.** Friday Oct 2: Open Team Event/Dinner 7:00 to 10:30 PM (Pitt at Virginia Tech kicks off 7 PM on ESPN), Bar Crawl 9 PM onward. Both carry "Two options tonight, same night: come to either, both, or neither." Saturday Oct 3: BBQ 12:00 to 4:00 PM at Schenley Overlook, women's soccer vs Miami 7:00 PM. Still TBD: Sunday alumni games time and field, the two program gatherings, the bar name.
+
+**Hotel named.** Hilton Garden Inn Pittsburgh University Place, 3454 Forbes Ave, Oakland. No block, no group rate. Appears both as the `HotelBlock` on /weekend and in `editions.lodging_note`, which was updated tonight. Rejected: the Oaklander (Autograph rate), Hampton Inn (Pitt has used it as student housing), Residence Inn (poor recent reviews), Courtyard (further from the park).
+
+**Both GroupMe links received** after five asks. Alumni only: https://groupme.com/join_group/25525883/XmguKcz4. Alumni and current: https://groupme.com/join_group/87254367/OrOti41l.
+
+**Duplicate-name rulings** from the previous session stand. Nothing merged.
+
 ## KEY DECISIONS
 
 - Saying whether you are coming IS the signup. There is no separate account creation step and never a bare "Sign up" button, because a second step is where a 50 year old alum drops out
@@ -80,19 +102,11 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 - Board placement uses player and captain stints only. Coach, assistant coach and manager stints show on the profile and never move a person's chip, because an alum who comes back to coach would otherwise be moved out of the cohort that recognises their name and into the current year row
 - The current year stint block applies to player and captain only. Coaches, assistant coaches and managers can hold a current year stint, admin entered, because the block exists to protect people who get cut and a sitting coach is not one of them
 
-## KNOWN ISSUES
+## KNOWN ISSUES, OPEN
 
-- High: no standing access-verification script. Three bugs on 2026-07-30 were reported as fixed and were not. Nothing asserts per-role read and write on every table before publish
-- Medium: rsvps.party_size is readable by any signed-in alum. It must be admin only
-- Medium: og:image in __root.tsx points at a Lovable R2 preview screenshot URL that is tied to a preview build and will rot
-- Medium: no privacy policy on a site holding 468 real names and 120 email addresses
-- Medium: `throttle_events` has no pruning job. It grows forever and the count queries slow as it fills. Needs a pg_cron delete of rows older than 48 hours
-- Low: the board renders every chip with no virtualization
-- Low: 005_verify.sql has 29 checks and has never been confirmed PASS in a browser
-- Accepted risk: an alum whose seeded name is misspelled now hits the review queue instead of getting a magic link. Three admins are the bottleneck, and it gets worse the week of the event
-- Accepted risk: two team_names spans are marked assumed. The men's B changeover year and the women's A early span. Each is a one row update when the answer arrives
-- Open: Nick Kaczmarek's coaching years are unknown. CONTEXT.md says longtime head coach, still coaching, with no start year. No coach stints have been created for him. Owner Nick
-- Open: Michael Van Ness's B coaching years are unknown. No coach stints created. Owner Mick
+- The four canonical docs (CONTEXT.md, BUILD_SPEC.md, DESIGN.md, URL_MANIFEST.md) describe a site that does not exist in at least six places. Not yet reconciled.
+- The hotel now lives in two places, the HotelBlock component and editions.lodging_note. Two sources of truth for one fact.
+- No standing access-verification script exists. Ad hoc checks were run tonight against the live database.
 
 ## ENV / SECRETS
 
@@ -110,6 +124,21 @@ Server side, status unconfirmed:
 - MAIL_REPLY_TO, optional
 - MAIL_UNSUBSCRIBE_SECRET, required for a valid unsubscribe token
 - PUBLIC_SITE_URL, fallback origin for links in mail
+
+## LAUNCH PLAN, CURRENT
+
+- T-60, Monday Aug 3: committee members hand-send personal invites to their own anchors from their own inboxes and phones. No app email. The dormant T-60 sequence stays inactive permanently because a person does its job.
+- T-45, Monday Aug 17: launch mass email. This is the old T-42 shifted three days. Everything after it keeps existing spacing: T-28 peer proof, T-21, T-14, T-7, T-2, T+3. NOTE: the sequence offsets have NOT been changed yet. One row goes dormant, one offset changes 42 to 45.
+- Outreach coverage so far: Ben Morgenstern taking graduating years 2018 to 2024, Micah Davis taking the last four years. 2023 and 2024 are double covered. No shared coverage sheet exists.
+
+## OPEN, NOT CODE
+
+- Danger database disclosure to Christie Lawry or Bailey Moorhead. Overdue.
+- DNS for alumni.pittultimate.org. Six records sent to Brody for the DreamHost zone: A alumni, TXT _lovable.alumni, TXT resend._domainkey.alumni, MX send.alumni, TXT send.alumni, TXT _dmarc.alumni. The DMARC record is deliberately scoped to _dmarc.alumni and must not be placed at the zone root. Brody supplied SFTP credentials, which are server access and not DNS. DreamHost will not create a co-manager account without a service, so he must add the records himself.
+- Redirect from pitt.everde.co to the new domain, if and when it cuts over. Not built. The Discord post promises old links keep working.
+- Nick Kaczmarek's coaching years, Mick van Ness's B coaching years. Never invent these.
+- Micah Davis's 48-name 2026 roster, still zero emails.
+- Sunday field and time.
 
 ## ROADMAP
 
