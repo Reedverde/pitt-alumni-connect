@@ -435,6 +435,7 @@ function MePage() {
         </button>
       </Section>
     </main>
+    </Chrome>
   );
 }
 
