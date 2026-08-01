@@ -112,6 +112,7 @@ function BoardPage() {
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
   const [panelPerson, setPanelPerson] = useState<BoardPerson | null>(null);
+  const [focusPersonId, setFocusPersonId] = useState<string | null>(null);
   const navigate = useNavigate();
   const session = useSessionPerson();
 
