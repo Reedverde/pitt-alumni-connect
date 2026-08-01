@@ -8,7 +8,7 @@ import { finalizeLogin } from "@/lib/account.functions";
 import { requestSignInLink } from "@/lib/signin.functions";
 import { useEditionEyebrow } from "@/lib/useEdition";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
-import { Lockup } from "@/components/Lockup";
+import pittUltimateShield from "@/assets/pitt-ultimate-shield.png.asset.json";
 import { FieldLabel, Notice, fieldStyle, primaryButton, secondaryButton } from "@/components/claim/ui";
 
 export const Route = createFileRoute("/auth")({
