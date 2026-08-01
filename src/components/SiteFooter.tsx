@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
-import pittClubUltimateLogo from "@/assets/pitt-club-ultimate-logo.png.asset.json";
+import pittUltimateShield from "@/assets/pitt-ultimate-shield.png.asset.json";
 
 /** Shield, the three permanent links, and the endowment. Footer only. */
 export function SiteFooter() {
@@ -9,7 +9,7 @@ export function SiteFooter() {
       <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-5 py-10 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
           <img
-            src={pittClubUltimateLogo.url}
+            src={pittUltimateShield.url}
             alt="Pitt Club Ultimate"
             width={120}
             loading="lazy"
