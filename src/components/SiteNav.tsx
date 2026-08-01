@@ -69,14 +69,15 @@ export function SiteNav(_props: { onClaim?: () => void }) {
           PCU
         </span>
         <span
+          className="max-w-[86px] whitespace-normal sm:max-w-none sm:whitespace-nowrap"
           style={{
             fontFamily: '"Archivo", sans-serif',
             fontWeight: 800,
-            fontSize: "clamp(12px, 3.2vw, 20px)",
+            fontSize: "clamp(13px, 3.2vw, 20px)",
+            lineHeight: 0.95,
             letterSpacing: "-0.02em",
             textTransform: "uppercase",
             color: "var(--pitt-royal)",
-            whiteSpace: "nowrap",
           }}
         >
           Pitt Club Ultimate
