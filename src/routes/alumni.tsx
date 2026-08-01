@@ -221,6 +221,12 @@ function AlumniPage() {
             </div>
           </Measure>
         </section>
+
+        <ClosingCta
+          title="Find your name"
+          body="Every player from 1978 on is on the board. Find yours and tell us if you are coming."
+          action={{ kind: "link", label: "Go to the board", to: "/" }}
+        />
       </main>
       <ActionRail />
     </div>
