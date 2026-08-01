@@ -53,22 +53,12 @@ export function SiteNav(_props: { onClaim?: () => void }) {
       style={{ background: "var(--pure-white)", borderBottom: "1px solid var(--chalk)" }}
     >
       <Link to="/" className="flex items-center gap-[6px] sm:gap-[10px]" aria-label="Pitt Club Ultimate">
-        {/* Seal ring with monogram. The shield PNG belongs to the footer. */}
-        <span
+        <img
+          src={pittUltimateShield.url}
+          alt=""
           aria-hidden="true"
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full sm:h-10 sm:w-10"
-          style={{
-            border: "1.5px solid var(--sabah-black)",
-            fontFamily: '"Archivo", sans-serif',
-            fontWeight: 800,
-            fontSize: 11,
-            letterSpacing: "-0.02em",
-            lineHeight: 1,
-            color: "var(--sabah-black)",
-          }}
-        >
-          PCU
-        </span>
+          className="h-8 w-8 shrink-0 object-contain sm:h-10 sm:w-10"
+        />
         <span
           className="max-w-[86px] whitespace-normal sm:max-w-none sm:whitespace-nowrap"
           style={{
