@@ -268,6 +268,8 @@ function WeekendPage() {
                   Nothing scheduled yet for this day.
                 </p>
               )}
+
+              {day.title === "Saturday" && <HotelBlock />}
             </section>
           );
         })}
