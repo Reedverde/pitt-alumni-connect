@@ -336,7 +336,7 @@ function BoardPage() {
 
         <DivisionFilter filters={filters} active={active} onToggle={toggle} />
         <FilterChips
-          legend="Status"
+          legend="Filter by"
           options={STATUS_FILTERS.map((s) => ({ code: s.code, label: s.label }))}
           active={activeStatuses}
           onToggle={toggleStatus}
