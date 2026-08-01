@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useState, type CSSProperties } from "react";
 
@@ -297,7 +297,7 @@ function WeekendPage() {
         onClaimed={(personId) => {
           setClaimOpen(false);
           // Never a dead end: the payoff is your own chip on the board.
-          window.location.href = personId ? `/#person-${personId}` : "/";
+          void navigate({ to: "/", hash: personId ? `person-${personId}` : undefined });
         }}
       />
     </div>
