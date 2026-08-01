@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 
 import { getWeekendPage, type ScheduleEvent } from "@/lib/schedule.functions";
 import {
@@ -23,6 +23,8 @@ import { PhotoSlot } from "@/components/media/PhotoSlot";
 import { NotchedBox } from "@/components/media/NotchedBox";
 import { NOTCH_ALL, NOTCH_LG, NOTCH_SM, type NotchCorner } from "@/components/media/notch";
 import { DivisionMark } from "@/components/schedule/DivisionMark";
+import { ClosingCta } from "@/components/claim/ClosingCta";
+import { ClaimDialog } from "@/components/claim/ClaimDialog";
 
 const weekendQuery = queryOptions({
   queryKey: ["weekend-page"],
@@ -128,6 +130,7 @@ function timeLabel(event: ScheduleEvent) {
 
 function WeekendPage() {
   const { data } = useSuspenseQuery(weekendQuery);
+  const [claimOpen, setClaimOpen] = useState(false);
   const season = resolveSeason(data.edition, null, todayInNewYork());
   const edition = season.edition;
   const events = data.events;
@@ -277,8 +280,20 @@ function WeekendPage() {
         <WhereToStay edition={edition} />
 
         <PastEditions editions={data.archive} />
+
+        <ClosingCta
+          title="Are you coming?"
+          body="Say yes, maybe, or not this year. That is the whole signup, there is no account to make."
+          action={{ kind: "rsvp", label: "RSVP", onOpen: () => setClaimOpen(true) }}
+        />
       </main>
       <ActionRail />
+      <ClaimDialog
+        open={claimOpen}
+        target={null}
+        onClose={() => setClaimOpen(false)}
+        onClaimed={() => setClaimOpen(false)}
+      />
     </div>
   );
 }

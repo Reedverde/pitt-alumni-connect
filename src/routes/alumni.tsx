@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteNav } from "@/components/SiteNav";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ActionRail } from "@/components/board/ActionRail";
+import { ClosingCta } from "@/components/claim/ClosingCta";
 import { PhotoSlot, StatementCard } from "@/components/media/PhotoSlot";
 import { primaryButton } from "@/components/claim/ui";
 import { useSessionPerson } from "@/lib/useSessionPerson";
@@ -221,6 +222,12 @@ function AlumniPage() {
             </div>
           </Measure>
         </section>
+
+        <ClosingCta
+          title="Find your name"
+          body="Every player from 1978 on is on the board. Find yours and tell us if you are coming."
+          action={{ kind: "link", label: "Go to the board", to: "/" }}
+        />
       </main>
       <ActionRail />
     </div>
