@@ -47,7 +47,7 @@ export function ClaimDialog({
   open: boolean;
   target: ClaimTarget | null;
   onClose: () => void;
-  onClaimed: () => void;
+  onClaimed: (personId: string | null) => void;
 }) {
   const eyebrow = useEditionEyebrow();
   const runSearch = useServerFn(searchPeople);
@@ -181,7 +181,9 @@ export function ClaimDialog({
         setBusy(false);
         return;
       }
-      setClaimedPersonId(selected?.id ?? null);
+      setClaimedPersonId(
+        ((result.person as { id?: string } | null | undefined)?.id ?? selected?.id ?? null) as string | null,
+      );
       setStamp({
         year: result.person?.board_year ?? selected?.board_year ?? null,
         team: result.person?.team_label ?? selected?.team_label ?? null,
@@ -234,7 +236,7 @@ export function ClaimDialog({
               year={stamp.year}
               teamLabel={stamp.team}
               onDone={() => {
-                onClaimed();
+                onClaimed(claimedPersonId);
                 onClose();
               }}
             />
