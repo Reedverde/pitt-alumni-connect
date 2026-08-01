@@ -133,6 +133,7 @@ function timeLabel(event: ScheduleEvent) {
 function WeekendPage() {
   const { data } = useSuspenseQuery(weekendQuery);
   const [claimOpen, setClaimOpen] = useState(false);
+  const navigate = useNavigate();
   const season = resolveSeason(data.edition, null, todayInNewYork());
   const edition = season.edition;
   const events = data.events;
