@@ -102,19 +102,13 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 - Board placement uses player and captain stints only. Coach, assistant coach and manager stints show on the profile and never move a person's chip, because an alum who comes back to coach would otherwise be moved out of the cohort that recognises their name and into the current year row
 - The current year stint block applies to player and captain only. Coaches, assistant coaches and managers can hold a current year stint, admin entered, because the block exists to protect people who get cut and a sitting coach is not one of them
 
-## KNOWN ISSUES
+## KNOWN ISSUES, OPEN
 
-- High: no standing access-verification script. Three bugs on 2026-07-30 were reported as fixed and were not. Nothing asserts per-role read and write on every table before publish
-- Medium: rsvps.party_size is readable by any signed-in alum. It must be admin only
-- Medium: og:image in __root.tsx points at a Lovable R2 preview screenshot URL that is tied to a preview build and will rot
-- Medium: no privacy policy on a site holding 468 real names and 120 email addresses
-- Medium: `throttle_events` has no pruning job. It grows forever and the count queries slow as it fills. Needs a pg_cron delete of rows older than 48 hours
-- Low: the board renders every chip with no virtualization
-- Low: 005_verify.sql has 29 checks and has never been confirmed PASS in a browser
-- Accepted risk: an alum whose seeded name is misspelled now hits the review queue instead of getting a magic link. Three admins are the bottleneck, and it gets worse the week of the event
-- Accepted risk: two team_names spans are marked assumed. The men's B changeover year and the women's A early span. Each is a one row update when the answer arrives
-- Open: Nick Kaczmarek's coaching years are unknown. CONTEXT.md says longtime head coach, still coaching, with no start year. No coach stints have been created for him. Owner Nick
-- Open: Michael Van Ness's B coaching years are unknown. No coach stints created. Owner Mick
+- The four canonical docs (CONTEXT.md, BUILD_SPEC.md, DESIGN.md, URL_MANIFEST.md) describe a site that does not exist in at least six places. Not yet reconciled.
+- The hotel now lives in two places, the HotelBlock component and editions.lodging_note. Two sources of truth for one fact.
+- No standing access-verification script exists. Ad hoc checks were run tonight against the live database.
+
+## ENV / SECRETS
 
 ## ENV / SECRETS
 
