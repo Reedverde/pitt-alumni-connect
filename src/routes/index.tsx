@@ -553,52 +553,26 @@ function Hero({
             </p>
           )}
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            {signedIn ? (
-              <>
-                <Link
-                  to="/me"
-                  style={{
-                    fontFamily: '"Space Grotesk", sans-serif',
-                    fontSize: 15,
-                    color: "var(--sterling)",
-                    textDecoration: "none",
-                  }}
-                >
-                  Your record
-                </Link>
-                {heroQuiet && (
-                  <span
-                    style={{
-                      fontFamily: '"Space Grotesk", sans-serif',
-                      fontSize: 15,
-                      color: "var(--sterling)",
-                    }}
-                  >
-                    {heroQuiet}
-                  </span>
-                )}
-              </>
-            ) : (
-              <button
-                type="button"
-                style={{
-                  ...primaryButton,
-                  padding: "18px 32px",
-                  fontSize: 15,
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  borderRadius: 7,
-                }}
-                onClick={onClaim}
-              >
-                Claim your name
-              </button>
-            )}
+            <button
+              type="button"
+              style={{
+                ...primaryButton,
+                padding: "18px 32px",
+                fontSize: 15,
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                borderRadius: 7,
+              }}
+              onClick={onClaim}
+            >
+              Claim your name
+            </button>
             <Link to="/weekend" style={{ ...ghostButton, color: "var(--pure-white)", border: "1px solid var(--steel-ink)" }}>
               See the schedule
             </Link>
           </div>
+
         </div>
       </div>
     </section>
