@@ -98,7 +98,13 @@ function AuthPage() {
   return (
     <main className="mx-auto w-full max-w-[520px] px-5 py-16">
       <div className="flex flex-col items-center">
-        <Lockup />
+        <img
+          src={pittUltimateShield.url}
+          alt="Pitt Club Ultimate"
+          width={96}
+          height={96}
+          className="h-24 w-24 object-contain"
+        />
         <p
           className="mt-2"
           style={{
