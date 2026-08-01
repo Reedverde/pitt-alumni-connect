@@ -169,6 +169,18 @@ export function ClaimDialog({
         setStep("requested");
         return;
       }
+      if (result.outcome === "sign_in_required") {
+        setError(
+          "This name is already claimed by a verified account. Sign in with the address on that account to change the answer.",
+        );
+        setBusy(false);
+        return;
+      }
+      if (!result.ok || result.written !== true || !result.rsvp) {
+        setError("We could not save your answer. Nothing was recorded, please try again.");
+        setBusy(false);
+        return;
+      }
       setClaimedPersonId(selected?.id ?? null);
       setStamp({
         year: result.person?.board_year ?? selected?.board_year ?? null,

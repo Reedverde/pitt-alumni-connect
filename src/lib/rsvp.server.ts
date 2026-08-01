@@ -238,6 +238,26 @@ function normalizedName(first: string, last: string | null) {
   return [first, last ?? ""].join(" ").toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+/** Every non-success branch of the RSVP path leaves a trace. Logging must never
+ *  be the reason a submission fails, so it swallows its own errors only. */
+export async function logRsvpEvent(
+  action: string,
+  personId: string | null,
+  after: Record<string, unknown>,
+) {
+  console.error(`[rsvp] ${action} ${personId ?? "unknown"} ${JSON.stringify(after)}`);
+  try {
+    await supabaseAdmin.from("audit_log").insert({
+      action,
+      table_name: "rsvps",
+      record_id: personId,
+      after: after as never,
+    });
+  } catch (err) {
+    console.error(`[rsvp] could not record ${action}: ${String(err)}`);
+  }
+}
+
 /** An unmatched name never creates a people row. It becomes a pending request
  *  the organizers review. No RSVP, no identity, no sign-in link yet. */
 async function requestNewPerson(args: {
@@ -377,21 +397,26 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
     | { id: string; email: string; is_primary: boolean }
     | undefined;
 
+  // The caller is the owner only when the address they typed is itself one of
+  // the verified addresses on this record.
+  const ownedByCaller = (verifiedIdentities ?? []).some(
+    (i) => String((i as { email: string }).email).trim().toLowerCase() === email,
+  );
+
+  if (verifiedOwner && !ownedByCaller) {
+    // Nothing is written. This must never look like success.
+    await logRsvpEvent("rsvp_refused_unverified_email", person.id, {
+      status,
+      email_domain: email.split("@")[1] ?? null,
+      ip_hash: ipHash,
+    });
+    return { ok: false, outcome: "sign_in_required", written: false, rsvp: null, person: null };
+  }
+
   let existingIdentity: { id: string; person_id: string } | null = null;
-  let effectiveStatus: RsvpStatus | null = status;
+  const effectiveStatus: RsvpStatus | null = status;
 
-  if (verifiedOwner) {
-    // No RSVP write, no identity write. Magic link goes to the address on file.
-    magicLinkEmail = verifiedOwner.email;
-
-    const { data: currentRsvp } = await supabaseAdmin
-      .from("rsvps")
-      .select("status")
-      .eq("person_id", person.id)
-      .eq("event_year", eventYear)
-      .maybeSingle();
-    effectiveStatus = (currentRsvp?.status as RsvpStatus | undefined) ?? null;
-  } else {
+  {
     // RSVP first: the record must save whether or not the email work succeeds.
     const { data: existingRsvp } = await supabaseAdmin
       .from("rsvps")
@@ -401,15 +426,23 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
       .maybeSingle();
 
     if (existingRsvp) {
-      await supabaseAdmin
+      const { error } = await supabaseAdmin
         .from("rsvps")
         // First touch wins: src is written at insert time only, never on a change.
         .update({ status, party_size: partySize, responded_at: new Date().toISOString() })
         .eq("id", existingRsvp.id as string);
+      if (error) {
+        await logRsvpEvent("rsvp_write_failed", person.id, { op: "update", error: error.message });
+        throw new Error("We could not save your answer. Nothing was recorded, please try again.");
+      }
     } else {
-      await supabaseAdmin
+      const { error } = await supabaseAdmin
         .from("rsvps")
         .insert({ person_id: person.id, event_year: eventYear, status, src, party_size: partySize });
+      if (error) {
+        await logRsvpEvent("rsvp_write_failed", person.id, { op: "insert", error: error.message });
+        throw new Error("We could not save your answer. Nothing was recorded, please try again.");
+      }
     }
 
     // Identity: if this email is already on file (for anyone), leave it alone.
@@ -434,6 +467,22 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
     }
   }
 
+  // Read the row back. No row, no success, no stamp.
+  const { data: persisted, error: readBackError } = await supabaseAdmin
+    .from("rsvps")
+    .select("id, status, party_size, responded_at")
+    .eq("person_id", person.id)
+    .eq("event_year", eventYear)
+    .maybeSingle();
+
+  if (readBackError || !persisted) {
+    await logRsvpEvent("rsvp_write_failed", person.id, {
+      op: "read_back",
+      error: readBackError?.message ?? "no row after write",
+    });
+    throw new Error("We could not save your answer. Nothing was recorded, please try again.");
+  }
+
   await supabaseAdmin.from("audit_log").insert({
     action: "rsvp_signup",
     table_name: "rsvps",
@@ -446,7 +495,7 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
       email_domain: email.split("@")[1] ?? null,
       matched_existing_email: Boolean(existingIdentity),
       matched_other_person: Boolean(existingIdentity && existingIdentity.person_id !== person.id),
-      ...(verifiedOwner ? { refused_verified_overwrite: true } : {}),
+      rsvp_id: persisted.id,
       ...(verdict.level === "soft" ? { mail_held_by_throttle: true } : {}),
     },
   });
@@ -472,11 +521,6 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
       status: "throttled",
       error: `held back by the ${verdict.reason}`,
     });
-  } else if (verifiedOwner) {
-    // Nothing was written: this person owns their record and already has a
-    // verified address, so they can sign in whenever they like. An answer
-    // typed on the public board is not a request for a sign-in link, and it
-    // must never mint one.
   } else {
     await sendRsvpConfirmation({
       to: magicLinkEmail,
@@ -491,6 +535,13 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
   return {
     ok: true,
     outcome: "recorded",
+    written: true,
+    rsvp: {
+      id: persisted.id as string,
+      status: persisted.status as RsvpStatus,
+      party_size: (persisted.party_size as number | null) ?? 1,
+      responded_at: (persisted.responded_at as string | null) ?? null,
+    },
     person: {
       first_name: person.first_name,
       last_name: person.last_name,
@@ -504,9 +555,7 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
           ? "going"
           : effectiveStatus === "maybe"
             ? "maybe"
-            : verifiedOwner
-              ? "claimed"
-              : "unclaimed",
+            : "unclaimed",
     },
   };
 }
