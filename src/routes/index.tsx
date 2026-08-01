@@ -305,6 +305,20 @@ function BoardPage() {
         effStatuses.includes(p.state),
     ).length;
 
+  // Filtered means the board stops being a year wall and becomes a list.
+  const filtered = isolateGoing || activeStatuses.length < STATUS_FILTERS.length;
+  const flatPeople = filtered
+    ? people
+        .filter((p) => !isHidden(p))
+        .sort(
+          (a, b) =>
+            b.board_year - a.board_year ||
+            `${a.last_name ?? a.first_name} ${a.first_name}`
+              .toLowerCase()
+              .localeCompare(`${b.last_name ?? b.first_name} ${b.first_name}`.toLowerCase()),
+        )
+    : [];
+
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
       <SiteNav onClaim={() => openClaim()} />
