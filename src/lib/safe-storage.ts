@@ -11,6 +11,14 @@
  *  acceptable. A dead site is not. */
 export const SAFE_STORAGE_SNIPPET = `(function(){
   try {
+    // iOS 15.0 to 15.3 lack Object.hasOwn, which the router calls on every
+    // route match. Without it the first navigation throws.
+    if (typeof Object.hasOwn !== 'function') {
+      Object.defineProperty(Object, 'hasOwn', {
+        configurable: true, writable: true,
+        value: function(o, k){ return Object.prototype.hasOwnProperty.call(Object(o), k); }
+      });
+    }
     function memory(){
       var m = Object.create(null);
       return {
