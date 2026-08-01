@@ -130,6 +130,9 @@ function BoardPage() {
     [data.divisions],
   );
   const [active, setActive] = useState<string[]>(() => data.divisions.map((d) => d.code));
+  const [activeStatuses, setActiveStatuses] = useState<string[]>(() =>
+    STATUS_FILTERS.map((s) => s.code),
+  );
   const [newestFirst, setNewestFirst] = useState(true);
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
@@ -226,8 +229,32 @@ function BoardPage() {
   const toggle = (code: string) =>
     setActive((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
 
+  const toggleStatus = (code: string) =>
+    setActiveStatuses((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
+    );
+
+  // Division AND status compose. A dimmed chip stays on the wall, so the board
+  // never visibly shrinks.
+  const matchesStatus = (person: BoardPerson) =>
+    person.state === "unclaimed" || person.state === "memorial"
+      ? true
+      : activeStatuses.includes(person.state);
+
   const isDimmed = (person: BoardPerson) =>
-    person.board_division !== null && !active.includes(person.board_division);
+    (person.board_division !== null && !active.includes(person.board_division)) ||
+    !matchesStatus(person);
+
+  // A row is "empty" when nothing that could carry a status does, under the
+  // toggles that are on.
+  const matchCount = (list: BoardPerson[]) =>
+    list.filter(
+      (p) =>
+        (p.board_division === null || active.includes(p.board_division)) &&
+        p.state !== "unclaimed" &&
+        p.state !== "memorial" &&
+        activeStatuses.includes(p.state),
+    ).length;
 
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
@@ -262,6 +289,12 @@ function BoardPage() {
         </header>
 
         <DivisionFilter filters={filters} active={active} onToggle={toggle} />
+        <FilterChips
+          legend="Status"
+          options={STATUS_FILTERS.map((s) => ({ code: s.code, label: s.label }))}
+          active={activeStatuses}
+          onToggle={toggleStatus}
+        />
         <DecadeRail groups={groups} />
 
         <div className="mt-6 flex justify-end">
@@ -284,6 +317,9 @@ function BoardPage() {
                 onClaim={openChip}
                 photos={data.photosByYear}
                 rowIndex={i}
+                isDimmed={isDimmed}
+                matchCount={matchCount}
+                activeStatuses={activeStatuses}
               />
             ) : (
               <YearRow
@@ -293,6 +329,8 @@ function BoardPage() {
                 onClaim={openChip}
                 photos={data.photosByYear}
                 rowIndex={i}
+                matchCount={matchCount}
+                activeStatuses={activeStatuses}
               />
             ),
           )}
