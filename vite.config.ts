@@ -12,4 +12,12 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    // Every Monday invite opens inside an iOS webview. Hold the browser
+    // baseline at Safari 15 so nothing in the bundle dies at parse time.
+    build: {
+      target: ["es2020", "safari15", "chrome87", "firefox78"],
+      cssTarget: ["safari15", "chrome87", "firefox78"],
+    },
+  },
 });

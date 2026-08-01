@@ -21,6 +21,8 @@ export function normalizeRsvpSource(raw: unknown): RsvpSource | null {
   return (RSVP_SOURCES as readonly string[]).includes(v) ? (v as RsvpSource) : null;
 }
 
+import { safeGet, safeSet } from "./safe-storage";
+
 const KEY = "pcu.rsvp.src";
 
 /** First touch wins. Captured from any route, kept in sessionStorage so it
@@ -29,9 +31,9 @@ const KEY = "pcu.rsvp.src";
 export function captureRsvpSource(search: string): void {
   if (typeof window === "undefined") return;
   try {
-    if (window.sessionStorage.getItem(KEY)) return;
+    if (safeGet("session", KEY)) return;
     const value = normalizeRsvpSource(new URLSearchParams(search).get("src"));
-    if (value) window.sessionStorage.setItem(KEY, value);
+    if (value) safeSet("session", KEY, value);
   } catch {
     /* storage disabled; the RSVP still works, the source is just unknown */
   }
@@ -40,7 +42,7 @@ export function captureRsvpSource(search: string): void {
 export function readRsvpSource(): RsvpSource | null {
   if (typeof window === "undefined") return null;
   try {
-    return normalizeRsvpSource(window.sessionStorage.getItem(KEY));
+    return normalizeRsvpSource(safeGet("session", KEY));
   } catch {
     return null;
   }
