@@ -1262,6 +1262,7 @@ export type Database = {
           deceased: boolean | null
           first_name: string | null
           id: string | null
+          is_current: boolean | null
           last_name: string | null
           played_as: string | null
           state: string | null
