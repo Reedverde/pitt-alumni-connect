@@ -35,7 +35,7 @@ function IdentitySlot() {
   if (signedIn) {
     return (
       <Link to="/me" style={style} {...handlers}>
-        {firstName ?? "My record"}
+        {(firstName ?? "You").toUpperCase()}
       </Link>
     );
   }
