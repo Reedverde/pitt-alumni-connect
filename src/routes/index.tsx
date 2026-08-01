@@ -271,7 +271,11 @@ function BoardPage() {
         open={claimOpen}
         target={claimTarget}
         onClose={() => setClaimOpen(false)}
-        onClaimed={() => queryClient.invalidateQueries({ queryKey: ["board"] })}
+        onClaimed={(personId) => {
+          void queryClient.invalidateQueries({ queryKey: ["board"] });
+          // The chip is the payoff: bring them back to it, updated.
+          if (personId) setFocusPersonId(personId);
+        }}
       />
     </div>
   );
