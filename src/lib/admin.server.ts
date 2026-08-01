@@ -1320,6 +1320,25 @@ export async function headcount(): Promise<Headcount> {
   };
 }
 
+export type SourceCount = { src: string; label: string; count: number };
+
+/** Where the answers came from. NULL is shown as "unknown", never guessed. */
+export async function rsvpSources(): Promise<SourceCount[]> {
+  const { data } = await supabaseAdmin.from("rsvps").select("src");
+  const tally = new Map<string, number>();
+  for (const row of (data ?? []) as { src: string | null }[]) {
+    const key = row.src ?? "__null__";
+    tally.set(key, (tally.get(key) ?? 0) + 1);
+  }
+  return [...tally.entries()]
+    .map(([src, count]) => ({
+      src,
+      label: src === "__null__" ? "unknown" : src,
+      count,
+    }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+}
+
 export type AdminDashboard = {
   isAdmin: true;
   queue: QueueItem[];
@@ -1334,10 +1353,11 @@ export type AdminDashboard = {
   editions: EditionRow[];
   sends: SendRow[];
   sendTotals: SendTotals;
+  rsvpSources: SourceCount[];
 };
 
 export async function dashboard(): Promise<AdminDashboard> {
-  const [queue, teamRes, divisionRes, gaps, heads, digest, drip, duplicates, editions, sends, totals] = await Promise.all([
+  const [queue, teamRes, divisionRes, gaps, heads, digest, drip, duplicates, editions, sends, totals, sources] = await Promise.all([
     reviewQueue(),
     supabaseAdmin
       .from("team_names")
@@ -1353,6 +1373,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     listEditions(),
     recentSends(),
     sendTotals(),
+    rsvpSources(),
   ]);
   return {
     isAdmin: true,
@@ -1367,6 +1388,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     editions,
     sends,
     sendTotals: totals,
+    rsvpSources: sources,
     seasonYear: CURRENT_SEASON,
   };
 }

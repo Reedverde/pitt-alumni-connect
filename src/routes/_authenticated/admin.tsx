@@ -18,7 +18,7 @@ import {
 } from "@/components/admin/Panels";
 import { EditionsPanel } from "@/components/admin/EditionsPanel";
 import { PhotosPanel } from "@/components/admin/PhotosPanel";
-import { SendsPanel } from "@/components/admin/SendsPanel";
+import { SendsPanel, SourcesPanel } from "@/components/admin/SendsPanel";
 import { MailPanel } from "@/components/admin/MailPanel";
 import { AuthAttemptsPanel } from "@/components/admin/AuthAttemptsPanel";
 import { Section } from "@/components/admin/ui";
@@ -177,7 +177,12 @@ function AdminPage() {
       ) : null}
       {active === "photos" ? <PhotosPanel /> : null}
       {active === "mail" ? <MailPanel /> : null}
-      {active === "sends" ? <SendsPanel rows={data.sends} totals={data.sendTotals} /> : null}
+      {active === "sends" ? (
+        <>
+          <SendsPanel rows={data.sends} totals={data.sendTotals} />
+          <SourcesPanel sources={data.rsvpSources} />
+        </>
+      ) : null}
       {active === "auth" ? <AuthAttemptsPanel /> : null}
     </main>
   );

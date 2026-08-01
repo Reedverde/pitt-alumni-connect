@@ -1,4 +1,4 @@
-import type { SendRow, SendTotals } from "@/lib/admin.server";
+import type { SendRow, SendTotals, SourceCount } from "@/lib/admin.server";
 import { Empty, Section, cellStyle, headStyle, mono } from "./ui";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -27,6 +27,38 @@ const OUTCOME_LABEL: Record<string, string> = {
   failed: "Failed",
   suppressed: "Held back",
 };
+
+export function SourcesPanel({ sources }: { sources: SourceCount[] }) {
+  const total = sources.reduce((sum, s) => sum + s.count, 0);
+  return (
+    <Section eyebrow="Attribution" title="Where the answers came from">
+      {sources.length === 0 ? (
+        <Empty>No answers yet.</Empty>
+      ) : (
+        <table style={{ width: "100%", borderCollapse: "collapse", maxWidth: 420 }}>
+          <thead>
+            <tr>
+              <th style={headStyle}>Source</th>
+              <th style={headStyle}>Answers</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sources.map((s) => (
+              <tr key={s.src}>
+                <td style={cellStyle}>{s.label}</td>
+                <td style={{ ...cellStyle, ...mono }}>{s.count}</td>
+              </tr>
+            ))}
+            <tr>
+              <td style={cellStyle}>Total</td>
+              <td style={{ ...cellStyle, ...mono }}>{total}</td>
+            </tr>
+          </tbody>
+        </table>
+      )}
+    </Section>
+  );
+}
 
 export function SendsPanel({ rows, totals }: { rows: SendRow[]; totals: SendTotals }) {
   return (
