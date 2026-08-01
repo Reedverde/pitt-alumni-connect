@@ -154,12 +154,9 @@ function BoardPage() {
     [data.divisions],
   );
   const [active, setActive] = useState<string[]>(() => data.divisions.map((d) => d.code));
-  const [activeStatuses, setActiveStatuses] = useState<string[]>(() =>
-    STATUS_FILTERS.map((s) => s.code),
-  );
+  // Single-select: null means "everyone", the normal year-row board.
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [newestFirst, setNewestFirst] = useState(true);
-  // Isolate is the counter shortcut only: it hides, where the chips dim.
-  const [isolateGoing, setIsolateGoing] = useState(false);
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
   const [panelPerson, setPanelPerson] = useState<BoardPerson | null>(null);
@@ -255,19 +252,13 @@ function BoardPage() {
   const toggle = (code: string) =>
     setActive((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
 
-  const toggleStatus = (code: string) =>
-    setActiveStatuses((prev) =>
-      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
-    );
+  const pickStatus = (code: string) =>
+    setStatusFilter((prev) => (prev === code ? null : code));
 
-  const effStatuses = isolateGoing ? ["going"] : activeStatuses;
+  const filtered = statusFilter !== null;
+  const effStatuses = filtered ? [statusFilter as string] : STATUS_FILTERS.map((s) => s.code);
 
-  const exitIsolate = () => {
-    setIsolateGoing(false);
-    setActiveStatuses((prev) =>
-      prev.length === STATUS_FILTERS.length ? prev : STATUS_FILTERS.map((s) => s.code),
-    );
-  };
+  const exitIsolate = () => setStatusFilter(null);
 
   // Division AND status compose. A dimmed chip stays on the wall, so the board
   // never visibly shrinks.
@@ -280,16 +271,9 @@ function BoardPage() {
     (person.board_division !== null && !active.includes(person.board_division)) ||
     !matchesStatus(person);
 
-  // The status row and the counter shortcut both hide. Programs keep dimming.
-  const statusFiltered = !isolateGoing && activeStatuses.length < STATUS_FILTERS.length;
+  // The status row hides. Programs keep dimming.
   const isHidden = (person: BoardPerson) => {
-    if (isolateGoing) {
-      return (
-        person.state !== "going" ||
-        (person.board_division !== null && !active.includes(person.board_division))
-      );
-    }
-    if (!statusFiltered) return false;
+    if (!filtered) return false;
     // Filtering by status means a list of people, not the wall.
     return !effStatuses.includes(person.state);
   };
@@ -305,8 +289,6 @@ function BoardPage() {
         effStatuses.includes(p.state),
     ).length;
 
-  // Filtered means the board stops being a year wall and becomes a list.
-  const filtered = isolateGoing || activeStatuses.length < STATUS_FILTERS.length;
   const flatPeople = filtered
     ? people
         .filter((p) => !isHidden(p))
@@ -331,9 +313,9 @@ function BoardPage() {
         clock={clock}
         goldLive={goldLive}
         countdownLive={countdownLive}
-        onIsolateGoing={() => setIsolateGoing(true)}
+        onIsolateGoing={() => setStatusFilter("going")}
       />
-      {isolateGoing && (
+      {statusFilter === "going" && (
         <div
           className="mx-auto w-full max-w-[1320px] px-5 pt-3"
           style={{ fontFamily: '"Space Mono", monospace', fontSize: 12, color: "var(--sterling)" }}
@@ -374,11 +356,11 @@ function BoardPage() {
         </header>
 
         <DivisionFilter filters={filters} active={active} onToggle={toggle} />
-        <FilterChips
+        <StatusRadioChips
           legend="Filter by"
           options={STATUS_FILTERS.map((s) => ({ code: s.code, label: s.label }))}
-          active={activeStatuses}
-          onToggle={toggleStatus}
+          value={statusFilter}
+          onPick={pickStatus}
         />
         {!filtered && <DecadeRail groups={groups} />}
 
