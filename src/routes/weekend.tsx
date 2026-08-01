@@ -47,6 +47,7 @@ export const Route = createFileRoute("/weekend")({
         content: "Three days in Pittsburgh. Everybody who ever played. Add any of it to your calendar.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: `${SITE_ORIGIN}/weekend` },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
