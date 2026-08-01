@@ -238,6 +238,26 @@ function normalizedName(first: string, last: string | null) {
   return [first, last ?? ""].join(" ").toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+/** Every non-success branch of the RSVP path leaves a trace. Logging must never
+ *  be the reason a submission fails, so it swallows its own errors only. */
+export async function logRsvpEvent(
+  action: string,
+  personId: string | null,
+  after: Record<string, unknown>,
+) {
+  console.error(`[rsvp] ${action} ${personId ?? "unknown"} ${JSON.stringify(after)}`);
+  try {
+    await supabaseAdmin.from("audit_log").insert({
+      action,
+      table_name: "rsvps",
+      record_id: personId,
+      after,
+    });
+  } catch (err) {
+    console.error(`[rsvp] could not record ${action}: ${String(err)}`);
+  }
+}
+
 /** An unmatched name never creates a people row. It becomes a pending request
  *  the organizers review. No RSVP, no identity, no sign-in link yet. */
 async function requestNewPerson(args: {
