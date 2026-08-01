@@ -14,6 +14,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { PersonPanel } from "@/components/board/PersonPanel";
 import { useSessionPerson } from "@/lib/useSessionPerson";
 import { SiteFooter } from "@/components/SiteFooter";
+import { StatusBar } from "@/components/board/StatusBar";
 import heroPeak from "@/assets/hero-peak.png.asset.json";
 import { NotchedBox } from "@/components/media/NotchedBox";
 import { NOTCH_ALL } from "@/components/media/notch";
@@ -132,6 +133,8 @@ function BoardPage() {
     STATUS_FILTERS.map((s) => s.code),
   );
   const [newestFirst, setNewestFirst] = useState(true);
+  // Isolate is the counter shortcut only: it hides, where the chips dim.
+  const [isolateGoing, setIsolateGoing] = useState(false);
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
   const [panelPerson, setPanelPerson] = useState<BoardPerson | null>(null);
@@ -232,16 +235,32 @@ function BoardPage() {
       prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
     );
 
+  const effStatuses = isolateGoing ? ["going"] : activeStatuses;
+
+  const exitIsolate = () => {
+    setIsolateGoing(false);
+    setActiveStatuses((prev) =>
+      prev.length === STATUS_FILTERS.length ? prev : STATUS_FILTERS.map((s) => s.code),
+    );
+  };
+
   // Division AND status compose. A dimmed chip stays on the wall, so the board
   // never visibly shrinks.
   const matchesStatus = (person: BoardPerson) =>
     person.state === "unclaimed" || person.state === "memorial"
       ? true
-      : activeStatuses.includes(person.state);
+      : effStatuses.includes(person.state);
 
   const isDimmed = (person: BoardPerson) =>
     (person.board_division !== null && !active.includes(person.board_division)) ||
     !matchesStatus(person);
+
+  // Only the counter shortcut hides, and it hides everyone who is not coming,
+  // unclaimed names included: the ask was for a list, not the wall.
+  const isHidden = (person: BoardPerson) =>
+    isolateGoing &&
+    (person.state !== "going" ||
+      (person.board_division !== null && !active.includes(person.board_division)));
 
   // A row is "empty" when nothing that could carry a status does, under the
   // toggles that are on.
@@ -251,13 +270,14 @@ function BoardPage() {
         (p.board_division === null || active.includes(p.board_division)) &&
         p.state !== "unclaimed" &&
         p.state !== "memorial" &&
-        activeStatuses.includes(p.state),
+        effStatuses.includes(p.state),
     ).length;
 
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
       <SiteNav onClaim={() => openClaim()} />
       <Hero season={season} clock={clock} countdownLive={countdownLive} onClaim={() => openClaim()} />
+      <StatusBar />
       <CounterBar
         claimed={data.totals.claimed}
         going={data.totals.going}
@@ -265,7 +285,28 @@ function BoardPage() {
         clock={clock}
         goldLive={goldLive}
         countdownLive={countdownLive}
+        onIsolateGoing={() => setIsolateGoing(true)}
       />
+      {isolateGoing && (
+        <div
+          className="mx-auto w-full max-w-[1320px] px-5 pt-3"
+          style={{ fontFamily: '"Space Mono", monospace', fontSize: 12, color: "var(--sterling)" }}
+        >
+          Showing {data.totals.going} going.{" "}
+          <button
+            type="button"
+            onClick={exitIsolate}
+            style={{
+              fontFamily: '"Space Mono", monospace',
+              fontSize: 12,
+              color: "var(--pitt-royal)",
+              textDecoration: "underline",
+            }}
+          >
+            Show everyone.
+          </button>
+        </div>
+      )}
 
       <main className="mx-auto w-full max-w-[1320px] px-5 pb-24">
         {season.edition && (
@@ -316,19 +357,21 @@ function BoardPage() {
                 photos={data.photosByYear}
                 rowIndex={i}
                 isDimmed={isDimmed}
+                isHidden={isHidden}
                 matchCount={matchCount}
-                activeStatuses={activeStatuses}
+                activeStatuses={effStatuses}
               />
             ) : (
               <YearRow
                 key={row.key}
                 group={row.group!}
                 isDimmed={isDimmed}
+                isHidden={isHidden}
                 onClaim={openChip}
                 photos={data.photosByYear}
                 rowIndex={i}
                 matchCount={matchCount}
-                activeStatuses={activeStatuses}
+                activeStatuses={effStatuses}
               />
             ),
           )}
@@ -521,6 +564,7 @@ function CounterBar({
   clock,
   goldLive,
   countdownLive,
+  onIsolateGoing,
 }: {
   claimed: number;
   going: number;
@@ -528,17 +572,18 @@ function CounterBar({
   clock: { value: string; label: string };
   goldLive: boolean;
   countdownLive: boolean;
+  onIsolateGoing: () => void;
 }) {
   // Off season there is nothing to be going to, so the bar drops going and the
   // countdown entirely and shows a figure that is useful all year instead.
   const figures = [
-    { value: String(claimed), label: "Claimed", color: "var(--pitt-royal)", dot: false },
+    { value: String(claimed), label: "Claimed", color: "var(--pitt-royal)", dot: false, going: false },
     ...(goldLive
-      ? [{ value: String(going), label: "Going", color: "var(--sabah-black)", dot: true }]
+      ? [{ value: String(going), label: "Going", color: "var(--sabah-black)", dot: true, going: true }]
       : []),
     ...(countdownLive
-      ? [{ value: clock.value, label: clock.label, color: "var(--steel-ink)", dot: false }]
-      : [{ value: String(total), label: "On the board", color: "var(--steel-ink)", dot: false }]),
+      ? [{ value: clock.value, label: clock.label, color: "var(--steel-ink)", dot: false, going: false }]
+      : [{ value: String(total), label: "On the board", color: "var(--steel-ink)", dot: false, going: false }]),
   ];
   return (
     <div
@@ -547,7 +592,26 @@ function CounterBar({
     >
       <SidelineLoop />
       <div className="relative mx-auto hidden h-14 max-w-[1320px] items-center gap-10 px-5 md:flex">
-        {figures.map((f) => (
+        {figures.map((f) =>
+          f.going ? (
+            <button
+              key={f.label}
+              type="button"
+              onClick={onIsolateGoing}
+              aria-label="Show only people who are coming"
+              className="going-counter flex flex-col justify-center text-left"
+            >
+              <span className="flex items-center gap-2">
+                <GoldDot />
+                <span style={{ fontFamily: '"Space Mono", monospace', fontWeight: 700, fontSize: 24, lineHeight: 1, color: f.color }}>
+                  {f.value}
+                </span>
+              </span>
+              <span className="label-caps mt-1" style={{ color: "var(--sterling)" }}>
+                {f.label}
+              </span>
+            </button>
+          ) : (
           <div key={f.label} className="flex flex-col justify-center">
             <span className="flex items-center gap-2">
               {f.dot && <GoldDot />}
@@ -559,17 +623,24 @@ function CounterBar({
               {f.label}
             </span>
           </div>
-        ))}
+          ),
+        )}
       </div>
       <div className="relative mx-auto flex h-14 max-w-[1320px] items-center px-5 md:hidden" style={{ fontSize: 13 }}>
         <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--pitt-royal)" }}>{claimed} claimed</span>
         <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
         {goldLive && (
           <>
-            <span className="inline-flex items-center gap-1.5" style={{ fontFamily: '"Space Mono", monospace', color: "var(--sabah-black)" }}>
+            <button
+              type="button"
+              onClick={onIsolateGoing}
+              aria-label="Show only people who are coming"
+              className="going-counter inline-flex items-center gap-1.5"
+              style={{ fontFamily: '"Space Mono", monospace', color: "var(--sabah-black)" }}
+            >
               <GoldDot />
               {going} going
-            </span>
+            </button>
             <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
           </>
         )}
@@ -699,6 +770,7 @@ function AnchorRow({
   photos,
   rowIndex,
   isDimmed,
+  isHidden,
   matchCount,
   activeStatuses,
 }: {
@@ -707,6 +779,7 @@ function AnchorRow({
   photos: Record<string, BoardPhoto>;
   rowIndex: number;
   isDimmed: (p: BoardPerson) => boolean;
+  isHidden: (p: BoardPerson) => boolean;
   matchCount: (list: BoardPerson[]) => number;
   activeStatuses: string[];
 }) {
@@ -736,7 +809,7 @@ function AnchorRow({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap content-start items-start gap-2">
-          {sorted.map((person) => (
+          {sorted.filter((p) => !isHidden(p)).map((person) => (
             <NameChip key={person.id} person={person} dimmed={isDimmed(person)} onClick={onClaim} />
           ))}
         </div>
@@ -769,6 +842,7 @@ function EmptyPrompt({ copy }: { copy: string }) {
 function YearRow({
   group,
   isDimmed,
+  isHidden,
   onClaim,
   photos,
   rowIndex,
@@ -777,6 +851,7 @@ function YearRow({
 }: {
   group: YearGroup;
   isDimmed: (p: BoardPerson) => boolean;
+  isHidden: (p: BoardPerson) => boolean;
   onClaim: (person: BoardPerson) => void;
   photos: Record<string, BoardPhoto>;
   rowIndex: number;
@@ -807,7 +882,7 @@ function YearRow({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap content-start items-start gap-2">
-          {group.people.map((person) => (
+          {group.people.filter((p) => !isHidden(p)).map((person) => (
             <NameChip key={person.id} person={person} dimmed={isDimmed(person)} onClick={onClaim} />
           ))}
         </div>
