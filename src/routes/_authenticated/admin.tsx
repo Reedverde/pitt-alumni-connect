@@ -18,7 +18,7 @@ import {
 } from "@/components/admin/Panels";
 import { EditionsPanel } from "@/components/admin/EditionsPanel";
 import { PhotosPanel } from "@/components/admin/PhotosPanel";
-import { SendsPanel, SourcesPanel } from "@/components/admin/SendsPanel";
+import { RsvpBreakdownPanel, SendsPanel, SourcesPanel } from "@/components/admin/SendsPanel";
 import { MailPanel } from "@/components/admin/MailPanel";
 import { AuthAttemptsPanel } from "@/components/admin/AuthAttemptsPanel";
 import { Section } from "@/components/admin/ui";
@@ -179,6 +179,7 @@ function AdminPage() {
       {active === "mail" ? <MailPanel /> : null}
       {active === "sends" ? (
         <>
+          <RsvpBreakdownPanel data={data.rsvpBreakdown} />
           <SendsPanel rows={data.sends} totals={data.sendTotals} />
           <SourcesPanel sources={data.rsvpSources} />
         </>
