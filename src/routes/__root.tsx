@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { captureRsvpSource } from "../lib/rsvp-src";
 
 function NotFoundComponent() {
   return (
@@ -126,6 +127,11 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  // Any route, first touch only. Deep links carry ?src= too.
+  useEffect(() => {
+    captureRsvpSource(window.location.search);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

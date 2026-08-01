@@ -1,8 +1,8 @@
 export const RSVP_STATUSES = ["going", "maybe", "not_this_year"] as const;
 export type RsvpStatus = (typeof RSVP_STATUSES)[number];
 
-export const RSVP_SOURCES = ["discord", "groupme", "email"] as const;
-export type RsvpSource = (typeof RSVP_SOURCES)[number];
+export { RSVP_SOURCES, normalizeRsvpSource } from "./rsvp-src";
+export type { RsvpSource } from "./rsvp-src";
 
 /** Heads, including the person themselves. Meaningful only for "going". */
 export const PARTY_SIZE_MIN = 1;

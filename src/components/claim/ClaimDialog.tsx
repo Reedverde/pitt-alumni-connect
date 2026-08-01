@@ -9,6 +9,7 @@ import {
   type PersonMatch,
   type RsvpStatus,
 } from "@/lib/rsvp-types";
+import { readRsvpSource } from "@/lib/rsvp-src";
 import { useEditionEyebrow } from "@/lib/useEdition";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimStamp } from "./ClaimStamp";
@@ -160,7 +161,7 @@ export function ClaimDialog({
           status,
           partySize: status === "going" ? partySize : 1,
           email,
-          src: "email",
+          src: readRsvpSource(),
           origin: window.location.origin,
         },
       });

@@ -8,7 +8,7 @@ import {
 } from "./throttle.server";
 import {
   normalizePartySize,
-  RSVP_SOURCES,
+  normalizeRsvpSource,
   RSVP_STATUSES,
   type PersonMatch,
   type RsvpResult,
@@ -245,7 +245,7 @@ async function requestNewPerson(args: {
   lastName: string | null;
   email: string;
   status: RsvpStatus | null;
-  src: RsvpSource;
+  src: RsvpSource | null;
   ipHash: string;
   origin: string | null | undefined;
 }): Promise<RsvpResult> {
@@ -320,9 +320,8 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
   const status = input.status as RsvpStatus;
   if (!RSVP_STATUSES.includes(status)) throw new Error("Please pick an answer.");
   const partySize = normalizePartySize(status, input.partySize ?? 1);
-  const src: RsvpSource = RSVP_SOURCES.includes(input.src as RsvpSource)
-    ? (input.src as RsvpSource)
-    : "email";
+  // Unknown or absent means NULL. An invalid source never blocks the answer.
+  const src: RsvpSource | null = normalizeRsvpSource(input.src);
   if (!isValidEmail(input.email)) throw new Error("That email doesn't look right.");
   const email = input.email.trim().toLowerCase();
 
@@ -404,7 +403,8 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
     if (existingRsvp) {
       await supabaseAdmin
         .from("rsvps")
-        .update({ status, src, party_size: partySize, responded_at: new Date().toISOString() })
+        // First touch wins: src is written at insert time only, never on a change.
+        .update({ status, party_size: partySize, responded_at: new Date().toISOString() })
         .eq("id", existingRsvp.id as string);
     } else {
       await supabaseAdmin
