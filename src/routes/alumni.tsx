@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteNav } from "@/components/SiteNav";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ActionRail } from "@/components/board/ActionRail";
+import { ClosingCta } from "@/components/claim/ClosingCta";
 import { PhotoSlot, StatementCard } from "@/components/media/PhotoSlot";
 import { primaryButton } from "@/components/claim/ui";
 import { useSessionPerson } from "@/lib/useSessionPerson";
