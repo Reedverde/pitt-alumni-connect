@@ -19,6 +19,5 @@ export default defineConfig({
       target: ["es2020", "safari15", "chrome87", "firefox78"],
       cssTarget: ["safari15", "chrome87", "firefox78"],
     },
-    esbuild: { target: "es2020" },
   },
 });
