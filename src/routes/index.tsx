@@ -748,6 +748,52 @@ function FilterChips({
 }
 
 /** Derived from the data on the wall, so the last band never freezes on a year. */
+function StatusRadioChips({
+  legend,
+  options,
+  value,
+  onPick,
+}: {
+  legend: string;
+  options: { code: string; label: string }[];
+  value: string | null;
+  onPick: (code: string) => void;
+}) {
+  return (
+    <div className="mt-2">
+      <p className="label-caps mb-2" style={{ color: "var(--sterling)" }}>
+        {legend}
+      </p>
+      <div role="radiogroup" aria-label={legend} className="flex flex-wrap gap-2">
+        {options.map((o) => {
+          const on = value === o.code;
+          return (
+            <button
+              key={o.code}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => onPick(o.code)}
+              className="cursor-pointer rounded-full px-3 py-2"
+              style={{
+                background: on ? "var(--pitt-royal)" : "transparent",
+                border: on ? "1px solid transparent" : "1px solid var(--chalk)",
+                color: on ? "var(--pure-white)" : "var(--sterling)",
+                fontSize: 12,
+                fontWeight: 500,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function buildDecades(groups: YearGroup[]) {
   const years = groups.flatMap((g) => g.years);
   if (years.length === 0) return [] as { label: string; from: number; to: number }[];
