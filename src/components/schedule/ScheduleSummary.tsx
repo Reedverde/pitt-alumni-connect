@@ -137,7 +137,7 @@ export function ScheduleSummary({
         Times marked TBD are still being set. RSVP now and we'll email you when they lock.
       </p>
       <p className="mt-2 max-w-[560px]" style={{ fontSize: 16, color: "var(--sterling)" }}>
-        Spectators welcome. Nobody plays who doesn't want to.
+        Currents versus alumni. Play if you want to, watch if you don't. We just want you there.
       </p>
       {(edition.lodging_note?.trim() || edition.travel_note?.trim()) && (
         <p className="mt-2 max-w-[560px]" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
