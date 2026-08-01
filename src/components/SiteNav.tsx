@@ -19,6 +19,7 @@ function IdentitySlot() {
     fontWeight: 500,
     textTransform: "uppercase" as const,
     letterSpacing: "0.08em",
+    whiteSpace: "nowrap" as const,
     color: hover ? "var(--steel-ink)" : "var(--sterling)",
     background: "transparent",
     border: "none",
