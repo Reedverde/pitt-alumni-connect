@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 
 import { getBoard, type BoardPerson, type BoardPhoto } from "@/lib/board.functions";
@@ -186,6 +186,20 @@ function BoardPage() {
   }, [groups, anchorPeople, newestFirst]);
 
   const clock = countdown(data.edition, data.nextEdition);
+
+  // Coming back from a claim, or arriving from another page with #person-<id>:
+  // scroll the person's own chip into view once the board has re-rendered.
+  useEffect(() => {
+    const fromHash = window.location.hash.startsWith("#person-")
+      ? window.location.hash.slice("#person-".length)
+      : null;
+    const id = focusPersonId ?? fromHash;
+    if (!id) return;
+    const node = document.getElementById(`person-${id}`);
+    if (!node) return;
+    node.scrollIntoView({ behavior: "smooth", block: "center" });
+    node.focus({ preventScroll: true });
+  }, [focusPersonId, people]);
 
   const toggle = (code: string) =>
     setActive((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
