@@ -179,35 +179,27 @@ function MePage() {
         </p>
       )}
 
-      {profile.rsvp === null && (
-        <div
-          className="mt-6 p-5"
-          style={{ border: "1px solid var(--chalk)", borderRadius: 7, background: "var(--field-white)" }}
-        >
-          <p style={{ fontSize: 15, color: "var(--steel-ink)" }}>Are you coming in October?</p>
-          <div className="mt-3 grid gap-2 md:grid-cols-3">
-            {(["going", "maybe", "not_this_year"] as RsvpStatus[]).map((s) => (
-              <button
-                key={s}
-                type="button"
-                style={{ ...secondaryButton, width: "100%" }}
-                onClick={() =>
-                  run(() => putRsvp({ data: { personId: person.id, status: s } }), "Answer saved.")
-                }
-              >
-                {STATUS_LABELS[s]}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       <Section title={profile.edition?.title ?? "Alumni Weekend"}>
+        {/* The answer is stated in words, not carried by the filled button
+            alone. Never gold: gold means attending on a board chip. */}
+        {profile.rsvp === null ? (
+          <p className="mb-3" style={{ fontSize: 15, color: "var(--steel-ink)" }}>
+            Are you coming in October?
+          </p>
+        ) : (
+          <p
+            className="label-caps mb-3"
+            style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}
+          >
+            Your answer: {STATUS_LABELS[profile.rsvp as RsvpStatus].toUpperCase()}
+          </p>
+        )}
         <div className="grid gap-2 md:grid-cols-3">
           {(["going", "maybe", "not_this_year"] as RsvpStatus[]).map((s) => (
             <button
               key={s}
               type="button"
+              aria-pressed={profile.rsvp === s}
               style={{ ...(profile.rsvp === s ? primaryButton : secondaryButton), width: "100%" }}
               onClick={() =>
                 run(
