@@ -11,8 +11,16 @@ export function Lockup({ size = 44 }: { size?: number }) {
           width: size,
           height: size,
           border: "1.5px solid var(--sabah-black)",
+          fontFamily: '"Archivo", sans-serif',
+          fontWeight: 800,
+          fontSize: Math.round(size * 0.28),
+          letterSpacing: "-0.02em",
+          lineHeight: 1,
+          color: "var(--sabah-black)",
         }}
-      />
+      >
+        PCU
+      </span>
       <span
         style={{
           fontFamily: '"Archivo", sans-serif',
