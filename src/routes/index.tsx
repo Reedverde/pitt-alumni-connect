@@ -255,12 +255,19 @@ function BoardPage() {
     (person.board_division !== null && !active.includes(person.board_division)) ||
     !matchesStatus(person);
 
-  // Only the counter shortcut hides, and it hides everyone who is not coming,
-  // unclaimed names included: the ask was for a list, not the wall.
-  const isHidden = (person: BoardPerson) =>
-    isolateGoing &&
-    (person.state !== "going" ||
-      (person.board_division !== null && !active.includes(person.board_division)));
+  // The status row and the counter shortcut both hide. Programs keep dimming.
+  const statusFiltered = !isolateGoing && activeStatuses.length < STATUS_FILTERS.length;
+  const isHidden = (person: BoardPerson) => {
+    if (isolateGoing) {
+      return (
+        person.state !== "going" ||
+        (person.board_division !== null && !active.includes(person.board_division))
+      );
+    }
+    if (!statusFiltered) return false;
+    // Filtering by status means a list of people, not the wall.
+    return !effStatuses.includes(person.state);
+  };
 
   // A row is "empty" when nothing that could carry a status does, under the
   // toggles that are on.
@@ -329,7 +336,7 @@ function BoardPage() {
 
         <DivisionFilter filters={filters} active={active} onToggle={toggle} />
         <FilterChips
-          legend="Status"
+          legend="Filter by"
           options={STATUS_FILTERS.map((s) => ({ code: s.code, label: s.label }))}
           active={activeStatuses}
           onToggle={toggleStatus}
