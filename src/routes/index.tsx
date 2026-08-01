@@ -14,6 +14,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { PersonPanel } from "@/components/board/PersonPanel";
 import { useSessionPerson } from "@/lib/useSessionPerson";
 import { SiteFooter } from "@/components/SiteFooter";
+import { StatusBar } from "@/components/board/StatusBar";
 import heroPeak from "@/assets/hero-peak.png.asset.json";
 import { NotchedBox } from "@/components/media/NotchedBox";
 import { NOTCH_ALL } from "@/components/media/notch";
@@ -132,6 +133,8 @@ function BoardPage() {
     STATUS_FILTERS.map((s) => s.code),
   );
   const [newestFirst, setNewestFirst] = useState(true);
+  // Isolate is the counter shortcut only: it hides, where the chips dim.
+  const [isolateGoing, setIsolateGoing] = useState(false);
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
   const [panelPerson, setPanelPerson] = useState<BoardPerson | null>(null);
@@ -232,16 +235,28 @@ function BoardPage() {
       prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
     );
 
+  const effStatuses = isolateGoing ? ["going"] : activeStatuses;
+
+  const exitIsolate = () => {
+    setIsolateGoing(false);
+    setActiveStatuses((prev) =>
+      prev.length === STATUS_FILTERS.length ? prev : STATUS_FILTERS.map((s) => s.code),
+    );
+  };
+
   // Division AND status compose. A dimmed chip stays on the wall, so the board
   // never visibly shrinks.
   const matchesStatus = (person: BoardPerson) =>
     person.state === "unclaimed" || person.state === "memorial"
       ? true
-      : activeStatuses.includes(person.state);
+      : effStatuses.includes(person.state);
 
   const isDimmed = (person: BoardPerson) =>
     (person.board_division !== null && !active.includes(person.board_division)) ||
     !matchesStatus(person);
+
+  // Only the counter shortcut hides. Everything else dims.
+  const isHidden = (person: BoardPerson) => isolateGoing && isDimmed(person);
 
   // A row is "empty" when nothing that could carry a status does, under the
   // toggles that are on.
@@ -251,13 +266,14 @@ function BoardPage() {
         (p.board_division === null || active.includes(p.board_division)) &&
         p.state !== "unclaimed" &&
         p.state !== "memorial" &&
-        activeStatuses.includes(p.state),
+        effStatuses.includes(p.state),
     ).length;
 
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
       <SiteNav onClaim={() => openClaim()} />
       <Hero season={season} clock={clock} countdownLive={countdownLive} onClaim={() => openClaim()} />
+      <StatusBar />
       <CounterBar
         claimed={data.totals.claimed}
         going={data.totals.going}
@@ -265,7 +281,28 @@ function BoardPage() {
         clock={clock}
         goldLive={goldLive}
         countdownLive={countdownLive}
+        onIsolateGoing={() => setIsolateGoing(true)}
       />
+      {isolateGoing && (
+        <div
+          className="mx-auto w-full max-w-[1320px] px-5 pt-3"
+          style={{ fontFamily: '"Space Mono", monospace', fontSize: 12, color: "var(--sterling)" }}
+        >
+          Showing {data.totals.going} going.{" "}
+          <button
+            type="button"
+            onClick={exitIsolate}
+            style={{
+              fontFamily: '"Space Mono", monospace',
+              fontSize: 12,
+              color: "var(--pitt-royal)",
+              textDecoration: "underline",
+            }}
+          >
+            Show everyone.
+          </button>
+        </div>
+      )}
 
       <main className="mx-auto w-full max-w-[1320px] px-5 pb-24">
         {season.edition && (
@@ -316,19 +353,21 @@ function BoardPage() {
                 photos={data.photosByYear}
                 rowIndex={i}
                 isDimmed={isDimmed}
+                isHidden={isHidden}
                 matchCount={matchCount}
-                activeStatuses={activeStatuses}
+                activeStatuses={effStatuses}
               />
             ) : (
               <YearRow
                 key={row.key}
                 group={row.group!}
                 isDimmed={isDimmed}
+                isHidden={isHidden}
                 onClaim={openChip}
                 photos={data.photosByYear}
                 rowIndex={i}
                 matchCount={matchCount}
-                activeStatuses={activeStatuses}
+                activeStatuses={effStatuses}
               />
             ),
           )}
