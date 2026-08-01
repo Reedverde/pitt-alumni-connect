@@ -32,8 +32,19 @@ export type PersonMatch = {
 export type RsvpResult = {
   ok: boolean;
   /** "recorded" means the answer is saved against a real record. "review_requested"
-   *  means the name went to the organizers and no record exists yet. */
-  outcome: "recorded" | "review_requested";
+   *  means the name went to the organizers and no record exists yet.
+   *  "sign_in_required" means the record belongs to a verified account and the
+   *  address typed here is not on it, so nothing was written. */
+  outcome: "recorded" | "review_requested" | "sign_in_required";
+  /** Only ever true when a row was read back from the database after the write.
+   *  The claim stamp is gated on this and nothing else. */
+  written?: boolean;
+  rsvp?: {
+    id: string;
+    status: RsvpStatus;
+    party_size: number;
+    responded_at: string | null;
+  } | null;
   person: {
     first_name: string;
     last_name: string | null;
