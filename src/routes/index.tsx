@@ -603,11 +603,29 @@ function DivisionFilter({
   onToggle: (code: string) => void;
 }) {
   return (
+    <FilterChips legend="Programs" options={filters} active={active} onToggle={onToggle} />
+  );
+}
+
+/** One neutral toggle row. Used by both the program filter and the status
+ *  filter so there is only ever one pattern. No gold: gold means attending. */
+function FilterChips({
+  legend,
+  options,
+  active,
+  onToggle,
+}: {
+  legend: string;
+  options: { code: string; label: string }[];
+  active: string[];
+  onToggle: (code: string) => void;
+}) {
+  return (
     <fieldset className="mt-2 flex flex-wrap gap-2">
       <legend className="label-caps mb-2" style={{ color: "var(--sterling)" }}>
-        Programs
+        {legend}
       </legend>
-      {filters.map((d) => {
+      {options.map((d) => {
         const on = active.includes(d.code);
         return (
           <label
