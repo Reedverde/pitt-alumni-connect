@@ -61,6 +61,28 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 - Unmatched names as review requests with an hourly admin digest: built
 - Privacy policy, analytics, automated tests: not started
 
+## RESOLVED TONIGHT (2026-07-31)
+
+**Critical bug, silent RSVP loss.** `submitRsvpServer` held an anonymous-overwrite guard: when a person record already had a verified identity, the server skipped the RSVP write, the identity write and the email, then returned `ok: true, outcome: "recorded"` anyway. The user saw a claim stamp and nothing persisted. Present since the pass that added the guard, not caused by this session. Evidence: three `refused_verified_overwrite: true` rows in `audit_log`. Fixed: ownership is decided by the address submitted rather than the record; a non-matching address returns `sign_in_required` with `ok: false` and writes an `rsvp_refused_unverified_email` audit row; the RSVP row is read back after every write and the stamp is gated on `ok && written === true && rsvp`; insert and update errors are checked instead of discarded; `logRsvpEvent` writes console plus audit on every failure branch.
+
+**Source tracking never worked.** `?src=` was never read anywhere. `ClaimDialog` passed a literal `"email"` and the server had a hardcoded `"email"` fallback, so all historic src values were meaningless and have been set to NULL. Now captured on first touch of any route in `__root.tsx`, held in sessionStorage, validated, written at insert only so first touch wins. Unknown or absent writes NULL, never a default.
+
+**Allowed src values** (constraint `rsvps_src_check`): text, discord, groupme_alumni, groupme_all, groupme, email, website, facebook. Tagged links are `https://pitt.everde.co/?src=<value>`.
+
+**Board read parity.** `rsvps` had an anon SELECT policy but no authenticated equivalent, so signing in emptied the board (0 going vs 8). Added `public board rsvps authenticated`. Column grants on `rsvps` narrowed to id, person_id, event_year, status for both roles; party_size, src and responded_at now only via the `admin_rsvp_detail` security definer function, execute granted to authenticated only.
+
+**RSVP confirmations enabled, forward only.** `app_settings.rsvp_confirmation_cutoff = 2026-08-01T02:59:07.702Z`, written once, never moves. Answers recorded before the cutoff are never confirmed. No catch-up or replay path exists and none may be built. Verified end to end: confirmation sent via Resend and received.
+
+**Interest-form RSVPs cleared.** 14 rows imported in bulk from the interest form were deleted. They were real answers but not given through the site, so those people will be asked again. The source CSV still holds them and they are the warmest anchor list available. Live RSVPs are now Reed Verdesoto (going), Ben Morgenstern (going), Test Account (going, hidden from board).
+
+**Schedule locked.** Friday Oct 2: Open Team Event/Dinner 7:00 to 10:30 PM (Pitt at Virginia Tech kicks off 7 PM on ESPN), Bar Crawl 9 PM onward. Both carry "Two options tonight, same night: come to either, both, or neither." Saturday Oct 3: BBQ 12:00 to 4:00 PM at Schenley Overlook, women's soccer vs Miami 7:00 PM. Still TBD: Sunday alumni games time and field, the two program gatherings, the bar name.
+
+**Hotel named.** Hilton Garden Inn Pittsburgh University Place, 3454 Forbes Ave, Oakland. No block, no group rate. Appears both as the `HotelBlock` on /weekend and in `editions.lodging_note`, which was updated tonight. Rejected: the Oaklander (Autograph rate), Hampton Inn (Pitt has used it as student housing), Residence Inn (poor recent reviews), Courtyard (further from the park).
+
+**Both GroupMe links received** after five asks. Alumni only: https://groupme.com/join_group/25525883/XmguKcz4. Alumni and current: https://groupme.com/join_group/87254367/OrOti41l.
+
+**Duplicate-name rulings** from the previous session stand. Nothing merged.
+
 ## KEY DECISIONS
 
 - Saying whether you are coming IS the signup. There is no separate account creation step and never a bare "Sign up" button, because a second step is where a 50 year old alum drops out
