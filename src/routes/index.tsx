@@ -560,6 +560,7 @@ function CounterBar({
   clock,
   goldLive,
   countdownLive,
+  onIsolateGoing,
 }: {
   claimed: number;
   going: number;
@@ -567,17 +568,18 @@ function CounterBar({
   clock: { value: string; label: string };
   goldLive: boolean;
   countdownLive: boolean;
+  onIsolateGoing: () => void;
 }) {
   // Off season there is nothing to be going to, so the bar drops going and the
   // countdown entirely and shows a figure that is useful all year instead.
   const figures = [
-    { value: String(claimed), label: "Claimed", color: "var(--pitt-royal)", dot: false },
+    { value: String(claimed), label: "Claimed", color: "var(--pitt-royal)", dot: false, going: false },
     ...(goldLive
-      ? [{ value: String(going), label: "Going", color: "var(--sabah-black)", dot: true }]
+      ? [{ value: String(going), label: "Going", color: "var(--sabah-black)", dot: true, going: true }]
       : []),
     ...(countdownLive
-      ? [{ value: clock.value, label: clock.label, color: "var(--steel-ink)", dot: false }]
-      : [{ value: String(total), label: "On the board", color: "var(--steel-ink)", dot: false }]),
+      ? [{ value: clock.value, label: clock.label, color: "var(--steel-ink)", dot: false, going: false }]
+      : [{ value: String(total), label: "On the board", color: "var(--steel-ink)", dot: false, going: false }]),
   ];
   return (
     <div
@@ -586,7 +588,26 @@ function CounterBar({
     >
       <SidelineLoop />
       <div className="relative mx-auto hidden h-14 max-w-[1320px] items-center gap-10 px-5 md:flex">
-        {figures.map((f) => (
+        {figures.map((f) =>
+          f.going ? (
+            <button
+              key={f.label}
+              type="button"
+              onClick={onIsolateGoing}
+              aria-label="Show only people who are coming"
+              className="going-counter flex flex-col justify-center text-left"
+            >
+              <span className="flex items-center gap-2">
+                <GoldDot />
+                <span style={{ fontFamily: '"Space Mono", monospace', fontWeight: 700, fontSize: 24, lineHeight: 1, color: f.color }}>
+                  {f.value}
+                </span>
+              </span>
+              <span className="label-caps mt-1" style={{ color: "var(--sterling)" }}>
+                {f.label}
+              </span>
+            </button>
+          ) : (
           <div key={f.label} className="flex flex-col justify-center">
             <span className="flex items-center gap-2">
               {f.dot && <GoldDot />}
@@ -598,17 +619,24 @@ function CounterBar({
               {f.label}
             </span>
           </div>
-        ))}
+          ),
+        )}
       </div>
       <div className="relative mx-auto flex h-14 max-w-[1320px] items-center px-5 md:hidden" style={{ fontSize: 13 }}>
         <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--pitt-royal)" }}>{claimed} claimed</span>
         <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
         {goldLive && (
           <>
-            <span className="inline-flex items-center gap-1.5" style={{ fontFamily: '"Space Mono", monospace', color: "var(--sabah-black)" }}>
+            <button
+              type="button"
+              onClick={onIsolateGoing}
+              aria-label="Show only people who are coming"
+              className="going-counter inline-flex items-center gap-1.5"
+              style={{ fontFamily: '"Space Mono", monospace', color: "var(--sabah-black)" }}
+            >
               <GoldDot />
               {going} going
-            </span>
+            </button>
             <span className="mx-2" style={{ color: "var(--chalk)" }}>·</span>
           </>
         )}
