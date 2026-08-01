@@ -248,12 +248,18 @@ export const setMyRsvp = createServerFn({ method: "POST" })
       .eq("person_id", personId)
       .eq("event_year", eventYear)
       .maybeSingle();
+    // An omitted party size means "don't touch it": the board's status bar
+    // changes the answer without knowing the heads already on record.
+    const partySizePatch =
+      data.partySize == null && data.status === "going"
+        ? {}
+        : { party_size: normalizePartySize(data.status, data.partySize ?? 1) };
     const { error } = existing
       ? await context.supabase
           .from("rsvps")
           .update({
             status: data.status,
-            party_size: normalizePartySize(data.status, data.partySize ?? 1),
+            ...partySizePatch,
             responded_at: new Date().toISOString(),
           })
           .eq("id", existing.id as string)
