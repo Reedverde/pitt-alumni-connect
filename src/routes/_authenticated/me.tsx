@@ -159,6 +159,15 @@ function MePage() {
       <h1 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
         {personDisplayName(person).toUpperCase()}
       </h1>
+      <p className="mt-2">
+        <Link
+          to="/"
+          hash={`person-${person.id}`}
+          style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 13, color: "var(--sterling)" }}
+        >
+          See your chip on the board
+        </Link>
+      </p>
       {status && (
         <p role="status" className="mt-3" style={{ fontSize: 13, color: "var(--steel-ink)" }}>
           {status}
