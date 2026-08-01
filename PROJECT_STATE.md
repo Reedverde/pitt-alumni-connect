@@ -179,6 +179,7 @@ Server side, status unconfirmed:
 - Nick Kaczmarek's coaching years, Mick van Ness's B coaching years. Never invent these.
 - Micah Davis's 48-name 2026 roster, still zero emails.
 - Sunday field and time.
+- Maiden name needs its own field and its own display convention. Today the `played_as` column carries both nicknames and maiden names, which display differently: a nickname reads as Michael Van Ness "Mick", while a maiden name reads as Sarah Chen (née Whitfield) or Sarah Whitfield Chen. Rendering a maiden name in quotes like a nickname reads as careless to the people it matters most to. The board chip already carries too much visual noise to decide this inline; part of the work is deciding whether either value belongs on the chip at all, or whether both should be search-only and shown only on the profile. Scope when it is built: add a separate `maiden_name` column on `people`, distinct from `played_as`; make both fields editable by the person on `/me`; include both in the fuzzy match at signup; and agree on a display rule covering the board chip, the profile page, and search results. This matters most for the women's programs, whose alumni records track a significant number of name changes by hand. Status: not started. No target date.
 
 ## ROADMAP
 
