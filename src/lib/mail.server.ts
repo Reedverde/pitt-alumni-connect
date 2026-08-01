@@ -15,10 +15,59 @@ import { logAuthAttempt } from "./auth-attempts.server";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
-/** The only kind of message allowed out while outbound email is paused. The
- *  allow list is by message kind, not by calling function: a test send or a
- *  party-size link is not a sign-in link even though it shares the code path. */
-const TRANSACTIONAL_KINDS = new Set(["magic_link"]);
+/** The kinds allowed out while outbound email is paused. The allow list is by
+ *  message kind, not by calling function: a test send or a party-size link is
+ *  not a sign-in link even though it shares the code path. RSVP confirmations
+ *  are allowed, but only forward: see rsvpConfirmationAllowed(). */
+const TRANSACTIONAL_KINDS = new Set(["magic_link", "rsvp_confirmation"]);
+
+/** Forward-only cutoff for RSVP confirmations. Written once at migration time
+ *  and never moved. An RSVP recorded before this instant is never confirmed by
+ *  email: there is no catch-up path and there must never be one. Fails closed. */
+async function rsvpConfirmationCutoff(): Promise<Date | null> {
+  try {
+    const { data } = await supabaseAdmin
+      .from("app_settings")
+      .select("value")
+      .eq("key", "rsvp_confirmation_cutoff")
+      .maybeSingle();
+    const raw = (data as { value?: string } | null)?.value;
+    if (!raw) return null;
+    const at = new Date(raw);
+    return Number.isNaN(at.getTime()) ? null : at;
+  } catch {
+    return null;
+  }
+}
+
+/** True only when this person's answer was written after the cutoff. Anything
+ *  older, unreadable or missing is refused. */
+export async function rsvpConfirmationAllowed(
+  personId: string | null,
+): Promise<{ ok: boolean; reason: string | null }> {
+  const cutoff = await rsvpConfirmationCutoff();
+  if (!cutoff) return { ok: false, reason: "rsvp confirmation cutoff is not set" };
+  if (!personId) return { ok: false, reason: "no person on the rsvp confirmation" };
+  try {
+    const { data } = await supabaseAdmin
+      .from("rsvps")
+      .select("responded_at")
+      .eq("person_id", personId)
+      .order("responded_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const raw = (data as { responded_at?: string } | null)?.responded_at;
+    if (!raw) return { ok: false, reason: "no rsvp row to confirm" };
+    const respondedAt = new Date(raw);
+    if (Number.isNaN(respondedAt.getTime())) return { ok: false, reason: "unreadable responded_at" };
+    if (respondedAt.getTime() < cutoff.getTime()) {
+      return { ok: false, reason: "rsvp predates the confirmation cutoff" };
+    }
+    return { ok: true, reason: null };
+  } catch {
+    return { ok: false, reason: "could not read the rsvp for the cutoff check" };
+  }
+}
 
 export type OutboundEmailMode = "transactional_only" | "all";
 
@@ -62,7 +111,7 @@ async function resendDeliver(
   const mode = await outboundEmailMode();
 
   if (mode !== "all" && !TRANSACTIONAL_KINDS.has(input.kind)) {
-    const reason = `outbound email is paused (transactional_only); "${input.kind}" is not a sign-in link`;
+    const reason = `outbound email is paused (transactional_only); "${input.kind}" is not permitted while paused`;
     await logSend({
       personId: input.personId,
       kind: input.kind,
@@ -564,7 +613,7 @@ export async function sendMagicLinkEmail(opts: {
     // same one switch is consulted before any of it runs. The decision itself
     // lives in outboundEmailMode(); this is not a second policy.
     if (!TRANSACTIONAL_KINDS.has(kind) && (await outboundEmailMode()) !== "all") {
-      const reason = `outbound email is paused (transactional_only); "${kind}" is not a sign-in link`;
+      const reason = `outbound email is paused (transactional_only); "${kind}" is not permitted while paused`;
       await logSend({
         personId: opts.personId,
         kind,
@@ -576,6 +625,25 @@ export async function sendMagicLinkEmail(opts: {
       });
       await logAuthAttempt({ email: to, personId: opts.personId, outcome: "blocked", detail: reason });
       return { sent: false, provider: "none", messageId: null, reason };
+    }
+
+    // Forward only. A confirmation exists to acknowledge an answer that was
+    // just written, so an answer older than the cutoff is never confirmed.
+    if (kind === "rsvp_confirmation") {
+      const gate = await rsvpConfirmationAllowed(opts.personId);
+      if (!gate.ok) {
+        const reason = `rsvp confirmation refused: ${gate.reason}`;
+        await logSend({
+          personId: opts.personId,
+          kind,
+          toEmail: to,
+          provider: "none",
+          providerMessageId: null,
+          status: "blocked",
+          error: reason,
+        });
+        return { sent: false, provider: "none", messageId: null, reason };
+      }
     }
 
     if (await isSuppressed(to)) {
