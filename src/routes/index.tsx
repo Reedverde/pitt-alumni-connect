@@ -255,8 +255,12 @@ function BoardPage() {
     (person.board_division !== null && !active.includes(person.board_division)) ||
     !matchesStatus(person);
 
-  // Only the counter shortcut hides. Everything else dims.
-  const isHidden = (person: BoardPerson) => isolateGoing && isDimmed(person);
+  // Only the counter shortcut hides, and it hides everyone who is not coming,
+  // unclaimed names included: the ask was for a list, not the wall.
+  const isHidden = (person: BoardPerson) =>
+    isolateGoing &&
+    (person.state !== "going" ||
+      (person.board_division !== null && !active.includes(person.board_division)));
 
   // A row is "empty" when nothing that could carry a status does, under the
   // toggles that are on.
