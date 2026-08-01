@@ -103,8 +103,6 @@ const STATUS_FILTERS = [
   { code: "claimed", label: "Claimed" },
 ] as const;
 
-type StatusCode = (typeof STATUS_FILTERS)[number]["code"];
-
 /** Copy for a row where nothing matches the toggles that are on. It reads as
  *  early, not broken, and always ends on an invitation. */
 function emptyCopy(label: string, statuses: string[]) {
