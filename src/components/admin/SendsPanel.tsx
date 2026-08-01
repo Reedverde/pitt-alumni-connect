@@ -1,4 +1,4 @@
-import type { SendRow, SendTotals, SourceCount } from "@/lib/admin.server";
+import type { RsvpBreakdown, SendRow, SendTotals, SourceCount } from "@/lib/admin.server";
 import { Empty, Section, cellStyle, headStyle, mono } from "./ui";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -29,6 +29,86 @@ const OUTCOME_LABEL: Record<string, string> = {
 };
 
 export function SourcesPanel({ sources }: { sources: SourceCount[] }) {
+  const total = sources.reduce((sum, s) => sum + s.count, 0);
+  return (
+    <Section eyebrow="Attribution" title="Where the answers came from">
+      {sources.length === 0 ? (
+        <Empty>No answers yet.</Empty>
+      ) : (
+        <table style={{ width: "100%", borderCollapse: "collapse", maxWidth: 420 }}>
+          <thead>
+            <tr>
+              <th style={headStyle}>Source</th>
+              <th style={headStyle}>Answers</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sources.map((s) => (
+              <tr key={s.src}>
+                <td style={cellStyle}>{s.label}</td>
+                <td style={{ ...cellStyle, ...mono }}>{s.count}</td>
+              </tr>
+            ))}
+            <tr>
+              <td style={cellStyle}>Total</td>
+              <td style={{ ...cellStyle, ...mono }}>{total}</td>
+            </tr>
+          </tbody>
+        </table>
+      )}
+    </Section>
+  );
+}
+
+/** Every answer for the current edition, by name, including the ones the public
+ *  board must never list. Admin only. */
+export function RsvpBreakdownPanel({ data }: { data: RsvpBreakdown }) {
+  return (
+    <Section
+      eyebrow="Answers"
+      title={`Who said what for ${data.eventYear}`}
+      aside={
+        <span style={{ fontSize: 13, color: "var(--sterling)" }}>
+          Organizer view only. Never shown on the board.
+        </span>
+      }
+    >
+      <div className="grid gap-8 md:grid-cols-2">
+        {data.buckets.map((bucket) => (
+          <div key={bucket.key}>
+            <p className="label-caps mb-2" style={{ color: "var(--sterling)" }}>
+              {bucket.label} <span style={mono}>{bucket.count}</span>
+            </p>
+            {bucket.people.length === 0 ? (
+              <Empty>Nobody yet.</Empty>
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={headStyle}>Name</th>
+                    <th style={headStyle}>Year</th>
+                    <th style={headStyle}>Party</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bucket.people.map((p) => (
+                    <tr key={p.person_id}>
+                      <td style={cellStyle}>{p.name}</td>
+                      <td style={{ ...cellStyle, ...mono }}>{p.board_year ?? "—"}</td>
+                      <td style={{ ...cellStyle, ...mono }}>{p.party_size ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function LegacySourcesPanel({ sources }: { sources: SourceCount[] }) {
   const total = sources.reduce((sum, s) => sum + s.count, 0);
   return (
     <Section eyebrow="Attribution" title="Where the answers came from">
