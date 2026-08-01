@@ -116,6 +116,31 @@ function emptyCopy(label: string, statuses: string[]) {
   return `Nobody from ${label} has claimed yet. Be the first.`;
 }
 
+const STATUS_WORDS: Record<string, string> = {
+  going: "going",
+  maybe: "maybe",
+  claimed: "claimed",
+};
+
+/** "going", "claimed or going", and so on, in a fixed reading order. */
+function statusPhrase(statuses: string[]) {
+  const ordered = ["claimed", "maybe", "going"].filter((s) => statuses.includes(s));
+  const words = ordered.map((s) => STATUS_WORDS[s]);
+  if (words.length === 0) return "nobody";
+  if (words.length === 1) return words[0];
+  return `${words.slice(0, -1).join(", ")} or ${words[words.length - 1]}`;
+}
+
+/** The one dashed card the flat list shows when nothing matches at all. */
+function flatEmptyCopy(statuses: string[]) {
+  const only = statuses.length === 1 ? statuses[0] : null;
+  if (only === "going") return "Nobody has said yes yet. Be the first.";
+  if (only === "maybe") return "Nobody is on the fence yet. Be the first.";
+  if (only === "claimed") return "Nobody has claimed yet. Be the first.";
+  if (statuses.length === 0) return "Turn a filter back on to see the board.";
+  return "Nobody has answered yet. Be the first.";
+}
+
 function BoardPage() {
   const { data } = useSuspenseQuery(boardQuery);
   const { data: weekend } = useSuspenseQuery(weekendQuery);
@@ -280,6 +305,20 @@ function BoardPage() {
         effStatuses.includes(p.state),
     ).length;
 
+  // Filtered means the board stops being a year wall and becomes a list.
+  const filtered = isolateGoing || activeStatuses.length < STATUS_FILTERS.length;
+  const flatPeople = filtered
+    ? people
+        .filter((p) => !isHidden(p))
+        .sort(
+          (a, b) =>
+            b.board_year - a.board_year ||
+            `${a.last_name ?? a.first_name} ${a.first_name}`
+              .toLowerCase()
+              .localeCompare(`${b.last_name ?? b.first_name} ${b.first_name}`.toLowerCase()),
+        )
+    : [];
+
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
       <SiteNav onClaim={() => openClaim()} />
@@ -341,8 +380,9 @@ function BoardPage() {
           active={activeStatuses}
           onToggle={toggleStatus}
         />
-        <DecadeRail groups={groups} />
+        {!filtered && <DecadeRail groups={groups} />}
 
+        {!filtered && (
         <div className="mt-6 flex justify-end">
           <button
             type="button"
@@ -353,7 +393,32 @@ function BoardPage() {
             {newestFirst ? "Newest first" : "Oldest first"}
           </button>
         </div>
+        )}
 
+        {filtered ? (
+          <div className="pt-6">
+            <p
+              className="label-caps"
+              style={{ fontFamily: '"Space Mono", monospace', color: "var(--sterling)" }}
+            >
+              {flatPeople.length} {statusPhrase(effStatuses)}
+            </p>
+            {flatPeople.length > 0 ? (
+              <div className="mt-4 flex flex-wrap content-start items-start gap-2">
+                {flatPeople.map((person) => (
+                  <NameChip
+                    key={person.id}
+                    person={person}
+                    dimmed={isDimmed(person)}
+                    onClick={openChip}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyPrompt copy={flatEmptyCopy(effStatuses)} />
+            )}
+          </div>
+        ) : (
         <div>
           {orderedRows.map((row, i) =>
             row.kind === "anchor" ? (
@@ -383,6 +448,7 @@ function BoardPage() {
             ),
           )}
         </div>
+        )}
 
         <WhyTeaser />
       </main>
