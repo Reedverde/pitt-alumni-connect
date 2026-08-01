@@ -766,6 +766,7 @@ function AnchorRow({
   photos,
   rowIndex,
   isDimmed,
+  isHidden,
   matchCount,
   activeStatuses,
 }: {
@@ -774,6 +775,7 @@ function AnchorRow({
   photos: Record<string, BoardPhoto>;
   rowIndex: number;
   isDimmed: (p: BoardPerson) => boolean;
+  isHidden: (p: BoardPerson) => boolean;
   matchCount: (list: BoardPerson[]) => number;
   activeStatuses: string[];
 }) {
@@ -803,7 +805,7 @@ function AnchorRow({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap content-start items-start gap-2">
-          {sorted.map((person) => (
+          {sorted.filter((p) => !isHidden(p)).map((person) => (
             <NameChip key={person.id} person={person} dimmed={isDimmed(person)} onClick={onClaim} />
           ))}
         </div>
@@ -836,6 +838,7 @@ function EmptyPrompt({ copy }: { copy: string }) {
 function YearRow({
   group,
   isDimmed,
+  isHidden,
   onClaim,
   photos,
   rowIndex,
@@ -844,6 +847,7 @@ function YearRow({
 }: {
   group: YearGroup;
   isDimmed: (p: BoardPerson) => boolean;
+  isHidden: (p: BoardPerson) => boolean;
   onClaim: (person: BoardPerson) => void;
   photos: Record<string, BoardPhoto>;
   rowIndex: number;
@@ -874,7 +878,7 @@ function YearRow({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap content-start items-start gap-2">
-          {group.people.map((person) => (
+          {group.people.filter((p) => !isHidden(p)).map((person) => (
             <NameChip key={person.id} person={person} dimmed={isDimmed(person)} onClick={onClaim} />
           ))}
         </div>
