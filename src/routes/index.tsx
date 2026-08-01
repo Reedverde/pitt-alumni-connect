@@ -380,8 +380,9 @@ function BoardPage() {
           active={activeStatuses}
           onToggle={toggleStatus}
         />
-        <DecadeRail groups={groups} />
+        {!filtered && <DecadeRail groups={groups} />}
 
+        {!filtered && (
         <div className="mt-6 flex justify-end">
           <button
             type="button"
@@ -392,7 +393,32 @@ function BoardPage() {
             {newestFirst ? "Newest first" : "Oldest first"}
           </button>
         </div>
+        )}
 
+        {filtered ? (
+          <div className="pt-6">
+            <p
+              className="label-caps"
+              style={{ fontFamily: '"Space Mono", monospace', color: "var(--sterling)" }}
+            >
+              {flatPeople.length} {statusPhrase(effStatuses)}
+            </p>
+            {flatPeople.length > 0 ? (
+              <div className="mt-4 flex flex-wrap content-start items-start gap-2">
+                {flatPeople.map((person) => (
+                  <NameChip
+                    key={person.id}
+                    person={person}
+                    dimmed={isDimmed(person)}
+                    onClick={openChip}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyPrompt copy={flatEmptyCopy(effStatuses)} />
+            )}
+          </div>
+        ) : (
         <div>
           {orderedRows.map((row, i) =>
             row.kind === "anchor" ? (
@@ -422,6 +448,7 @@ function BoardPage() {
             ),
           )}
         </div>
+        )}
 
         <WhyTeaser />
       </main>
