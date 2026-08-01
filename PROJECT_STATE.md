@@ -127,6 +127,21 @@ Server side, status unconfirmed:
 - MAIL_UNSUBSCRIBE_SECRET, required for a valid unsubscribe token
 - PUBLIC_SITE_URL, fallback origin for links in mail
 
+## LAUNCH PLAN, CURRENT
+
+- T-60, Monday Aug 3: committee members hand-send personal invites to their own anchors from their own inboxes and phones. No app email. The dormant T-60 sequence stays inactive permanently because a person does its job.
+- T-45, Monday Aug 17: launch mass email. This is the old T-42 shifted three days. Everything after it keeps existing spacing: T-28 peer proof, T-21, T-14, T-7, T-2, T+3. NOTE: the sequence offsets have NOT been changed yet. One row goes dormant, one offset changes 42 to 45.
+- Outreach coverage so far: Ben Morgenstern taking graduating years 2018 to 2024, Micah Davis taking the last four years. 2023 and 2024 are double covered. No shared coverage sheet exists.
+
+## OPEN, NOT CODE
+
+- Danger database disclosure to Christie Lawry or Bailey Moorhead. Overdue.
+- DNS for alumni.pittultimate.org. Six records sent to Brody for the DreamHost zone: A alumni, TXT _lovable.alumni, TXT resend._domainkey.alumni, MX send.alumni, TXT send.alumni, TXT _dmarc.alumni. The DMARC record is deliberately scoped to _dmarc.alumni and must not be placed at the zone root. Brody supplied SFTP credentials, which are server access and not DNS. DreamHost will not create a co-manager account without a service, so he must add the records himself.
+- Redirect from pitt.everde.co to the new domain, if and when it cuts over. Not built. The Discord post promises old links keep working.
+- Nick Kaczmarek's coaching years, Mick van Ness's B coaching years. Never invent these.
+- Micah Davis's 48-name 2026 roster, still zero emails.
+- Sunday field and time.
+
 ## ROADMAP
 
 NOW: write the standing access-verification script that runs as anon and as a non-admin and asserts per-role read and write on every table plus what can leave the mail system while paused. Narrow rsvps so party_size is admin only. Confirm or delete the remaining placeholder events. Add a pg_cron job pruning throttle_events older than 48 hours. Replace the og:image with a stable hosted asset. Publish a privacy policy and link it in the footer. Reconcile CONTEXT.md, BUILD_SPEC.md, DESIGN.md and URL_MANIFEST.md, all four now describe a site that does not exist.
