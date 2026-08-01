@@ -95,6 +95,28 @@ const DIVISION_CHIP_LABELS: Record<string, string> = {
   WOMENS_B: "Danger B",
 };
 
+/** Three states only. "Not this year" is never publicly listable, and
+ *  unclaimed is the board's background rather than a status. */
+const STATUS_FILTERS = [
+  { code: "going", label: "Going" },
+  { code: "maybe", label: "Maybe" },
+  { code: "claimed", label: "Claimed" },
+] as const;
+
+type StatusCode = (typeof STATUS_FILTERS)[number]["code"];
+
+/** Copy for a row where nothing matches the toggles that are on. It reads as
+ *  early, not broken, and always ends on an invitation. */
+function emptyCopy(label: string, statuses: string[]) {
+  const only = statuses.length === 1 ? statuses[0] : null;
+  if (only === "going") return `Nobody has said yes from ${label} yet. Be the first.`;
+  if (only === "maybe") return `Nobody from ${label} is on the fence yet. Be the first.`;
+  if (statuses.length === 2 && statuses.includes("going") && statuses.includes("maybe"))
+    return `Nobody from ${label} has answered yet. Be the first.`;
+  if (statuses.length === 0) return `Turn a filter back on to see ${label}.`;
+  return `Nobody from ${label} has claimed yet. Be the first.`;
+}
+
 function BoardPage() {
   const { data } = useSuspenseQuery(boardQuery);
   const { data: weekend } = useSuspenseQuery(weekendQuery);
