@@ -1322,6 +1322,108 @@ export async function headcount(): Promise<Headcount> {
 
 export type SourceCount = { src: string; label: string; count: number };
 
+export type RsvpBreakdownPerson = {
+  person_id: string;
+  name: string;
+  board_year: number | null;
+  party_size: number | null;
+  responded_at: string | null;
+};
+
+export type RsvpBreakdownBucket = {
+  key: "going" | "maybe" | "not_this_year" | "claimed_no_rsvp";
+  label: string;
+  count: number;
+  people: RsvpBreakdownPerson[];
+};
+
+export type RsvpBreakdown = { eventYear: number; buckets: RsvpBreakdownBucket[] };
+
+/** Every answer for the current edition, by name. Admin only: this is the one
+ *  place "not this year" is ever listed. */
+export async function rsvpBreakdown(): Promise<RsvpBreakdown> {
+  const eventYear = await currentEditionYear();
+  const [rsvpRes, peopleRes, identRes, placeRes] = await Promise.all([
+    supabaseAdmin
+      .from("rsvps")
+      .select("person_id, status, party_size, responded_at")
+      .eq("event_year", eventYear),
+    supabaseAdmin.from("people").select("id, first_name, last_name, grad_year, deceased").limit(2000),
+    supabaseAdmin.from("identities").select("person_id, verified_at"),
+    supabaseAdmin.from("person_board_placement").select("person_id, board_year"),
+  ]);
+
+  const names = new Map<string, { name: string; grad_year: number | null; deceased: boolean }>();
+  for (const row of peopleRes.data ?? [])
+    names.set(row.id as string, {
+      name: fullName(row as { first_name: string; last_name?: string | null }),
+      grad_year: (row.grad_year as number | null) ?? null,
+      deceased: Boolean(row.deceased),
+    });
+  const placement = new Map<string, number | null>();
+  for (const row of placeRes.data ?? [])
+    placement.set(row.person_id as string, (row.board_year as number | null) ?? null);
+  const verified = new Set<string>();
+  for (const row of identRes.data ?? [])
+    if (row.verified_at) verified.add(row.person_id as string);
+
+  const buckets: Record<RsvpBreakdownBucket["key"], RsvpBreakdownPerson[]> = {
+    going: [],
+    maybe: [],
+    not_this_year: [],
+    claimed_no_rsvp: [],
+  };
+  const answered = new Set<string>();
+
+  for (const row of rsvpRes.data ?? []) {
+    const personId = row.person_id as string;
+    const info = names.get(personId);
+    if (!info) continue;
+    answered.add(personId);
+    const status = row.status as string;
+    if (status !== "going" && status !== "maybe" && status !== "not_this_year") continue;
+    buckets[status].push({
+      person_id: personId,
+      name: info.name,
+      board_year: placement.get(personId) ?? info.grad_year,
+      party_size: status === "going" ? Number(row.party_size ?? 1) : null,
+      responded_at: (row.responded_at as string | null) ?? null,
+    });
+  }
+
+  for (const personId of verified) {
+    if (answered.has(personId)) continue;
+    const info = names.get(personId);
+    if (!info || info.deceased) continue;
+    buckets.claimed_no_rsvp.push({
+      person_id: personId,
+      name: info.name,
+      board_year: placement.get(personId) ?? info.grad_year,
+      party_size: null,
+      responded_at: null,
+    });
+  }
+
+  const order: { key: RsvpBreakdownBucket["key"]; label: string }[] = [
+    { key: "going", label: "Going" },
+    { key: "maybe", label: "Maybe" },
+    { key: "not_this_year", label: "Not this year" },
+    { key: "claimed_no_rsvp", label: "Claimed, no answer yet" },
+  ];
+
+  return {
+    eventYear,
+    buckets: order.map(({ key, label }) => ({
+      key,
+      label,
+      count: buckets[key].length,
+      people: buckets[key].sort(
+        (a, b) => (b.board_year ?? 0) - (a.board_year ?? 0) || a.name.localeCompare(b.name),
+      ),
+    })),
+  };
+}
+
 /** Where the answers came from. NULL is shown as "unknown", never guessed. */
 export async function rsvpSources(): Promise<SourceCount[]> {
   const { data } = await supabaseAdmin.from("rsvps").select("src");
@@ -1354,10 +1456,11 @@ export type AdminDashboard = {
   sends: SendRow[];
   sendTotals: SendTotals;
   rsvpSources: SourceCount[];
+  rsvpBreakdown: RsvpBreakdown;
 };
 
 export async function dashboard(): Promise<AdminDashboard> {
-  const [queue, teamRes, divisionRes, gaps, heads, digest, drip, duplicates, editions, sends, totals, sources] = await Promise.all([
+  const [queue, teamRes, divisionRes, gaps, heads, digest, drip, duplicates, editions, sends, totals, sources, breakdown] = await Promise.all([
     reviewQueue(),
     supabaseAdmin
       .from("team_names")
@@ -1374,6 +1477,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     recentSends(),
     sendTotals(),
     rsvpSources(),
+    rsvpBreakdown(),
   ]);
   return {
     isAdmin: true,
@@ -1389,6 +1493,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     sends,
     sendTotals: totals,
     rsvpSources: sources,
+    rsvpBreakdown: breakdown,
     seasonYear: CURRENT_SEASON,
   };
 }

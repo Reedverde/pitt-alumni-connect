@@ -95,6 +95,26 @@ const DIVISION_CHIP_LABELS: Record<string, string> = {
   WOMENS_B: "Danger B",
 };
 
+/** Three states only. "Not this year" is never publicly listable, and
+ *  unclaimed is the board's background rather than a status. */
+const STATUS_FILTERS = [
+  { code: "going", label: "Going" },
+  { code: "maybe", label: "Maybe" },
+  { code: "claimed", label: "Claimed" },
+] as const;
+
+/** Copy for a row where nothing matches the toggles that are on. It reads as
+ *  early, not broken, and always ends on an invitation. */
+function emptyCopy(label: string, statuses: string[]) {
+  const only = statuses.length === 1 ? statuses[0] : null;
+  if (only === "going") return `Nobody has said yes from ${label} yet. Be the first.`;
+  if (only === "maybe") return `Nobody from ${label} is on the fence yet. Be the first.`;
+  if (statuses.length === 2 && statuses.includes("going") && statuses.includes("maybe"))
+    return `Nobody from ${label} has answered yet. Be the first.`;
+  if (statuses.length === 0) return `Turn a filter back on to see ${label}.`;
+  return `Nobody from ${label} has claimed yet. Be the first.`;
+}
+
 function BoardPage() {
   const { data } = useSuspenseQuery(boardQuery);
   const { data: weekend } = useSuspenseQuery(weekendQuery);
@@ -108,6 +128,9 @@ function BoardPage() {
     [data.divisions],
   );
   const [active, setActive] = useState<string[]>(() => data.divisions.map((d) => d.code));
+  const [activeStatuses, setActiveStatuses] = useState<string[]>(() =>
+    STATUS_FILTERS.map((s) => s.code),
+  );
   const [newestFirst, setNewestFirst] = useState(true);
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
@@ -204,8 +227,32 @@ function BoardPage() {
   const toggle = (code: string) =>
     setActive((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
 
+  const toggleStatus = (code: string) =>
+    setActiveStatuses((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
+    );
+
+  // Division AND status compose. A dimmed chip stays on the wall, so the board
+  // never visibly shrinks.
+  const matchesStatus = (person: BoardPerson) =>
+    person.state === "unclaimed" || person.state === "memorial"
+      ? true
+      : activeStatuses.includes(person.state);
+
   const isDimmed = (person: BoardPerson) =>
-    person.board_division !== null && !active.includes(person.board_division);
+    (person.board_division !== null && !active.includes(person.board_division)) ||
+    !matchesStatus(person);
+
+  // A row is "empty" when nothing that could carry a status does, under the
+  // toggles that are on.
+  const matchCount = (list: BoardPerson[]) =>
+    list.filter(
+      (p) =>
+        (p.board_division === null || active.includes(p.board_division)) &&
+        p.state !== "unclaimed" &&
+        p.state !== "memorial" &&
+        activeStatuses.includes(p.state),
+    ).length;
 
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
@@ -240,6 +287,12 @@ function BoardPage() {
         </header>
 
         <DivisionFilter filters={filters} active={active} onToggle={toggle} />
+        <FilterChips
+          legend="Status"
+          options={STATUS_FILTERS.map((s) => ({ code: s.code, label: s.label }))}
+          active={activeStatuses}
+          onToggle={toggleStatus}
+        />
         <DecadeRail groups={groups} />
 
         <div className="mt-6 flex justify-end">
@@ -262,6 +315,9 @@ function BoardPage() {
                 onClaim={openChip}
                 photos={data.photosByYear}
                 rowIndex={i}
+                isDimmed={isDimmed}
+                matchCount={matchCount}
+                activeStatuses={activeStatuses}
               />
             ) : (
               <YearRow
@@ -271,6 +327,8 @@ function BoardPage() {
                 onClaim={openChip}
                 photos={data.photosByYear}
                 rowIndex={i}
+                matchCount={matchCount}
+                activeStatuses={activeStatuses}
               />
             ),
           )}
@@ -543,11 +601,29 @@ function DivisionFilter({
   onToggle: (code: string) => void;
 }) {
   return (
+    <FilterChips legend="Programs" options={filters} active={active} onToggle={onToggle} />
+  );
+}
+
+/** One neutral toggle row. Used by both the program filter and the status
+ *  filter so there is only ever one pattern. No gold: gold means attending. */
+function FilterChips({
+  legend,
+  options,
+  active,
+  onToggle,
+}: {
+  legend: string;
+  options: { code: string; label: string }[];
+  active: string[];
+  onToggle: (code: string) => void;
+}) {
+  return (
     <fieldset className="mt-2 flex flex-wrap gap-2">
       <legend className="label-caps mb-2" style={{ color: "var(--sterling)" }}>
-        Programs
+        {legend}
       </legend>
-      {filters.map((d) => {
+      {options.map((d) => {
         const on = active.includes(d.code);
         return (
           <label
@@ -622,11 +698,17 @@ function AnchorRow({
   onClaim,
   photos,
   rowIndex,
+  isDimmed,
+  matchCount,
+  activeStatuses,
 }: {
   people: BoardPerson[];
   onClaim: (person: BoardPerson) => void;
   photos: Record<string, BoardPhoto>;
   rowIndex: number;
+  isDimmed: (p: BoardPerson) => boolean;
+  matchCount: (list: BoardPerson[]) => number;
+  activeStatuses: string[];
 }) {
   const sorted = [...people].sort((a, b) =>
     `${a.last_name ?? a.first_name}`.localeCompare(`${b.last_name ?? b.first_name}`),
@@ -655,17 +737,21 @@ function AnchorRow({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap content-start items-start gap-2">
           {sorted.map((person) => (
-            <NameChip key={person.id} person={person} dimmed={false} onClick={onClaim} />
+            <NameChip key={person.id} person={person} dimmed={isDimmed(person)} onClick={onClaim} />
           ))}
         </div>
-        {claimed === 0 && <EmptyPrompt label={String(sorted[0]?.board_year ?? 1978)} />}
+        {matchCount(sorted) === 0 && (
+          <EmptyPrompt
+            copy={emptyCopy(String(sorted[0]?.board_year ?? 1978), activeStatuses)}
+          />
+        )}
       </div>
     </section>
   );
 }
 
 /** A prompt, not a chip: it sits under the chip wall on its own line. */
-function EmptyPrompt({ label }: { label: string }) {
+function EmptyPrompt({ copy }: { copy: string }) {
   return (
     <NotchedBox
       corners={NOTCH_ALL}
@@ -674,7 +760,7 @@ function EmptyPrompt({ label }: { label: string }) {
       className="mt-4 w-full max-w-[560px]"
     >
       <p className="px-4 py-3" style={{ color: "var(--sterling)", fontSize: 13 }}>
-        Nobody from {label} has claimed yet. Be the first.
+        {copy}
       </p>
     </NotchedBox>
   );
@@ -686,12 +772,16 @@ function YearRow({
   onClaim,
   photos,
   rowIndex,
+  matchCount,
+  activeStatuses,
 }: {
   group: YearGroup;
   isDimmed: (p: BoardPerson) => boolean;
   onClaim: (person: BoardPerson) => void;
   photos: Record<string, BoardPhoto>;
   rowIndex: number;
+  matchCount: (list: BoardPerson[]) => number;
+  activeStatuses: string[];
 }) {
   const claimed = claimedCount(group.people);
   const shot = pickPhoto(photos, group.years);
@@ -721,7 +811,9 @@ function YearRow({
             <NameChip key={person.id} person={person} dimmed={isDimmed(person)} onClick={onClaim} />
           ))}
         </div>
-        {claimed === 0 && <EmptyPrompt label={group.label} />}
+        {matchCount(group.people) === 0 && (
+          <EmptyPrompt copy={emptyCopy(group.label, activeStatuses)} />
+        )}
       </div>
     </section>
   );
