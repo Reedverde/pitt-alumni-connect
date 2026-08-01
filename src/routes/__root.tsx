@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { captureRsvpSource } from "../lib/rsvp-src";
+import { SAFE_STORAGE_SNIPPET } from "../lib/safe-storage";
 import { OG_IMAGE, SITE_ORIGIN } from "../lib/site-url";
 
 function NotFoundComponent() {
@@ -120,6 +121,10 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        {/* Must run before any module script. In iOS in-app webviews, Private
+            Browsing and Lockdown Mode, reading window.localStorage throws and
+            kills hydration, leaving a page whose buttons do nothing. */}
+        <script dangerouslySetInnerHTML={{ __html: SAFE_STORAGE_SNIPPET }} />
         <HeadContent />
       </head>
       <body>
