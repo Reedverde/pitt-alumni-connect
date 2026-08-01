@@ -251,7 +251,7 @@ export async function logRsvpEvent(
       action,
       table_name: "rsvps",
       record_id: personId,
-      after,
+      after: after as never,
     });
   } catch (err) {
     console.error(`[rsvp] could not record ${action}: ${String(err)}`);
