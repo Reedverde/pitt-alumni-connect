@@ -50,6 +50,7 @@ export function NameChip({
   const teamPart = person.team_label ? `, ${person.team_label}` : "";
   const isUnclaimed = person.state === "unclaimed";
   const clickable = Boolean(onClick) && person.state !== "memorial";
+  const isCurrent = person.is_current === true;
 
   return (
     <button
@@ -57,7 +58,7 @@ export function NameChip({
       id={`person-${person.id}`}
       disabled={!clickable}
       onClick={clickable ? () => onClick?.(person) : undefined}
-      aria-label={`${display}${teamPart}, ${person.board_year}, ${STATE_WORDS[person.state]}${
+      aria-label={`${display}${teamPart}${isCurrent ? ", current player" : ""}, ${person.board_year}, ${STATE_WORDS[person.state]}${
         clickable ? (isUnclaimed ? ". Claim this name" : ". Update this answer") : ""
       }`}
       className="group inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full transition-[opacity,border-color] duration-150"
@@ -79,6 +80,11 @@ export function NameChip({
       {person.team_label && (
         <span style={{ fontSize: 10, letterSpacing: "0.1em", opacity: 0.55, textTransform: "uppercase" }}>
           {person.team_label}
+        </span>
+      )}
+      {isCurrent && (
+        <span style={{ fontSize: 10, letterSpacing: "0.1em", opacity: 0.55, textTransform: "uppercase" }}>
+          Current
         </span>
       )}
       <span style={{ fontFamily: '"Space Mono", monospace', fontSize: 11, opacity: 0.7 }}>{person.board_year}</span>

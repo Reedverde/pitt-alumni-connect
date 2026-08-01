@@ -175,8 +175,9 @@ function AlumniPage() {
               This year it is a crawl through Oakland and the Pitt away game on a screen.
             </p>
             <p className="mt-4" style={body}>
-              Saturday is the cookout, with the field and the playground right there. Sunday is a
-              game nobody has to play in.
+              Saturday is the cookout, with the field and the playground right there. Sunday is
+              currents versus alumni. Play if you want to, watch if you don't. We just want you
+              there.
             </p>
           </Measure>
           <PhotoSlot

@@ -12,6 +12,7 @@ export type BoardPerson = {
   board_year: number;
   board_division: string | null;
   team_label: string | null;
+  is_current: boolean;
   state: "unclaimed" | "claimed" | "going" | "maybe" | "memorial";
 };
 
@@ -46,7 +47,9 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
   const [peopleRes, countsRes, divisionsRes, photosRes] = await Promise.all([
     supabase
       .from("board_people")
-      .select("id, first_name, last_name, played_as, deceased, board_year, board_division, team_label, state")
+      .select(
+        "id, first_name, last_name, played_as, deceased, board_year, board_division, team_label, state, is_current",
+      )
       .order("board_year", { ascending: false })
       .limit(2000),
     supabase.from("board_year_counts").select("board_year, total, claimed, going"),

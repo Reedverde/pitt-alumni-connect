@@ -194,7 +194,7 @@ function WeekendPage() {
             Times marked TBD are still being set. RSVP now and we'll email you when they lock.
           </p>
           <p className="mt-3 max-w-[640px]" style={{ fontSize: 16, opacity: 0.86 }}>
-            Spectators welcome. Nobody plays who doesn't want to.
+            Currents versus alumni. Play if you want to, watch if you don't. We just want you there.
           </p>
           </div>
         </NotchedBox>
