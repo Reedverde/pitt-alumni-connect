@@ -370,14 +370,6 @@ function Hero({
           src={heroPeak.url}
           alt="Pitt Ultimate players piled together on the sideline"
           className="pointer-events-none absolute inset-x-0 bottom-0 z-10 w-full select-none"
-          style={{
-            filter: [
-              "drop-shadow(0 -6px 0 var(--pure-white))",
-              "drop-shadow(6px 0 0 var(--pure-white))",
-              "drop-shadow(-6px 0 0 var(--pure-white))",
-              "drop-shadow(0 6px 0 var(--pure-white))",
-            ].join(" "),
-          }}
         />
       </div>
 
