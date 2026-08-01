@@ -613,7 +613,7 @@ export async function sendMagicLinkEmail(opts: {
     // same one switch is consulted before any of it runs. The decision itself
     // lives in outboundEmailMode(); this is not a second policy.
     if (!TRANSACTIONAL_KINDS.has(kind) && (await outboundEmailMode()) !== "all") {
-      const reason = `outbound email is paused (transactional_only); "${kind}" is not a sign-in link`;
+      const reason = `outbound email is paused (transactional_only); "${kind}" is not permitted while paused`;
       await logSend({
         personId: opts.personId,
         kind,
@@ -625,6 +625,25 @@ export async function sendMagicLinkEmail(opts: {
       });
       await logAuthAttempt({ email: to, personId: opts.personId, outcome: "blocked", detail: reason });
       return { sent: false, provider: "none", messageId: null, reason };
+    }
+
+    // Forward only. A confirmation exists to acknowledge an answer that was
+    // just written, so an answer older than the cutoff is never confirmed.
+    if (kind === "rsvp_confirmation") {
+      const gate = await rsvpConfirmationAllowed(opts.personId);
+      if (!gate.ok) {
+        const reason = `rsvp confirmation refused: ${gate.reason}`;
+        await logSend({
+          personId: opts.personId,
+          kind,
+          toEmail: to,
+          provider: "none",
+          providerMessageId: null,
+          status: "blocked",
+          error: reason,
+        });
+        return { sent: false, provider: "none", messageId: null, reason };
+      }
     }
 
     if (await isSuppressed(to)) {
