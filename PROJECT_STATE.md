@@ -83,6 +83,42 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 
 **Duplicate-name rulings** from the previous session stand. Nothing merged.
 
+## 2026-08-01
+
+BUILD CHANGES SHIPPED TODAY (all deployed):
+
+1. **WebKit and in-app-webview failure fixed.** The Supabase client read `window.localStorage` unguarded at init, which throws `SecurityError` in iOS webviews, Private Browsing and Lockdown Mode, so React never hydrated and every button was dead with no console error. Storage access is now guarded through `src/lib/safe-storage.ts`. Two related fixes: build target moved to Safari 15 in `vite.config.ts` so Tailwind stops emitting raw `oklch()` colors older iOS cannot render, and `Object.hasOwn` is polyfilled for the router in the same inline script.
+
+2. **Navigation trap fixed.** `/me` previously rendered a bare main with no header or footer, so Sign out was the only way off the page. `/me` now carries the full site chrome. The header slot that read SIGN IN now shows the person's first name linking to `/me`, and Sign out moved to the bottom of `/me`.
+
+3. **Board status filter added.** A "Filter by" row of three toggles: GOING, MAYBE, CLAIMED. There is deliberately no filter for "not this year"; declining is never publicly listable. Toggling now HIDES non-matching people rather than dimming them. The Programs filter still dims.
+
+4. **Flat list mode.** Whenever the board is filtered, it stops grouping by year entirely and renders a single wall of matching name chips with a summary line such as "5 GOING". No year rows, no seals, no decade rail, no per-year empty prompts. The unfiltered board is unchanged.
+
+5. **Going counter is now tappable.** Tapping the going figure isolates the board to people who are coming and shows a "Showing N going. Show everyone." reset line. Works signed out; no account is needed to filter or to see who is coming.
+
+6. **Signed-in status bar.** A concrete-filled bar between the hero and the counter bar, signed in only, reading YOUR STATUS, CLAIMED with a check, and the three answer buttons with the current answer filled royal. A single gold dot appears next to GOING only when that is the person's answer.
+
+7. **`/me` now states the answer in words** as "YOUR ANSWER: GOING" rather than relying on button fill colour alone, carries `aria-pressed` on all three buttons, and no longer renders a duplicate set of status buttons.
+
+8. **Hero cleanup.** The signed-in "Your record / You're coming" row was removed as duplicated by the status bar. Note as a known issue: the hero now shows the CLAIM YOUR NAME button to signed-in people as well, which is wrong for someone who has already claimed. Unresolved.
+
+9. **Nav logo.** The Pitt shield now appears in the header. Record this as a deliberate decision by Reed that overrides the previous DESIGN.md rule restricting the shield to the footer, and note the known consequence that gold now appears outside the attending state.
+
+10. **OG social card added** at `public/og-card.jpg` with absolute-URL meta tags, origin held in one constant at `src/lib/site-url.ts`.
+
+DATABASE CHANGE:
+
+The `sequences` row keyed `t_minus_42` now has `offset_days = -45`. The key name was deliberately not renamed because it may be referenced in cron code. Record this mismatch as a known issue.
+
+KNOWN ISSUES TO RECORD:
+
+- Sequence key `t_minus_42` now carries offset `-45`.
+- Hero shows CLAIM YOUR NAME to signed-in visitors.
+- The agent sandbox browser cannot render authenticated routes, so `/me` and the signed-in status bar are code-verified but not visually verified.
+- Four canonical docs still describe a `/why` route that does not exist; that content lives at `/alumni`.
+
+
 ## KEY DECISIONS
 
 - Saying whether you are coming IS the signup. There is no separate account creation step and never a bare "Sign up" button, because a second step is where a 50 year old alum drops out
