@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { useSessionPerson } from "@/lib/useSessionPerson";
+import pittUltimateShield from "@/assets/pitt-ultimate-shield.png.asset.json";
 
 const linkStyle = { color: "var(--sterling)" } as const;
 const activeStyle = { color: "var(--pitt-royal)" } as const;
