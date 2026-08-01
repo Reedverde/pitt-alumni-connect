@@ -48,10 +48,10 @@ function IdentitySlot() {
 export function SiteNav(_props: { onClaim?: () => void }) {
   return (
     <nav
-      className="sticky top-0 z-30 flex h-[72px] items-center gap-3 px-5"
+      className="sticky top-0 z-30 flex h-[72px] items-center gap-2 px-3 sm:gap-3 sm:px-5"
       style={{ background: "var(--pure-white)", borderBottom: "1px solid var(--chalk)" }}
     >
-      <Link to="/" className="flex items-center gap-[10px]" aria-label="Pitt Club Ultimate">
+      <Link to="/" className="flex items-center gap-[6px] sm:gap-[10px]" aria-label="Pitt Club Ultimate">
         {/* Seal ring with monogram. The shield PNG belongs to the footer. */}
         <span
           aria-hidden="true"
@@ -72,7 +72,7 @@ export function SiteNav(_props: { onClaim?: () => void }) {
           style={{
             fontFamily: '"Archivo", sans-serif',
             fontWeight: 800,
-            fontSize: "clamp(13px, 3.6vw, 20px)",
+            fontSize: "clamp(12px, 3.2vw, 20px)",
             letterSpacing: "-0.02em",
             textTransform: "uppercase",
             color: "var(--pitt-royal)",
@@ -83,7 +83,7 @@ export function SiteNav(_props: { onClaim?: () => void }) {
         </span>
       </Link>
 
-      <span className="ml-3 flex items-center gap-4 sm:ml-4">
+      <span className="ml-1 flex items-center gap-2.5 sm:ml-4 sm:gap-4">
         <Link to="/" className="label-caps" style={linkStyle} activeProps={{ style: activeStyle }} activeOptions={{ exact: true }}>
           Board
         </Link>
@@ -95,7 +95,7 @@ export function SiteNav(_props: { onClaim?: () => void }) {
         </Link>
       </span>
 
-      <span className="ml-auto flex items-center gap-3">
+      <span className="ml-auto flex items-center gap-3 pl-1">
         <IdentitySlot />
       </span>
     </nav>
