@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useState, type CSSProperties } from "react";
 
@@ -133,6 +133,7 @@ function timeLabel(event: ScheduleEvent) {
 function WeekendPage() {
   const { data } = useSuspenseQuery(weekendQuery);
   const [claimOpen, setClaimOpen] = useState(false);
+  const navigate = useNavigate();
   const season = resolveSeason(data.edition, null, todayInNewYork());
   const edition = season.edition;
   const events = data.events;
@@ -294,7 +295,11 @@ function WeekendPage() {
         open={claimOpen}
         target={null}
         onClose={() => setClaimOpen(false)}
-        onClaimed={() => setClaimOpen(false)}
+        onClaimed={(personId) => {
+          setClaimOpen(false);
+          // Never a dead end: the payoff is your own chip on the board.
+          void navigate({ to: "/", hash: personId ? `person-${personId}` : undefined });
+        }}
       />
     </div>
   );

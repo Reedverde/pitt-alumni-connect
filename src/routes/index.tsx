@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 
 import { getBoard, type BoardPerson, type BoardPhoto } from "@/lib/board.functions";
@@ -112,6 +112,7 @@ function BoardPage() {
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
   const [panelPerson, setPanelPerson] = useState<BoardPerson | null>(null);
+  const [focusPersonId, setFocusPersonId] = useState<string | null>(null);
   const navigate = useNavigate();
   const session = useSessionPerson();
 
@@ -185,6 +186,20 @@ function BoardPage() {
   }, [groups, anchorPeople, newestFirst]);
 
   const clock = countdown(data.edition, data.nextEdition);
+
+  // Coming back from a claim, or arriving from another page with #person-<id>:
+  // scroll the person's own chip into view once the board has re-rendered.
+  useEffect(() => {
+    const fromHash = window.location.hash.startsWith("#person-")
+      ? window.location.hash.slice("#person-".length)
+      : null;
+    const id = focusPersonId ?? fromHash;
+    if (!id) return;
+    const node = document.getElementById(`person-${id}`);
+    if (!node) return;
+    node.scrollIntoView({ behavior: "smooth", block: "center" });
+    node.focus({ preventScroll: true });
+  }, [focusPersonId, people]);
 
   const toggle = (code: string) =>
     setActive((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
@@ -271,7 +286,11 @@ function BoardPage() {
         open={claimOpen}
         target={claimTarget}
         onClose={() => setClaimOpen(false)}
-        onClaimed={() => queryClient.invalidateQueries({ queryKey: ["board"] })}
+        onClaimed={(personId) => {
+          void queryClient.invalidateQueries({ queryKey: ["board"] });
+          // The chip is the payoff: bring them back to it, updated.
+          if (personId) setFocusPersonId(personId);
+        }}
       />
     </div>
   );

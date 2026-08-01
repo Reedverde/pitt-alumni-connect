@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 
@@ -23,6 +23,20 @@ import { PartySizeStepper } from "@/components/claim/PartySizeStepper";
 import { STATUS_LABELS, personDisplayName, type RsvpStatus } from "@/lib/rsvp-types";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { FieldLabel, Notice, fieldStyle, primaryButton, secondaryButton } from "@/components/claim/ui";
+import { SiteNav } from "@/components/SiteNav";
+import { SiteFooter } from "@/components/SiteFooter";
+
+/** The attendance page is a normal page of the site: header, content, footer.
+ *  Signing out must never be the only way off it. */
+function Chrome({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ background: "var(--field-white)" }} className="flex min-h-screen flex-col">
+      <SiteNav />
+      {children}
+      <SiteFooter />
+    </div>
+  );
+}
 
 const DIVISIONS = [
   { code: "MENS_A", label: "En Sabah Nur" },
@@ -107,9 +121,11 @@ function MePage() {
 
   if (!profile) {
     return (
-      <main className="mx-auto max-w-[720px] px-5 py-16">
-        <p style={{ color: "var(--sterling)" }}>{error ?? "Loading your record…"}</p>
-      </main>
+      <Chrome>
+        <main className="mx-auto w-full max-w-[720px] flex-1 px-5 py-16">
+          <p style={{ color: "var(--sterling)" }}>{error ?? "Loading your record…"}</p>
+        </main>
+      </Chrome>
     );
   }
 
@@ -117,7 +133,8 @@ function MePage() {
 
   if (!person) {
     return (
-      <main className="mx-auto max-w-[720px] px-5 py-16">
+      <Chrome>
+        <main className="mx-auto w-full max-w-[720px] flex-1 px-5 py-16">
         <h1 className="display-30" style={{ color: "var(--sabah-black)" }}>
           WE CAN'T FIND YOUR RECORD
         </h1>
@@ -130,16 +147,27 @@ function MePage() {
             Go to the board
           </button>
         </div>
-      </main>
+        </main>
+      </Chrome>
     );
   }
 
   return (
-    <main className="mx-auto w-full max-w-[720px] px-5 py-12">
+    <Chrome>
+    <main className="mx-auto w-full max-w-[720px] flex-1 px-5 py-12">
       <SlashEyebrow>Your record</SlashEyebrow>
       <h1 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
         {personDisplayName(person).toUpperCase()}
       </h1>
+      <p className="mt-2">
+        <Link
+          to="/"
+          hash={`person-${person.id}`}
+          style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 13, color: "var(--sterling)" }}
+        >
+          See your chip on the board
+        </Link>
+      </p>
       {status && (
         <p role="status" className="mt-3" style={{ fontSize: 13, color: "var(--steel-ink)" }}>
           {status}
@@ -416,6 +444,7 @@ function MePage() {
         </button>
       </Section>
     </main>
+    </Chrome>
   );
 }
 

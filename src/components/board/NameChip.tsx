@@ -54,6 +54,7 @@ export function NameChip({
   return (
     <button
       type="button"
+      id={`person-${person.id}`}
       disabled={!clickable}
       onClick={clickable ? () => onClick?.(person) : undefined}
       aria-label={`${display}${teamPart}, ${person.board_year}, ${STATE_WORDS[person.state]}${
