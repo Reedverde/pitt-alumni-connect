@@ -294,7 +294,11 @@ function WeekendPage() {
         open={claimOpen}
         target={null}
         onClose={() => setClaimOpen(false)}
-        onClaimed={() => setClaimOpen(false)}
+        onClaimed={(personId) => {
+          setClaimOpen(false);
+          // Never a dead end: the payoff is your own chip on the board.
+          window.location.href = personId ? `/#person-${personId}` : "/";
+        }}
       />
     </div>
   );
