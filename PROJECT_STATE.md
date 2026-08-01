@@ -110,8 +110,6 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 
 ## ENV / SECRETS
 
-## ENV / SECRETS
-
 Client side, configured:
 - VITE_SUPABASE_URL, VITE_SUPABASE_PROJECT_ID, VITE_SUPABASE_PUBLISHABLE_KEY
 
