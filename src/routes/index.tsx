@@ -700,11 +700,17 @@ function AnchorRow({
   onClaim,
   photos,
   rowIndex,
+  isDimmed,
+  matchCount,
+  activeStatuses,
 }: {
   people: BoardPerson[];
   onClaim: (person: BoardPerson) => void;
   photos: Record<string, BoardPhoto>;
   rowIndex: number;
+  isDimmed: (p: BoardPerson) => boolean;
+  matchCount: (list: BoardPerson[]) => number;
+  activeStatuses: string[];
 }) {
   const sorted = [...people].sort((a, b) =>
     `${a.last_name ?? a.first_name}`.localeCompare(`${b.last_name ?? b.first_name}`),
@@ -733,17 +739,21 @@ function AnchorRow({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap content-start items-start gap-2">
           {sorted.map((person) => (
-            <NameChip key={person.id} person={person} dimmed={false} onClick={onClaim} />
+            <NameChip key={person.id} person={person} dimmed={isDimmed(person)} onClick={onClaim} />
           ))}
         </div>
-        {claimed === 0 && <EmptyPrompt label={String(sorted[0]?.board_year ?? 1978)} />}
+        {matchCount(sorted) === 0 && (
+          <EmptyPrompt
+            copy={emptyCopy(String(sorted[0]?.board_year ?? 1978), activeStatuses)}
+          />
+        )}
       </div>
     </section>
   );
 }
 
 /** A prompt, not a chip: it sits under the chip wall on its own line. */
-function EmptyPrompt({ label }: { label: string }) {
+function EmptyPrompt({ copy }: { copy: string }) {
   return (
     <NotchedBox
       corners={NOTCH_ALL}
@@ -752,7 +762,7 @@ function EmptyPrompt({ label }: { label: string }) {
       className="mt-4 w-full max-w-[560px]"
     >
       <p className="px-4 py-3" style={{ color: "var(--sterling)", fontSize: 13 }}>
-        Nobody from {label} has claimed yet. Be the first.
+        {copy}
       </p>
     </NotchedBox>
   );
@@ -764,12 +774,16 @@ function YearRow({
   onClaim,
   photos,
   rowIndex,
+  matchCount,
+  activeStatuses,
 }: {
   group: YearGroup;
   isDimmed: (p: BoardPerson) => boolean;
   onClaim: (person: BoardPerson) => void;
   photos: Record<string, BoardPhoto>;
   rowIndex: number;
+  matchCount: (list: BoardPerson[]) => number;
+  activeStatuses: string[];
 }) {
   const claimed = claimedCount(group.people);
   const shot = pickPhoto(photos, group.years);
@@ -799,7 +813,9 @@ function YearRow({
             <NameChip key={person.id} person={person} dimmed={isDimmed(person)} onClick={onClaim} />
           ))}
         </div>
-        {claimed === 0 && <EmptyPrompt label={group.label} />}
+        {matchCount(group.people) === 0 && (
+          <EmptyPrompt copy={emptyCopy(group.label, activeStatuses)} />
+        )}
       </div>
     </section>
   );
