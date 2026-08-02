@@ -60,7 +60,9 @@ export function NameChip({
       id={`person-${person.id}`}
       disabled={!clickable}
       onClick={clickable ? () => onClick?.(person) : undefined}
-      aria-label={`${display}${teamPart}${isCoach ? ", coach" : isCurrent ? ", current player" : ""}, ${person.board_year}, ${STATE_WORDS[person.state]}${
+      aria-label={`${display}${teamPart}${isCoach ? ", coach" : isCurrent ? ", current player" : ""}${
+        person.board_year > 0 ? `, ${person.board_year}` : ""
+      }, ${STATE_WORDS[person.state]}${
         clickable ? (isUnclaimed ? ". Claim this name" : ". Update this answer") : ""
       }`}
       className="group inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full transition-[opacity,border-color] duration-150"
@@ -89,7 +91,11 @@ export function NameChip({
           {tag}
         </span>
       )}
-      <span style={{ fontFamily: '"Space Mono", monospace', fontSize: 11, opacity: 0.7 }}>{person.board_year}</span>
+      {person.board_year > 0 && (
+        <span style={{ fontFamily: '"Space Mono", monospace', fontSize: 11, opacity: 0.7 }}>
+          {person.board_year}
+        </span>
+      )}
       {isUnclaimed && (
         <span
           aria-hidden="true"
