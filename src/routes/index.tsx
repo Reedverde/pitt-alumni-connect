@@ -174,7 +174,8 @@ function BoardPage() {
       })),
     [data.divisions],
   );
-  const [active, setActive] = useState<string[]>(() => data.divisions.map((d) => d.code));
+  // Single-select: null means every program.
+  const [divisionFilter, setDivisionFilter] = useState<string | null>(null);
   // Single-select: null means "everyone", the normal year-row board.
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [newestFirst, setNewestFirst] = useState(true);
@@ -270,8 +271,8 @@ function BoardPage() {
     node.focus({ preventScroll: true });
   }, [focusPersonId, people]);
 
-  const toggle = (code: string) =>
-    setActive((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
+  const pickDivision = (code: string) =>
+    setDivisionFilter((prev) => (prev === code ? null : code));
 
   const pickStatus = (code: string) =>
     setStatusFilter((prev) => (prev === code ? null : code));
@@ -281,19 +282,14 @@ function BoardPage() {
 
   const exitIsolate = () => setStatusFilter(null);
 
-  // Division AND status compose. A dimmed chip stays on the wall, so the board
-  // never visibly shrinks.
-  const matchesStatus = (person: BoardPerson) =>
-    person.state === "unclaimed" || person.state === "memorial"
-      ? true
-      : effStatuses.includes(person.state);
+  // Program AND status compose, and both hide rather than dim.
+  const isDimmed = (_person: BoardPerson) => false;
 
-  const isDimmed = (person: BoardPerson) =>
-    (person.board_division !== null && !active.includes(person.board_division)) ||
-    !matchesStatus(person);
+  const matchesDivision = (person: BoardPerson) =>
+    divisionFilter === null || person.board_division === divisionFilter;
 
-  // The status row hides. Programs keep dimming.
   const isHidden = (person: BoardPerson) => {
+    if (!matchesDivision(person)) return true;
     if (!filtered) return false;
     // Filtering by status means a list of people, not the wall.
     return !effStatuses.includes(person.state);
@@ -304,7 +300,7 @@ function BoardPage() {
   const matchCount = (list: BoardPerson[]) =>
     list.filter(
       (p) =>
-        (p.board_division === null || active.includes(p.board_division)) &&
+        matchesDivision(p) &&
         p.state !== "unclaimed" &&
         p.state !== "memorial" &&
         effStatuses.includes(p.state),
@@ -376,7 +372,12 @@ function BoardPage() {
           </p>
         </header>
 
-        <DivisionFilter filters={filters} active={active} onToggle={toggle} />
+        <StatusRadioChips
+          legend="Programs"
+          options={filters}
+          value={divisionFilter}
+          onPick={pickDivision}
+        />
         <StatusRadioChips
           legend="Filter by"
           options={STATUS_FILTERS.map((s) => ({ code: s.code, label: s.label }))}
