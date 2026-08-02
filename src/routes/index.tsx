@@ -29,9 +29,13 @@ import {
   resolveSeason,
 } from "@/lib/edition-format";
 
+/** The server already rendered this data. Refetching it the instant the page
+ *  hydrates puts a cold Worker on the critical path of a first ever visit,
+ *  and a single transient failure there tears the whole board down. */
 const boardQuery = queryOptions({
   queryKey: ["board"],
   queryFn: () => getBoard(),
+  staleTime: 60_000,
 });
 
 /** A year ending in 00 shows all four digits: "00" reads as a placeholder. */
@@ -51,6 +55,7 @@ function pickPhoto(photos: Record<string, BoardPhoto>, years: number[]) {
 const weekendQuery = queryOptions({
   queryKey: ["weekend-page"],
   queryFn: () => getWeekendPage(),
+  staleTime: 60_000,
 });
 
 export const Route = createFileRoute("/")({
@@ -78,16 +83,32 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  errorComponent: () => (
+  errorComponent: BoardError,
+  component: BoardPage,
+});
+
+/** Only reached after the automatic retries have all failed. */
+function BoardError({ reset }: { error: Error; reset: () => void }) {
+  const router = useRouter();
+  return (
     <main className="mx-auto max-w-[560px] px-5 py-24">
       <h1 className="display-30">The board didn't load</h1>
       <p className="mt-3 text-sm" style={{ color: "var(--sterling)" }}>
-        Refresh the page and it should come back.
+        Something went wrong on our end. Try again and it should come back.
       </p>
+      <button
+        type="button"
+        className="mt-6 text-sm underline"
+        onClick={() => {
+          void router.invalidate();
+          reset();
+        }}
+      >
+        Try again
+      </button>
     </main>
-  ),
-  component: BoardPage,
-});
+  );
+}
 
 const DIVISION_CHIP_LABELS: Record<string, string> = {
   MENS_A: "Sabah",
