@@ -707,69 +707,8 @@ function GoldDot() {
   );
 }
 
-function DivisionFilter({
-  filters,
-  active,
-  onToggle,
-}: {
-  filters: { code: string; label: string }[];
-  active: string[];
-  onToggle: (code: string) => void;
-}) {
-  return (
-    <FilterChips legend="Programs" options={filters} active={active} onToggle={onToggle} />
-  );
-}
-
-/** One neutral toggle row. Used by both the program filter and the status
+/** One neutral radio row. Used by both the program filter and the status
  *  filter so there is only ever one pattern. No gold: gold means attending. */
-function FilterChips({
-  legend,
-  options,
-  active,
-  onToggle,
-}: {
-  legend: string;
-  options: { code: string; label: string }[];
-  active: string[];
-  onToggle: (code: string) => void;
-}) {
-  return (
-    <fieldset className="mt-2 flex flex-wrap gap-2">
-      <legend className="label-caps mb-2" style={{ color: "var(--sterling)" }}>
-        {legend}
-      </legend>
-      {options.map((d) => {
-        const on = active.includes(d.code);
-        return (
-          <label
-            key={d.code}
-            className="cursor-pointer rounded-full px-3 py-2"
-            style={{
-              background: on ? "var(--concrete)" : "transparent",
-              border: on ? "1px solid transparent" : "1px solid var(--chalk)",
-              color: on ? "var(--steel-ink)" : "var(--sterling)",
-              fontSize: 12,
-              fontWeight: 500,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-            }}
-          >
-            <input
-              type="checkbox"
-              className="sr-only"
-              checked={on}
-              onChange={() => onToggle(d.code)}
-            />
-            {d.label}
-          </label>
-        );
-      })}
-    </fieldset>
-  );
-}
-
-/** Derived from the data on the wall, so the last band never freezes on a year. */
 function StatusRadioChips({
   legend,
   options,
