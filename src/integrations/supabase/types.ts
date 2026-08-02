@@ -29,6 +29,13 @@ export type Database = {
             foreignKeyName: "admins_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: true
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admins_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
             referencedRelation: "board_people"
             referencedColumns: ["id"]
           },
@@ -105,6 +112,13 @@ export type Database = {
             foreignKeyName: "audit_log_actor_person_id_fkey"
             columns: ["actor_person_id"]
             isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_log_actor_person_id_fkey"
+            columns: ["actor_person_id"]
+            isOneToOne: false
             referencedRelation: "board_people"
             referencedColumns: ["id"]
           },
@@ -154,6 +168,13 @@ export type Database = {
             foreignKeyName: "auth_attempts_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auth_attempts_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
             referencedRelation: "board_people"
             referencedColumns: ["id"]
           },
@@ -199,6 +220,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "confirmation_sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "confirmation_sends_person_id_fkey"
             columns: ["person_id"]
@@ -278,6 +306,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "duplicate_rulings_ruled_by_fkey"
+            columns: ["ruled_by"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "duplicate_rulings_ruled_by_fkey"
             columns: ["ruled_by"]
@@ -436,6 +471,13 @@ export type Database = {
             foreignKeyName: "identities_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "identities_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
             referencedRelation: "board_people"
             referencedColumns: ["id"]
           },
@@ -475,6 +517,13 @@ export type Database = {
           person_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "magic_link_issues_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "magic_link_issues_person_id_fkey"
             columns: ["person_id"]
@@ -570,6 +619,13 @@ export type Database = {
             foreignKeyName: "people_deceased_confirmed_by_fkey"
             columns: ["deceased_confirmed_by"]
             isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_deceased_confirmed_by_fkey"
+            columns: ["deceased_confirmed_by"]
+            isOneToOne: false
             referencedRelation: "board_people"
             referencedColumns: ["id"]
           },
@@ -634,6 +690,13 @@ export type Database = {
             foreignKeyName: "photo_slots_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_slots_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
             referencedRelation: "board_people"
             referencedColumns: ["id"]
           },
@@ -692,6 +755,13 @@ export type Database = {
             foreignKeyName: "photos_uploaded_by_fkey"
             columns: ["uploaded_by"]
             isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photos_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
             referencedRelation: "board_people"
             referencedColumns: ["id"]
           },
@@ -731,6 +801,13 @@ export type Database = {
           note?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "preapproved_emails_consumed_by_fkey"
+            columns: ["consumed_by"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "preapproved_emails_consumed_by_fkey"
             columns: ["consumed_by"]
@@ -789,6 +866,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "editions"
             referencedColumns: ["event_year"]
+          },
+          {
+            foreignKeyName: "rsvps_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "rsvps_person_id_fkey"
@@ -872,6 +956,13 @@ export type Database = {
           to_email?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sends_person_id_fkey"
             columns: ["person_id"]
@@ -968,6 +1059,13 @@ export type Database = {
             foreignKeyName: "stints_confirmed_by_fkey"
             columns: ["confirmed_by"]
             isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stints_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
             referencedRelation: "board_people"
             referencedColumns: ["id"]
           },
@@ -991,6 +1089,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "divisions"
             referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "stints_person_id_fkey"
@@ -1054,6 +1159,13 @@ export type Database = {
             foreignKeyName: "suggestions_peer_verified_by_fkey"
             columns: ["peer_verified_by"]
             isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestions_peer_verified_by_fkey"
+            columns: ["peer_verified_by"]
+            isOneToOne: false
             referencedRelation: "board_people"
             referencedColumns: ["id"]
           },
@@ -1075,6 +1187,13 @@ export type Database = {
             foreignKeyName: "suggestions_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
             referencedRelation: "board_people"
             referencedColumns: ["id"]
           },
@@ -1091,6 +1210,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "person_board_placement"
             referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "suggestions_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "suggestions_submitted_by_fkey"
@@ -1213,6 +1339,13 @@ export type Database = {
             foreignKeyName: "verifications_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verifications_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
             referencedRelation: "board_people"
             referencedColumns: ["id"]
           },
@@ -1229,6 +1362,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "person_board_placement"
             referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "verifications_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "verifications_verified_by_fkey"
@@ -1255,6 +1395,17 @@ export type Database = {
       }
     }
     Views: {
+      board_coaches: {
+        Row: {
+          deceased: boolean | null
+          first_name: string | null
+          id: string | null
+          last_name: string | null
+          played_as: string | null
+          state: string | null
+        }
+        Relationships: []
+      }
       board_people: {
         Row: {
           board_division: string | null
@@ -1298,6 +1449,13 @@ export type Database = {
             foreignKeyName: "stints_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
             referencedRelation: "board_people"
             referencedColumns: ["id"]
           },
@@ -1334,6 +1492,13 @@ export type Database = {
           person_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "identities_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "identities_person_id_fkey"
             columns: ["person_id"]
