@@ -13,6 +13,7 @@ export type BoardPerson = {
   board_division: string | null;
   team_label: string | null;
   is_current: boolean;
+  is_coach: boolean;
   state: "unclaimed" | "claimed" | "going" | "maybe" | "memorial";
 };
 
@@ -48,7 +49,7 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
     supabase
       .from("board_people")
       .select(
-        "id, first_name, last_name, played_as, deceased, board_year, board_division, team_label, state, is_current",
+        "id, first_name, last_name, played_as, deceased, board_year, board_division, team_label, state, is_current, is_coach",
       )
       .order("board_year", { ascending: false })
       .limit(2000),
