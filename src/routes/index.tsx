@@ -795,16 +795,40 @@ function DecadeRail({ groups }: { groups: YearGroup[] }) {
   );
 }
 
-function AnchorRow({
+/** Coach-only people have no year to place them on, so they pin above the board. */
+function CoachesRow({
   people,
   onClaim,
-}: never) {
-  void people;
-  void onClaim;
-  return null;
+}: {
+  people: BoardPerson[];
+  onClaim: (person: BoardPerson) => void;
+}) {
+  const sorted = [...people].sort((a, b) =>
+    `${a.last_name ?? a.first_name}`.localeCompare(`${b.last_name ?? b.first_name}`),
+  );
+  return (
+    <section
+      id="coaches"
+      className="flex scroll-mt-[180px] flex-col gap-4 py-7 md:flex-row md:gap-8"
+      style={{ borderBottom: "1px solid var(--chalk)" }}
+    >
+      <div className="flex items-center gap-4 md:w-[240px] md:shrink-0 md:flex-col md:items-start md:gap-3">
+        <div className="year-numeral" style={{ color: "var(--sabah-black)" }}>
+          COACHES
+        </div>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap content-start items-start gap-2">
+          {sorted.map((person) => (
+            <NameChip key={person.id} person={person} dimmed={false} onClick={onClaim} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }
 
-function AnchorRowReal({
+function AnchorRow({
   people,
   onClaim,
   photos,
