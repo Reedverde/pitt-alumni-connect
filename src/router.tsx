@@ -1,5 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
+import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { routeTree } from "./routeTree.gen";
 
 export const getRouter = () => {
@@ -23,6 +24,11 @@ export const getRouter = () => {
     scrollRestoration: true,
     defaultPreloadStaleTime: 30_000,
   });
+
+  // Without this the server's query cache is thrown away, so every first visit
+  // fetches the whole board a second time from the browser. That second fetch,
+  // against a cold Worker, is what produced the "board didn't load" screen.
+  setupRouterSsrQueryIntegration({ router, queryClient });
 
   return router;
 };
