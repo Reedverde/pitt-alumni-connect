@@ -798,6 +798,15 @@ function DecadeRail({ groups }: { groups: YearGroup[] }) {
 function AnchorRow({
   people,
   onClaim,
+}: never) {
+  void people;
+  void onClaim;
+  return null;
+}
+
+function AnchorRowReal({
+  people,
+  onClaim,
   photos,
   rowIndex,
   isDimmed,
