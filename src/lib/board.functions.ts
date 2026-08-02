@@ -26,6 +26,8 @@ export type BoardPhoto = {
 
 export type BoardData = {
   people: BoardPerson[];
+  /** Coach-only people with no board year: they pin to their own row. */
+  coaches: BoardPerson[];
   totals: { total: number; claimed: number; going: number };
   divisions: { code: string; label: string }[];
   edition: EditionSummary;
@@ -45,7 +47,7 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
   const current = await loadCurrentEdition();
   const next = await loadNextPublishedEdition(current.event_year);
 
-  const [peopleRes, countsRes, divisionsRes, photosRes] = await Promise.all([
+  const [peopleRes, countsRes, divisionsRes, photosRes, coachesRes] = await Promise.all([
     supabase
       .from("board_people")
       .select(
@@ -61,6 +63,10 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
       .not("board_year", "is", null)
       .order("board_year", { ascending: true })
       .order("uploaded_at", { ascending: true }),
+    supabase
+      .from("board_coaches")
+      .select("id, first_name, last_name, played_as, deceased, state")
+      .limit(200),
   ]);
 
   if (peopleRes.error) throw peopleRes.error;
@@ -104,6 +110,19 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
 
   return {
     people: (peopleRes.data ?? []) as BoardPerson[],
+    coaches: ((coachesRes.data ?? []) as Array<Record<string, unknown>>).map((row) => ({
+      id: row.id as string,
+      first_name: row.first_name as string,
+      last_name: (row.last_name as string | null) ?? null,
+      played_as: (row.played_as as string | null) ?? null,
+      deceased: Boolean(row.deceased),
+      board_year: 0,
+      board_division: null,
+      team_label: null,
+      is_current: false,
+      is_coach: true,
+      state: row.state as BoardPerson["state"],
+    })),
     totals,
     divisions,
     edition,
