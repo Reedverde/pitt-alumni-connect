@@ -14,6 +14,10 @@ export type BoardPerson = {
   team_label: string | null;
   is_current: boolean;
   is_coach: boolean;
+  /** True when the person holds ANY coach or manager stint, even if they played. */
+  has_coached?: boolean;
+  /** Which word the tag shows when has_coached: coach outranks manager. */
+  coach_role?: "coach" | "manager" | null;
   /** Only set for the coaches and managers row: which word the chip tag shows. */
   role_label?: "coach" | "manager";
   /** Every program the person holds history in, for filtering only. The chip's
@@ -56,7 +60,7 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
     supabase
       .from("board_people")
       .select(
-        "id, first_name, last_name, played_as, deceased, board_year, board_division, team_label, state, is_current, is_coach, divisions",
+        "id, first_name, last_name, played_as, deceased, board_year, board_division, team_label, state, is_current, is_coach, divisions, has_coached, coach_role",
       )
       .order("board_year", { ascending: false })
       .limit(2000),
@@ -129,6 +133,8 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
       team_label: null,
       is_current: false,
       is_coach: true,
+      has_coached: true,
+      coach_role: row.role_label === "manager" ? "manager" : "coach",
       divisions: [],
       role_label: row.role_label === "manager" ? "manager" : "coach",
       state: row.state as BoardPerson["state"],
