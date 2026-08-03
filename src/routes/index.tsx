@@ -288,6 +288,12 @@ function BoardPage() {
   const pickDivision = (code: string) =>
     setDivisionFilter((prev) => (prev === code ? null : code));
 
+  // Light debounce so a fast typist does not re-filter 454 rows per keystroke.
+  useEffect(() => {
+    const id = setTimeout(() => setSearchQuery(searchInput), 160);
+    return () => clearTimeout(id);
+  }, [searchInput]);
+
   const pickStatus = (code: string) =>
     setStatusFilter((prev) => (prev === code ? null : code));
 
@@ -413,6 +419,14 @@ function BoardPage() {
           </p>
         </header>
 
+        <BoardSearch
+          value={searchInput}
+          onChange={setSearchInput}
+          onClear={() => {
+            setSearchInput("");
+            setSearchQuery("");
+          }}
+        />
         <StatusRadioChips
           legend="Programs"
           options={filters}
@@ -425,9 +439,9 @@ function BoardPage() {
           value={statusFilter}
           onPick={pickStatus}
         />
-        {!filtered && <DecadeRail groups={groups} />}
+        {!flatMode && <DecadeRail groups={groups} />}
 
-        {!filtered && (
+        {!flatMode && (
         <div className="mt-6 flex justify-end">
           <button
             type="button"
@@ -440,13 +454,16 @@ function BoardPage() {
         </div>
         )}
 
-        {filtered ? (
+        {flatMode ? (
           <div className="pt-6">
             <p
               className="label-caps"
+              aria-live="polite"
               style={{ fontFamily: '"Space Mono", monospace', color: "var(--sterling)" }}
             >
-              {flatPeople.length} {statusPhrase(phraseStatuses)}
+              {searching
+                ? `${flatPeople.length} MATCHING "${searchQuery.trim().toUpperCase()}"`
+                : `${flatPeople.length} ${statusPhrase(phraseStatuses)}`}
             </p>
             {flatPeople.length > 0 ? (
               <div className="mt-4 flex flex-wrap content-start items-start gap-2">
@@ -460,7 +477,13 @@ function BoardPage() {
                 ))}
               </div>
             ) : (
-              <EmptyPrompt copy={flatEmptyCopy(phraseStatuses)} />
+              <EmptyPrompt
+                copy={
+                  searching
+                    ? `No names match "${searchQuery.trim()}". Try a last name, or add yourself.`
+                    : flatEmptyCopy(phraseStatuses)
+                }
+              />
             )}
           </div>
         ) : (
