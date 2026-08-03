@@ -14,6 +14,8 @@ export type BoardPerson = {
   team_label: string | null;
   is_current: boolean;
   is_coach: boolean;
+  /** Only set for the coaches and managers row: which word the chip tag shows. */
+  role_label?: "coach" | "manager";
   /** Every program the person holds history in, for filtering only. The chip's
    *  team badge still resolves from board_division. */
   divisions: string[];
