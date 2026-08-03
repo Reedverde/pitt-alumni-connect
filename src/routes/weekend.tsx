@@ -290,7 +290,7 @@ function WeekendPage() {
           action={{ kind: "rsvp", label: "RSVP", onOpen: () => setClaimOpen(true) }}
         />
       </main>
-      <ActionRail />
+      <ActionRail onRsvp={() => setClaimOpen(true)} />
       <ClaimDialog
         open={claimOpen}
         target={null}
