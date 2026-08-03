@@ -112,7 +112,10 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
   };
 
   return {
-    people: (peopleRes.data ?? []) as BoardPerson[],
+    people: ((peopleRes.data ?? []) as Array<Record<string, unknown>>).map((row) => ({
+      ...(row as unknown as BoardPerson),
+      divisions: ((row.divisions as string[] | null) ?? []) as string[],
+    })),
     coaches: ((coachesRes.data ?? []) as Array<Record<string, unknown>>).map((row) => ({
       id: row.id as string,
       first_name: row.first_name as string,
