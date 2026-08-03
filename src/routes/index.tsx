@@ -1018,21 +1018,6 @@ function BoardSearch({
   );
 }
 
-function EmptyPromptUnused({ copy }: { copy: string }) {
-  return (
-    <NotchedBox
-      corners={NOTCH_ALL}
-      stroke="var(--chalk)"
-      dashed
-      className="mt-4 w-full max-w-[560px]"
-    >
-      <p className="px-4 py-3" style={{ color: "var(--sterling)", fontSize: 13 }}>
-        {copy}
-      </p>
-    </NotchedBox>
-  );
-}
-
 function YearRow({
   group,
   isDimmed,
