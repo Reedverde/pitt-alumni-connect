@@ -70,7 +70,7 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
       .order("uploaded_at", { ascending: true }),
     supabase
       .from("board_coaches")
-      .select("id, first_name, last_name, played_as, deceased, state")
+      .select("id, first_name, last_name, played_as, deceased, state, role_label")
       .limit(200),
   ]);
 
