@@ -189,6 +189,9 @@ function BoardPage() {
   const [divisionFilter, setDivisionFilter] = useState<string | null>(null);
   // Single-select: null means "everyone", the normal year-row board.
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  // Search is its own constraint: it composes with the two filters above.
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [newestFirst, setNewestFirst] = useState(true);
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
@@ -289,6 +292,10 @@ function BoardPage() {
     setStatusFilter((prev) => (prev === code ? null : code));
 
   const filtered = statusFilter !== null;
+  const search = normalize(searchQuery);
+  const searching = search.length > 0;
+  // Either constraint flattens the wall into a list.
+  const flatMode = filtered || searching;
   // CLAIMED means "has claimed their name", whatever they answered, so it is a
   // superset of GOING and MAYBE. It matches the counter bar's claimed figure.
   const expandStatus = (code: string) =>
@@ -315,6 +322,13 @@ function BoardPage() {
     return (person.divisions ?? []).includes(divisionFilter);
   };
 
+  const matchesSearch = (person: BoardPerson) => {
+    if (!searching) return true;
+    return [person.first_name, person.last_name, person.played_as]
+      .filter(Boolean)
+      .some((field) => normalize(String(field)).includes(search));
+  };
+
   const isHidden = (person: BoardPerson) => {
     if (!matchesDivision(person)) return true;
     if (!filtered) return false;
@@ -333,9 +347,9 @@ function BoardPage() {
         effStatuses.includes(p.state),
     ).length;
 
-  const flatPeople = filtered
-    ? people
-        .filter((p) => !isHidden(p))
+  const flatPeople = flatMode
+    ? (searching ? [...people, ...data.coaches] : people)
+        .filter((p) => !isHidden(p) && matchesSearch(p))
         .sort(
           (a, b) =>
             b.board_year - a.board_year ||
