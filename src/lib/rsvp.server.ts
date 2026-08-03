@@ -259,12 +259,14 @@ export async function logRsvpEvent(
 }
 
 /** An unmatched name never creates a people row. It becomes a pending request
- *  the organizers review. No RSVP, no identity, no sign-in link yet. */
+ *  the organizers review. The answer and the email are still captured, and a
+ *  sign-in link still goes out: a decline is a signup too. */
 async function requestNewPerson(args: {
   firstName: string;
   lastName: string | null;
   email: string;
   status: RsvpStatus | null;
+  partySize: number;
   src: RsvpSource | null;
   ipHash: string;
   origin: string | null | undefined;
@@ -280,6 +282,7 @@ async function requestNewPerson(args: {
     last_name: args.lastName,
     email: args.email,
     requested_status: args.status,
+    party_size: args.partySize,
     src: args.src,
     ip_hash: args.ipHash,
     ...(preapproved ? { preapproved: true } : {}),
@@ -328,6 +331,23 @@ async function requestNewPerson(args: {
 
   const { notifyAdminsOfPendingSuggestions } = await import("./admin-notify.server");
   await notifyAdminsOfPendingSuggestions(args.origin);
+
+  // The email they typed is the contact record, whatever they answered. The
+  // link verifies it and creates the session, exactly as for a matched name.
+  // Mail must never throw: the request is already filed.
+  try {
+    const { sendMagicLinkEmail } = await import("./mail.server");
+    await sendMagicLinkEmail({
+      to: args.email,
+      personId: null,
+      firstName: args.firstName,
+      status: args.status ?? "",
+      origin: args.origin,
+      kind: "magic_link",
+    });
+  } catch (err) {
+    console.error(`[rsvp] new-person sign-in link failed: ${String(err)}`);
+  }
 
   return { ok: true, outcome: "review_requested", person: null };
 }
@@ -378,6 +398,7 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
       lastName,
       email,
       status,
+      partySize,
       src,
       ipHash,
       origin: input.origin,
