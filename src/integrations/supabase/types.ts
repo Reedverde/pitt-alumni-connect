@@ -1402,6 +1402,7 @@ export type Database = {
           id: string | null
           last_name: string | null
           played_as: string | null
+          role_label: string | null
           state: string | null
         }
         Relationships: []
