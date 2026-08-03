@@ -1411,6 +1411,7 @@ export type Database = {
           board_division: string | null
           board_year: number | null
           deceased: boolean | null
+          divisions: string[] | null
           first_name: string | null
           id: string | null
           is_coach: boolean | null

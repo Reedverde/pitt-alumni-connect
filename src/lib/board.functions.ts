@@ -14,6 +14,9 @@ export type BoardPerson = {
   team_label: string | null;
   is_current: boolean;
   is_coach: boolean;
+  /** Every program the person holds history in, for filtering only. The chip's
+   *  team badge still resolves from board_division. */
+  divisions: string[];
   state: "unclaimed" | "claimed" | "going" | "maybe" | "memorial";
 };
 
@@ -51,7 +54,7 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
     supabase
       .from("board_people")
       .select(
-        "id, first_name, last_name, played_as, deceased, board_year, board_division, team_label, state, is_current, is_coach",
+        "id, first_name, last_name, played_as, deceased, board_year, board_division, team_label, state, is_current, is_coach, divisions",
       )
       .order("board_year", { ascending: false })
       .limit(2000),
@@ -109,7 +112,10 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
   };
 
   return {
-    people: (peopleRes.data ?? []) as BoardPerson[],
+    people: ((peopleRes.data ?? []) as Array<Record<string, unknown>>).map((row) => ({
+      ...(row as unknown as BoardPerson),
+      divisions: ((row.divisions as string[] | null) ?? []) as string[],
+    })),
     coaches: ((coachesRes.data ?? []) as Array<Record<string, unknown>>).map((row) => ({
       id: row.id as string,
       first_name: row.first_name as string,
@@ -121,6 +127,7 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
       team_label: null,
       is_current: false,
       is_coach: true,
+      divisions: [],
       state: row.state as BoardPerson["state"],
     })),
     totals,
