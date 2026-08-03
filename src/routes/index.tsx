@@ -967,6 +967,72 @@ function EmptyPrompt({ copy }: { copy: string }) {
   );
 }
 
+/** One text field above the filter rows. No gold, no submit. */
+function BoardSearch({
+  value,
+  onChange,
+  onClear,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="pt-6">
+      <label htmlFor="board-search" className="sr-only">
+        Find a name
+      </label>
+      <div className="relative w-full sm:max-w-[360px]">
+        <input
+          id="board-search"
+          type="text"
+          value={value}
+          autoComplete="off"
+          placeholder="Find a name"
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") onClear();
+          }}
+          className="w-full rounded-[7px] px-3 py-2 pr-9 outline-none"
+          style={{
+            border: "1px solid var(--chalk)",
+            background: "var(--pure-white)",
+            color: "var(--sabah-black)",
+            fontFamily: '"Space Grotesk", sans-serif',
+            fontSize: 15,
+          }}
+        />
+        {value !== "" && (
+          <button
+            type="button"
+            onClick={onClear}
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 px-1"
+            style={{ color: "var(--sterling)", fontSize: 16, lineHeight: 1 }}
+          >
+            ×
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EmptyPromptUnused({ copy }: { copy: string }) {
+  return (
+    <NotchedBox
+      corners={NOTCH_ALL}
+      stroke="var(--chalk)"
+      dashed
+      className="mt-4 w-full max-w-[560px]"
+    >
+      <p className="px-4 py-3" style={{ color: "var(--sterling)", fontSize: 13 }}>
+        {copy}
+      </p>
+    </NotchedBox>
+  );
+}
+
 function YearRow({
   group,
   isDimmed,
