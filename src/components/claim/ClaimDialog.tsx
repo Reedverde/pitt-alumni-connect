@@ -41,11 +41,14 @@ const quietLink: React.CSSProperties = {
 export function ClaimDialog({
   open,
   target,
+  prefillName,
   onClose,
   onClaimed,
 }: {
   open: boolean;
   target: ClaimTarget | null;
+  /** Seeds the search box, e.g. what they typed into the board search. */
+  prefillName?: string;
   onClose: () => void;
   onClaimed: (personId: string | null) => void;
 }) {
@@ -87,10 +90,12 @@ export function ClaimDialog({
     } else {
       setSelected(null);
       setAddingNew(false);
-      setQuery("");
+      setQuery(prefillName?.trim() ?? "");
       setMatches([]);
       setStep("name");
     }
+    // prefillName is read at open time only, on purpose.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, target]);
 
   useEffect(() => {
@@ -269,12 +274,13 @@ export function ClaimDialog({
                   placeholder="Start typing"
                   onChange={(e) => setQuery(e.target.value)}
                 />
-                {query.trim().length >= 2 && (
-                  <div className="mt-5">
+                <div className="mt-5">
+                  {query.trim().length >= 2 && (
                     <p className="label-caps mb-3" style={{ color: "var(--sterling)" }}>
                       {searching ? "Looking…" : matches.length ? "Did you mean…" : "No match yet"}
                     </p>
-                    <ul className="flex flex-col gap-2">
+                  )}
+                  <ul className="flex flex-col gap-2">
                       {matches.map((m) => (
                         <li key={m.id}>
                           <button
@@ -302,12 +308,11 @@ export function ClaimDialog({
                       ))}
                       <li>
                         <button type="button" onClick={pickNew} style={{ ...secondaryButton, width: "100%" }}>
-                          None of these, add me
+                          I'm not on here, add me
                         </button>
                       </li>
                     </ul>
-                  </div>
-                )}
+                </div>
               </div>
             )}
 
