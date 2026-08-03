@@ -52,7 +52,8 @@ export function NameChip({
   const clickable = Boolean(onClick) && person.state !== "memorial";
   const isCurrent = person.is_current === true;
   const isCoach = person.is_coach === true;
-  const tag = isCoach ? "COACH" : isCurrent ? "CURRENT" : null;
+  const isManager = isCoach && person.role_label === "manager";
+  const tag = isManager ? "MANAGER" : isCoach ? "COACH" : isCurrent ? "CURRENT" : null;
 
   return (
     <button
@@ -60,7 +61,9 @@ export function NameChip({
       id={`person-${person.id}`}
       disabled={!clickable}
       onClick={clickable ? () => onClick?.(person) : undefined}
-      aria-label={`${display}${teamPart}${isCoach ? ", coach" : isCurrent ? ", current player" : ""}${
+      aria-label={`${display}${teamPart}${
+        isManager ? ", manager" : isCoach ? ", coach" : isCurrent ? ", current player" : ""
+      }${
         person.board_year > 0 ? `, ${person.board_year}` : ""
       }, ${STATE_WORDS[person.state]}${
         clickable ? (isUnclaimed ? ". Claim this name" : ". Update this answer") : ""
