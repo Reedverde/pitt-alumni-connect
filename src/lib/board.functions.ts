@@ -130,6 +130,7 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
       is_current: false,
       is_coach: true,
       divisions: [],
+      role_label: row.role_label === "manager" ? "manager" : "coach",
       state: row.state as BoardPerson["state"],
     })),
     totals,
