@@ -168,10 +168,12 @@ function BoardPage() {
   const queryClient = useQueryClient();
   const filters = useMemo(
     () =>
-      data.divisions.map((d) => ({
+      data.divisions
+        .map((d) => ({
         code: d.code,
         label: DIVISION_CHIP_LABELS[d.code] ?? d.label,
-      })),
+        }))
+        .concat([{ code: "__coaches", label: "Coaches" }]),
     [data.divisions],
   );
   // Single-select: null means every program.
@@ -297,8 +299,12 @@ function BoardPage() {
 
   // Any program the person holds history in, not just the one their board year
   // resolves to. Someone with A and B history appears under both.
-  const matchesDivision = (person: BoardPerson) =>
-    divisionFilter === null || (person.divisions ?? []).includes(divisionFilter);
+  const matchesDivision = (person: BoardPerson) => {
+    if (divisionFilter === null) return true;
+    // The fourth chip filters by role, not program: anyone who ever coached or managed.
+    if (divisionFilter === "__coaches") return person.has_coached === true || person.is_coach === true;
+    return (person.divisions ?? []).includes(divisionFilter);
+  };
 
   const isHidden = (person: BoardPerson) => {
     if (!matchesDivision(person)) return true;
