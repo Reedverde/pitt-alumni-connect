@@ -826,7 +826,7 @@ function CoachesRow({
     >
       <div className="flex items-center gap-4 md:w-[240px] md:shrink-0 md:flex-col md:items-start md:gap-3">
         <div className="year-numeral" style={{ color: "var(--sabah-black)" }}>
-          COACHES
+          COACHES AND MANAGERS
         </div>
       </div>
       <div className="min-w-0 flex-1">
