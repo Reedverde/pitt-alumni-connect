@@ -162,6 +162,15 @@ function flatEmptyCopy(statuses: string[]) {
   return "Nobody has answered yet. Be the first.";
 }
 
+/** Accent insensitive, case insensitive, substring anywhere. */
+function normalize(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 function BoardPage() {
   const { data } = useSuspenseQuery(boardQuery);
   const { data: weekend } = useSuspenseQuery(weekendQuery);
@@ -180,6 +189,9 @@ function BoardPage() {
   const [divisionFilter, setDivisionFilter] = useState<string | null>(null);
   // Single-select: null means "everyone", the normal year-row board.
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  // Search is its own constraint: it composes with the two filters above.
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [newestFirst, setNewestFirst] = useState(true);
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
@@ -276,10 +288,20 @@ function BoardPage() {
   const pickDivision = (code: string) =>
     setDivisionFilter((prev) => (prev === code ? null : code));
 
+  // Light debounce so a fast typist does not re-filter 454 rows per keystroke.
+  useEffect(() => {
+    const id = setTimeout(() => setSearchQuery(searchInput), 160);
+    return () => clearTimeout(id);
+  }, [searchInput]);
+
   const pickStatus = (code: string) =>
     setStatusFilter((prev) => (prev === code ? null : code));
 
   const filtered = statusFilter !== null;
+  const search = normalize(searchQuery);
+  const searching = search.length > 0;
+  // Either constraint flattens the wall into a list.
+  const flatMode = filtered || searching;
   // CLAIMED means "has claimed their name", whatever they answered, so it is a
   // superset of GOING and MAYBE. It matches the counter bar's claimed figure.
   const expandStatus = (code: string) =>
@@ -306,6 +328,13 @@ function BoardPage() {
     return (person.divisions ?? []).includes(divisionFilter);
   };
 
+  const matchesSearch = (person: BoardPerson) => {
+    if (!searching) return true;
+    return [person.first_name, person.last_name, person.played_as]
+      .filter(Boolean)
+      .some((field) => normalize(String(field)).includes(search));
+  };
+
   const isHidden = (person: BoardPerson) => {
     if (!matchesDivision(person)) return true;
     if (!filtered) return false;
@@ -324,9 +353,9 @@ function BoardPage() {
         effStatuses.includes(p.state),
     ).length;
 
-  const flatPeople = filtered
-    ? people
-        .filter((p) => !isHidden(p))
+  const flatPeople = flatMode
+    ? (searching ? [...people, ...data.coaches] : people)
+        .filter((p) => !isHidden(p) && matchesSearch(p))
         .sort(
           (a, b) =>
             b.board_year - a.board_year ||
@@ -390,6 +419,14 @@ function BoardPage() {
           </p>
         </header>
 
+        <BoardSearch
+          value={searchInput}
+          onChange={setSearchInput}
+          onClear={() => {
+            setSearchInput("");
+            setSearchQuery("");
+          }}
+        />
         <StatusRadioChips
           legend="Programs"
           options={filters}
@@ -402,9 +439,9 @@ function BoardPage() {
           value={statusFilter}
           onPick={pickStatus}
         />
-        {!filtered && <DecadeRail groups={groups} />}
+        {!flatMode && <DecadeRail groups={groups} />}
 
-        {!filtered && (
+        {!flatMode && (
         <div className="mt-6 flex justify-end">
           <button
             type="button"
@@ -417,13 +454,16 @@ function BoardPage() {
         </div>
         )}
 
-        {filtered ? (
+        {flatMode ? (
           <div className="pt-6">
             <p
               className="label-caps"
+              aria-live="polite"
               style={{ fontFamily: '"Space Mono", monospace', color: "var(--sterling)" }}
             >
-              {flatPeople.length} {statusPhrase(phraseStatuses)}
+              {searching
+                ? `${flatPeople.length} MATCHING "${searchQuery.trim().toUpperCase()}"`
+                : `${flatPeople.length} ${statusPhrase(phraseStatuses)}`}
             </p>
             {flatPeople.length > 0 ? (
               <div className="mt-4 flex flex-wrap content-start items-start gap-2">
@@ -437,7 +477,13 @@ function BoardPage() {
                 ))}
               </div>
             ) : (
-              <EmptyPrompt copy={flatEmptyCopy(phraseStatuses)} />
+              <EmptyPrompt
+                copy={
+                  searching
+                    ? `No names match "${searchQuery.trim()}". Try a last name, or add yourself.`
+                    : flatEmptyCopy(phraseStatuses)
+                }
+              />
             )}
           </div>
         ) : (
@@ -918,6 +964,57 @@ function EmptyPrompt({ copy }: { copy: string }) {
         {copy}
       </p>
     </NotchedBox>
+  );
+}
+
+/** One text field above the filter rows. No gold, no submit. */
+function BoardSearch({
+  value,
+  onChange,
+  onClear,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="pt-6">
+      <label htmlFor="board-search" className="sr-only">
+        Find a name
+      </label>
+      <div className="relative w-full sm:max-w-[360px]">
+        <input
+          id="board-search"
+          type="text"
+          value={value}
+          autoComplete="off"
+          placeholder="Find a name"
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") onClear();
+          }}
+          className="w-full rounded-[7px] px-3 py-2 pr-9 outline-none"
+          style={{
+            border: "1px solid var(--chalk)",
+            background: "var(--pure-white)",
+            color: "var(--sabah-black)",
+            fontFamily: '"Space Grotesk", sans-serif',
+            fontSize: 15,
+          }}
+        />
+        {value !== "" && (
+          <button
+            type="button"
+            onClick={onClear}
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 px-1"
+            style={{ color: "var(--sterling)", fontSize: 16, lineHeight: 1 }}
+          >
+            ×
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
