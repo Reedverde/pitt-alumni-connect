@@ -51,9 +51,12 @@ export function NameChip({
   const isUnclaimed = person.state === "unclaimed";
   const clickable = Boolean(onClick) && person.state !== "memorial";
   const isCurrent = person.is_current === true;
-  const isCoach = person.is_coach === true;
-  const isManager = isCoach && person.role_label === "manager";
-  const tag = isManager ? "MANAGER" : isCoach ? "COACH" : isCurrent ? "CURRENT" : null;
+  // Anyone who ever coached or managed carries the tag, even if they also played.
+  const role = person.role_label ?? person.coach_role ?? null;
+  const hasRole = person.has_coached === true || person.is_coach === true || role !== null;
+  const roleTag = hasRole ? (role === "manager" ? "MANAGER" : "COACH") : null;
+  // At most two tags, CURRENT first.
+  const tags = [isCurrent ? "CURRENT" : null, roleTag].filter(Boolean) as string[];
 
   return (
     <button
@@ -61,8 +64,8 @@ export function NameChip({
       id={`person-${person.id}`}
       disabled={!clickable}
       onClick={clickable ? () => onClick?.(person) : undefined}
-      aria-label={`${display}${teamPart}${
-        isManager ? ", manager" : isCoach ? ", coach" : isCurrent ? ", current player" : ""
+      aria-label={`${display}${teamPart}${isCurrent ? ", current player" : ""}${
+        roleTag === "MANAGER" ? ", manager" : roleTag === "COACH" ? ", coach" : ""
       }${
         person.board_year > 0 ? `, ${person.board_year}` : ""
       }, ${STATE_WORDS[person.state]}${
@@ -89,11 +92,14 @@ export function NameChip({
           {person.team_label}
         </span>
       )}
-      {tag && (
-        <span style={{ fontSize: 10, letterSpacing: "0.1em", opacity: 0.55, textTransform: "uppercase" }}>
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          style={{ fontSize: 10, letterSpacing: "0.1em", opacity: 0.55, textTransform: "uppercase" }}
+        >
           {tag}
         </span>
-      )}
+      ))}
       {person.board_year > 0 && (
         <span style={{ fontFamily: '"Space Mono", monospace', fontSize: 11, opacity: 0.7 }}>
           {person.board_year}
