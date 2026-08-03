@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   addMyEmail,
+  addMeAsPerson,
+  amIPreapproved,
+  claimPersonAsMe,
   getMyProfile,
   getPendingVerifications,
   removeMyEmail,
@@ -20,6 +23,8 @@ import {
   type MyProfile,
 } from "@/lib/account.functions";
 import { PartySizeStepper } from "@/components/claim/PartySizeStepper";
+import { searchPeople } from "@/lib/rsvp.functions";
+import { personDisplayName as matchName, type PersonMatch } from "@/lib/rsvp-types";
 import { STATUS_LABELS, personDisplayName, type RsvpStatus } from "@/lib/rsvp-types";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { FieldLabel, Notice, fieldStyle, primaryButton, secondaryButton } from "@/components/claim/ui";
@@ -135,18 +140,7 @@ function MePage() {
     return (
       <Chrome>
         <main className="mx-auto w-full max-w-[720px] flex-1 px-5 py-16">
-        <h1 className="display-30" style={{ color: "var(--sabah-black)" }}>
-          WE CAN'T FIND YOUR RECORD
-        </h1>
-        <Notice>
-          This address isn't attached to anyone on the board yet. Head back and claim your name — it takes a
-          few seconds.
-        </Notice>
-        <div className="mt-6">
-          <button type="button" style={primaryButton} onClick={() => navigate({ to: "/" })}>
-            Go to the board
-          </button>
-        </div>
+          <NoRecordPanel onDone={() => void refresh()} />
         </main>
       </Chrome>
     );
