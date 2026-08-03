@@ -40,6 +40,53 @@ export const finalizeLogin = createServerFn({ method: "POST" })
     return linkAuthUser(context.userId, email, provider);
   });
 
+/** True when the signed-in caller has no person record but the organizers
+ *  preapproved their address. Drives the claim panel on /me. */
+export const amIPreapproved = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ preapproved: boolean }> => {
+    const email = (context.claims as { email?: string }).email ?? "";
+    if (!email) return { preapproved: false };
+    const { isPreapprovedEmail } = await import("./account.server");
+    return { preapproved: await isPreapprovedEmail(email) };
+  });
+
+/** The signed-in caller points at the name on the board that is theirs. */
+export const claimPersonAsMe = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { personId: string }) => ({ personId: String(input?.personId ?? "") }))
+  .handler(async ({ context, data }) => {
+    const email = (context.claims as { email?: string }).email ?? "";
+    if (!email) throw new Error("We can't read your address.");
+    if (!data.personId) throw new Error("Pick a name first.");
+    const { attachMeToPerson } = await import("./account.server");
+    return attachMeToPerson({ authUserId: context.userId, email, personId: data.personId });
+  });
+
+/** The signed-in caller is on no roster. Auto-approved: the inbox proved it. */
+export const addMeAsPerson = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { firstName: string; lastName?: string | null; gradYear?: number | null }) => ({
+    firstName: String(input?.firstName ?? ""),
+    lastName: input?.lastName ? String(input.lastName) : null,
+    gradYear:
+      typeof input?.gradYear === "number" && input.gradYear >= 1970 && input.gradYear <= 2100
+        ? input.gradYear
+        : null,
+  }))
+  .handler(async ({ context, data }) => {
+    const email = (context.claims as { email?: string }).email ?? "";
+    if (!email) throw new Error("We can't read your address.");
+    const { addMeAsNewPerson } = await import("./account.server");
+    return addMeAsNewPerson({
+      authUserId: context.userId,
+      email,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      gradYear: data.gradYear,
+    });
+  });
+
 export const getMyProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<MyProfile> => {
