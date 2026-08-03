@@ -14,6 +14,8 @@ export type BoardPerson = {
   team_label: string | null;
   is_current: boolean;
   is_coach: boolean;
+  /** Only set for the coaches and managers row: which word the chip tag shows. */
+  role_label?: "coach" | "manager";
   /** Every program the person holds history in, for filtering only. The chip's
    *  team badge still resolves from board_division. */
   divisions: string[];
@@ -68,7 +70,7 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
       .order("uploaded_at", { ascending: true }),
     supabase
       .from("board_coaches")
-      .select("id, first_name, last_name, played_as, deceased, state")
+      .select("id, first_name, last_name, played_as, deceased, state, role_label")
       .limit(200),
   ]);
 
@@ -128,6 +130,7 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
       is_current: false,
       is_coach: true,
       divisions: [],
+      role_label: row.role_label === "manager" ? "manager" : "coach",
       state: row.state as BoardPerson["state"],
     })),
     totals,
