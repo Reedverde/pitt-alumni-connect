@@ -278,15 +278,27 @@ function BoardPage() {
     setStatusFilter((prev) => (prev === code ? null : code));
 
   const filtered = statusFilter !== null;
-  const effStatuses = filtered ? [statusFilter as string] : STATUS_FILTERS.map((s) => s.code);
+  // CLAIMED means "has claimed their name", whatever they answered, so it is a
+  // superset of GOING and MAYBE. It matches the counter bar's claimed figure.
+  const expandStatus = (code: string) =>
+    code === "claimed" ? ["claimed", "going", "maybe"] : [code];
+  const effStatuses = filtered
+    ? expandStatus(statusFilter as string)
+    : STATUS_FILTERS.map((s) => s.code);
+  // The word used in copy is the chip that is on, not the states it expands to.
+  const phraseStatuses = filtered
+    ? [statusFilter as string]
+    : STATUS_FILTERS.map((s) => s.code);
 
   const exitIsolate = () => setStatusFilter(null);
 
   // Program AND status compose, and both hide rather than dim.
   const isDimmed = (_person: BoardPerson) => false;
 
+  // Any program the person holds history in, not just the one their board year
+  // resolves to. Someone with A and B history appears under both.
   const matchesDivision = (person: BoardPerson) =>
-    divisionFilter === null || person.board_division === divisionFilter;
+    divisionFilter === null || (person.divisions ?? []).includes(divisionFilter);
 
   const isHidden = (person: BoardPerson) => {
     if (!matchesDivision(person)) return true;
@@ -405,7 +417,7 @@ function BoardPage() {
               className="label-caps"
               style={{ fontFamily: '"Space Mono", monospace', color: "var(--sterling)" }}
             >
-              {flatPeople.length} {statusPhrase(effStatuses)}
+              {flatPeople.length} {statusPhrase(phraseStatuses)}
             </p>
             {flatPeople.length > 0 ? (
               <div className="mt-4 flex flex-wrap content-start items-start gap-2">
@@ -419,7 +431,7 @@ function BoardPage() {
                 ))}
               </div>
             ) : (
-              <EmptyPrompt copy={flatEmptyCopy(effStatuses)} />
+              <EmptyPrompt copy={flatEmptyCopy(phraseStatuses)} />
             )}
           </div>
         ) : (
