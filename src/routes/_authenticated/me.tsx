@@ -81,6 +81,218 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+/** Signed in and verified, but we do not yet know which name is theirs. Never
+ *  a dead end and never an account step: the link already made the account. */
+function NoRecordPanel({ onDone }: { onDone: () => void }) {
+  const runSearch = useServerFn(searchPeople);
+  const runClaim = useServerFn(claimPersonAsMe);
+  const runAdd = useServerFn(addMeAsPerson);
+  const askPreapproved = useServerFn(amIPreapproved);
+
+  const [mode, setMode] = useState<"choose" | "find" | "add">("choose");
+  const [preapproved, setPreapproved] = useState(false);
+  const [query, setQuery] = useState("");
+  const [matches, setMatches] = useState<PersonMatch[]>([]);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [gradYear, setGradYear] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void askPreapproved()
+      .then((r) => setPreapproved(r.preapproved))
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (mode !== "find" || query.trim().length < 2) {
+      setMatches([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const results = await runSearch({ data: { q: query } });
+        if (!cancelled) setMatches(results);
+      } catch {
+        /* a failed lookup is not an error state here */
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [query, mode, runSearch]);
+
+  const attach = async (personId: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await runClaim({ data: { personId } });
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "That didn't work. Try again.");
+      setBusy(false);
+    }
+  };
+
+  const addMe = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const year = Number.parseInt(gradYear, 10);
+      await runAdd({
+        data: {
+          firstName,
+          lastName: lastName || null,
+          gradYear: Number.isFinite(year) ? year : null,
+        },
+      });
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "That didn't work. Try again.");
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div>
+      <SlashEyebrow>You are in</SlashEyebrow>
+      <h1 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
+        WHICH NAME IS YOURS?
+      </h1>
+      <Notice>
+        {preapproved
+          ? "You are in. We just do not know which name on the board is yours."
+          : "Your email is verified. We just do not know which name on the board is yours."}
+      </Notice>
+
+      {error && (
+        <p className="mt-3" style={{ fontSize: 13, color: "var(--pitt-royal)" }}>
+          {error}
+        </p>
+      )}
+
+      {mode === "choose" && (
+        <div className="mt-6 flex flex-wrap gap-2">
+          <button type="button" style={primaryButton} onClick={() => setMode("find")}>
+            Find my name on the board
+          </button>
+          <button type="button" style={secondaryButton} onClick={() => setMode("add")}>
+            I'm not on here, add me
+          </button>
+        </div>
+      )}
+
+      {mode === "find" && (
+        <div className="mt-6">
+          <FieldLabel htmlFor="me-find">Your name</FieldLabel>
+          <input
+            id="me-find"
+            style={fieldStyle}
+            value={query}
+            autoComplete="name"
+            placeholder="Start typing"
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <ul className="mt-4 flex flex-col gap-2">
+            {matches.map((m) => (
+              <li key={m.id}>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void attach(m.id)}
+                  className="flex w-full items-baseline justify-between gap-3 text-left"
+                  style={{
+                    border: "1px solid var(--chalk)",
+                    borderRadius: 7,
+                    padding: "11px 13px",
+                    background: "var(--pure-white)",
+                  }}
+                >
+                  <span style={{ fontSize: 15, color: "var(--steel-ink)" }}>{matchName(m)}</span>
+                  <span className="label-caps" style={{ color: "var(--sterling)", whiteSpace: "nowrap" }}>
+                    {[m.team_label, m.years_label].filter(Boolean).join(" · ")}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button type="button" style={secondaryButton} onClick={() => setMode("choose")}>
+              Back
+            </button>
+            <button
+              type="button"
+              style={secondaryButton}
+              onClick={() => {
+                const parts = query.trim().split(" ");
+                setFirstName(parts[0] ?? "");
+                setLastName(parts.slice(1).join(" "));
+                setMode("add");
+              }}
+            >
+              I'm not on here, add me
+            </button>
+          </div>
+        </div>
+      )}
+
+      {mode === "add" && (
+        <form
+          className="mt-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void addMe();
+          }}
+        >
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <FieldLabel htmlFor="me-first">First name</FieldLabel>
+              <input
+                id="me-first"
+                style={fieldStyle}
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+            <div>
+              <FieldLabel htmlFor="me-last">Last name</FieldLabel>
+              <input
+                id="me-last"
+                style={fieldStyle}
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="mt-3 max-w-[200px]">
+            <FieldLabel htmlFor="me-year">Class year (optional)</FieldLabel>
+            <input
+              id="me-year"
+              inputMode="numeric"
+              style={fieldStyle}
+              value={gradYear}
+              onChange={(e) => setGradYear(e.target.value)}
+            />
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button type="button" style={secondaryButton} onClick={() => setMode("choose")}>
+              Back
+            </button>
+            <button type="submit" style={{ ...primaryButton, opacity: busy ? 0.6 : 1 }} disabled={busy}>
+              {busy ? "Saving…" : "Add me"}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
 function MePage() {
   const navigate = useNavigate();
   const loadProfile = useServerFn(getMyProfile);
