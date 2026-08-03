@@ -19,7 +19,14 @@ export async function linkAuthUser(
     .eq("email", lower)
     .maybeSingle();
 
-  if (!identity) return { linked: false, personId: null };
+  if (!identity) {
+    // No person record yet. They may still be a preapproved Google Group
+    // address, or someone whose new-person request is still in the queue.
+    // Clicking the link proves the inbox, so the pending request is marked
+    // verified and the address attaches for real once it is approved.
+    await markPendingRequestVerified(lower);
+    return { linked: false, personId: null };
+  }
 
   const personId = identity.person_id as string;
 
@@ -86,6 +93,176 @@ export async function linkAuthUser(
   }
 
   return { linked: true, personId };
+}
+
+/** Records that the address behind a pending new_person request has now been
+ *  proven. Never throws: it is bookkeeping on a successful login. */
+async function markPendingRequestVerified(email: string) {
+  try {
+    const { data } = await supabaseAdmin
+      .from("suggestions")
+      .select("id, payload")
+      .eq("type", "new_person")
+      .eq("status", "pending")
+      .eq("payload->>email", email)
+      .limit(20);
+    for (const row of data ?? []) {
+      const payload = (row.payload ?? {}) as Record<string, unknown>;
+      if (payload.email_verified === true) continue;
+      await supabaseAdmin
+        .from("suggestions")
+        .update({ payload: { ...payload, email_verified: true } as never })
+        .eq("id", row.id as string);
+    }
+  } catch (err) {
+    console.error(`[account] could not mark a request verified: ${String(err)}`);
+  }
+}
+
+/** True when this signed-in address is one the organizers preapproved. */
+export async function isPreapprovedEmail(email: string) {
+  const { data } = await supabaseAdmin
+    .from("preapproved_emails")
+    .select("email")
+    .eq("email", email.trim().toLowerCase())
+    .maybeSingle();
+  return Boolean(data);
+}
+
+/** The signed-in, already verified caller says which name on the board is
+ *  theirs. Their address attaches to that person as a verified identity and
+ *  any preapproval is consumed. Refused when that name already belongs to a
+ *  verified account. */
+export async function attachMeToPerson(args: {
+  authUserId: string;
+  email: string;
+  personId: string;
+}) {
+  const email = args.email.trim().toLowerCase();
+
+  const { data: mine } = await supabaseAdmin
+    .from("identities")
+    .select("id, person_id")
+    .eq("email", email)
+    .maybeSingle();
+  if (mine) return { ok: true, personId: mine.person_id as string };
+
+  const { data: person } = await supabaseAdmin
+    .from("people")
+    .select("id, deceased")
+    .eq("id", args.personId)
+    .maybeSingle();
+  if (!person || person.deceased) throw new Error("That name can't be claimed.");
+
+  const { data: owners } = await supabaseAdmin
+    .from("identities")
+    .select("id, verified_at")
+    .eq("person_id", args.personId);
+  if ((owners ?? []).some((o) => o.verified_at)) {
+    throw new Error("That name is already claimed by a verified account.");
+  }
+
+  const { error } = await supabaseAdmin.from("identities").insert({
+    person_id: args.personId,
+    email,
+    provider: "magic",
+    is_primary: (owners ?? []).length === 0,
+    auth_user_id: args.authUserId,
+    verified_at: new Date().toISOString(),
+  } as never);
+  if (error) throw new Error("We couldn't attach your email to that name.");
+
+  await supabaseAdmin
+    .from("preapproved_emails")
+    .update({ consumed_by: args.personId, consumed_at: new Date().toISOString() })
+    .eq("email", email)
+    .is("consumed_by", null);
+
+  await supabaseAdmin.from("people").update({ needs_review: false }).eq("id", args.personId);
+
+  await supabaseAdmin.from("audit_log").insert({
+    actor_person_id: args.personId,
+    action: "identity_self_attached",
+    table_name: "identities",
+    record_id: args.personId,
+  });
+
+  return { ok: true, personId: args.personId };
+}
+
+/** The signed-in caller is on no roster at all. Same new-person path as
+ *  everyone else, except the request is auto-approved: possession of the inbox
+ *  already proved membership, so there is nothing for an organizer to check. */
+export async function addMeAsNewPerson(args: {
+  authUserId: string;
+  email: string;
+  firstName: string;
+  lastName: string | null;
+  gradYear: number | null;
+}) {
+  const email = args.email.trim().toLowerCase();
+  const firstName = args.firstName.replace(/\s+/g, " ").trim().slice(0, 80);
+  if (!firstName) throw new Error("Please enter your name.");
+
+  const { data: mine } = await supabaseAdmin
+    .from("identities")
+    .select("person_id")
+    .eq("email", email)
+    .maybeSingle();
+  if (mine) return { ok: true, personId: mine.person_id as string };
+
+  const { data: created, error } = await supabaseAdmin
+    .from("people")
+    .insert({
+      first_name: firstName,
+      last_name: args.lastName ? args.lastName.replace(/\s+/g, " ").trim().slice(0, 80) : null,
+      grad_year: args.gradYear,
+      needs_review: false,
+      show_on_board: true,
+    } as never)
+    .select("id")
+    .single();
+  if (error || !created) throw new Error("We couldn't add you. Try again.");
+  const personId = created.id as string;
+
+  await supabaseAdmin.from("identities").insert({
+    person_id: personId,
+    email,
+    provider: "magic",
+    is_primary: true,
+    auth_user_id: args.authUserId,
+    verified_at: new Date().toISOString(),
+  } as never);
+
+  await supabaseAdmin.from("suggestions").insert({
+    type: "new_person",
+    status: "approved",
+    submitted_by: personId,
+    reviewed_at: new Date().toISOString(),
+    payload: {
+      first_name: firstName,
+      last_name: args.lastName,
+      grad_year: args.gradYear,
+      email,
+      email_verified: true,
+      auto_approved: "verified_email",
+    } as never,
+  } as never);
+
+  await supabaseAdmin
+    .from("preapproved_emails")
+    .update({ consumed_by: personId, consumed_at: new Date().toISOString() })
+    .eq("email", email)
+    .is("consumed_by", null);
+
+  await supabaseAdmin.from("audit_log").insert({
+    actor_person_id: personId,
+    action: "self_added_verified",
+    table_name: "people",
+    record_id: personId,
+  });
+
+  return { ok: true, personId };
 }
 
 export type PendingSuggestion = {
