@@ -297,3 +297,14 @@ Revoked all `anon` and `authenticated` table grants on `duplicate_rulings`, leav
 
 ## /admin is tabbed, 2026-07-30
 One tab per panel: Review queue, People, Duplicates, Roster import, Editions, Schedule, Photos, Mail, Sends, Auth attempts. Tab state lives in the `?tab=` search param so a refresh keeps the tab. Review queue and Duplicates carry a count badge when either has pending items. Schedule holds the weekend-planning panels: headcount, data confidence, digest, drip and export. No panel changed behavior.
+
+## The "I am not listed" paths, 2026-08-03
+Three fixes, no schema change.
+
+Magic link honours preapproved_emails. `requestSignInLink` used to look up `identities` only, so roughly twenty alumni Google Group addresses got complete silence. It now falls through to `preapproved_emails` and still sends the link. Verified with a temporary preapproved test address, which reached the mailer and was stopped only by a deliberate suppression row. An address in neither table is unchanged: neutral notice, nothing sent, `no_identity_match` logged.
+
+/me no longer dead ends. A signed-in person with no person record gets a claim panel, "we just do not know which name on the board is yours", with two actions. Find my name searches the same fuzzy pool and attaches their verified address to that person as an identity, consuming any preapproval, refused if that name already has a verified account. I'm not on here, add me creates the record directly and files the suggestion already approved, since inbox possession is the proof an organizer would have been checking. Both live in `account.server.ts` behind `claimPersonAsMe` and `addMeAsPerson`.
+
+A decline is a signup. An unmatched name still becomes a pending `new_person` suggestion, but the typed email now receives a sign-in link on every answer including not_this_year, and `party_size` is carried in the payload. Clicking the link marks the pending request `email_verified`, and approval then attaches that address as a verified identity, so the person is signed in on arrival. The answer was already written as a real rsvp row at approval time and still is.
+
+Add-me is a control everywhere, worded "I'm not on here, add me". The board search empty state has a real button that opens the dialog with the typed text prefilled, the claim dialog shows the add-me button from the first keystroke rather than the third, the ActionRail circle opens the dialog in place instead of linking home, and /alumni FIND YOUR NAME and its closing button open the dialog. No gold anywhere in any of it.

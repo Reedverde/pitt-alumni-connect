@@ -34,6 +34,28 @@ export const requestSignInLink = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (!identity) {
+      // Inbox possession on an address the organizers preapproved is proof of
+      // membership. They have no person record yet, so the link still goes out
+      // and /me asks them which name on the board is theirs.
+      const { data: preapproved } = await supabaseAdmin
+        .from("preapproved_emails")
+        .select("email")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (preapproved) {
+        const { sendMagicLinkEmail } = await import("./mail.server");
+        await sendMagicLinkEmail({
+          to: email,
+          personId: null,
+          firstName: null,
+          status: "",
+          origin: data?.origin ?? null,
+          kind: "magic_link",
+        });
+        return { ok: true };
+      }
+
       await logAuthAttempt({
         email,
         personId: null,

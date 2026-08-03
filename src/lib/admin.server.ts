@@ -575,7 +575,8 @@ export async function resolveSuggestion(
       } as never);
     }
 
-    // The email the submitter typed, unverified. Signing in verifies it.
+    // The email the submitter typed. If they already clicked their link it is
+    // proven, so it attaches verified and they are signed in on arrival.
     if (typeof payload.email === "string" && payload.email.includes("@")) {
       await supabaseAdmin
         .from("identities")
@@ -583,6 +584,9 @@ export async function resolveSuggestion(
           person_id: createdId,
           email: payload.email.trim().toLowerCase(),
           is_primary: true,
+          ...(payload.email_verified === true
+            ? { verified_at: new Date().toISOString(), provider: "magic" }
+            : {}),
         } as never)
         .select("id")
         .maybeSingle();

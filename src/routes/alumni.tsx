@@ -1,9 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 
 import { SiteNav } from "@/components/SiteNav";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ActionRail } from "@/components/board/ActionRail";
 import { ClosingCta } from "@/components/claim/ClosingCta";
+import { ClaimDialog } from "@/components/claim/ClaimDialog";
 import { PhotoSlot, StatementCard } from "@/components/media/PhotoSlot";
 import { primaryButton } from "@/components/claim/ui";
 import { useSessionPerson } from "@/lib/useSessionPerson";
@@ -83,6 +85,8 @@ function RecordStrip() {
 
 function AlumniPage() {
   const { signedIn } = useSessionPerson();
+  const navigate = useNavigate();
+  const [claimOpen, setClaimOpen] = useState(false);
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
       <SiteNav />
@@ -216,9 +220,9 @@ function AlumniPage() {
                   YOUR RECORD
                 </Link>
               ) : (
-                <Link to="/" style={{ ...primaryButton, display: "inline-block", textDecoration: "none" }}>
+                <button type="button" style={primaryButton} onClick={() => setClaimOpen(true)}>
                   FIND YOUR NAME
-                </Link>
+                </button>
               )}
             </div>
           </Measure>
@@ -227,10 +231,19 @@ function AlumniPage() {
         <ClosingCta
           title="Find your name"
           body="Every player from 1978 on is on the board. Find yours and tell us if you are coming."
-          action={{ kind: "link", label: "Go to the board", to: "/" }}
+          action={{ kind: "rsvp", label: "Find your name", onOpen: () => setClaimOpen(true) }}
         />
       </main>
-      <ActionRail />
+      <ActionRail onRsvp={() => setClaimOpen(true)} />
+      <ClaimDialog
+        open={claimOpen}
+        target={null}
+        onClose={() => setClaimOpen(false)}
+        onClaimed={(personId) => {
+          setClaimOpen(false);
+          void navigate({ to: "/", hash: personId ? `person-${personId}` : undefined });
+        }}
+      />
     </div>
   );
 }

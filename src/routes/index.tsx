@@ -195,6 +195,7 @@ function BoardPage() {
   const [newestFirst, setNewestFirst] = useState(true);
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
+  const [claimPrefill, setClaimPrefill] = useState("");
   const [panelPerson, setPanelPerson] = useState<BoardPerson | null>(null);
   const [focusPersonId, setFocusPersonId] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -216,7 +217,8 @@ function BoardPage() {
     setPanelPerson(person);
   };
 
-  const openClaim = (person?: BoardPerson) => {
+  const openClaim = (person?: BoardPerson, prefill = "") => {
+    setClaimPrefill(person ? "" : prefill);
     setClaimTarget(
       person
         ? {
@@ -483,6 +485,14 @@ function BoardPage() {
                     ? `No names match "${searchQuery.trim()}". Try a last name, or add yourself.`
                     : flatEmptyCopy(phraseStatuses)
                 }
+                action={
+                  searching
+                    ? {
+                        label: "I'm not on here, add me",
+                        onClick: () => openClaim(undefined, searchQuery.trim()),
+                      }
+                    : undefined
+                }
               />
             )}
           </div>
@@ -528,6 +538,7 @@ function BoardPage() {
       <ClaimDialog
         open={claimOpen}
         target={claimTarget}
+        prefillName={claimPrefill}
         onClose={() => setClaimOpen(false)}
         onClaimed={(personId) => {
           void queryClient.invalidateQueries({ queryKey: ["board"] });
@@ -952,7 +963,13 @@ function AnchorRow({
 }
 
 /** A prompt, not a chip: it sits under the chip wall on its own line. */
-function EmptyPrompt({ copy }: { copy: string }) {
+function EmptyPrompt({
+  copy,
+  action,
+}: {
+  copy: string;
+  action?: { label: string; onClick: () => void };
+}) {
   return (
     <NotchedBox
       corners={NOTCH_ALL}
@@ -960,9 +977,23 @@ function EmptyPrompt({ copy }: { copy: string }) {
       dashed
       className="mt-4 w-full max-w-[560px]"
     >
-      <p className="px-4 py-3" style={{ color: "var(--sterling)", fontSize: 13 }}>
-        {copy}
-      </p>
+      <div className="px-4 py-3">
+        <p style={{ color: "var(--sterling)", fontSize: 13 }}>{copy}</p>
+        {action && (
+          <button
+            type="button"
+            onClick={action.onClick}
+            className="label-caps mt-3 rounded-[7px] px-3 py-2"
+            style={{
+              border: "1px solid var(--chalk)",
+              background: "var(--pure-white)",
+              color: "var(--steel-ink)",
+            }}
+          >
+            {action.label}
+          </button>
+        )}
+      </div>
     </NotchedBox>
   );
 }
