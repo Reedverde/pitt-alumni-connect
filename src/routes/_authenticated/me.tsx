@@ -27,7 +27,15 @@ import { searchPeople } from "@/lib/rsvp.functions";
 import { personDisplayName as matchName, type PersonMatch } from "@/lib/rsvp-types";
 import { STATUS_LABELS, personDisplayName, type RsvpStatus } from "@/lib/rsvp-types";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
-import { FieldLabel, Notice, fieldStyle, primaryButton, secondaryButton } from "@/components/claim/ui";
+import { isStructurallyValidEmail } from "@/lib/email-typos";
+import {
+  EmailSuggestion,
+  FieldLabel,
+  Notice,
+  fieldStyle,
+  primaryButton,
+  secondaryButton,
+} from "@/components/claim/ui";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 
