@@ -337,7 +337,13 @@ function BoardPage() {
     const haystack = normalize(
       [person.first_name, person.last_name, person.played_as].filter(Boolean).join(" "),
     );
-    return searchTokens.every((token) => haystack.includes(token));
+    // Direct substring first; only then fall back to nickname equivalence,
+    // and only for the query token, never for the stored name.
+    return searchTokens.every(
+      (token) =>
+        haystack.includes(token) ||
+        equivalentNames(token).some((alt) => new RegExp(`(^| )${alt}`).test(haystack)),
+    );
   };
 
   const isHidden = (person: BoardPerson) => {
