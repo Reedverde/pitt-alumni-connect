@@ -308,3 +308,7 @@ Magic link honours preapproved_emails. `requestSignInLink` used to look up `iden
 A decline is a signup. An unmatched name still becomes a pending `new_person` suggestion, but the typed email now receives a sign-in link on every answer including not_this_year, and `party_size` is carried in the payload. Clicking the link marks the pending request `email_verified`, and approval then attaches that address as a verified identity, so the person is signed in on arrival. The answer was already written as a real rsvp row at approval time and still is.
 
 Add-me is a control everywhere, worded "I'm not on here, add me". The board search empty state has a real button that opens the dialog with the typed text prefilled, the claim dialog shows the add-me button from the first keystroke rather than the third, the ActionRail circle opens the dialog in place instead of linking home, and /alumni FIND YOUR NAME and its closing button open the dialog. No gold anywhere in any of it.
+
+## 2026-08-04
+- Coaches and managers row moved to the bottom of the board, below the oldest year row. The 1978 anchor block is unchanged.
+- Email typo guard added in `src/lib/email-typos.ts` with the `EmailSuggestion` control in `src/components/claim/ui.tsx`. Wired into the claim dialog email step, `/auth`, and the add an email field on `/me`. Structural validation blocks submit, a domain suspicion never does.

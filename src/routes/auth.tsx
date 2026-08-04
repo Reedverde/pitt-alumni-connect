@@ -9,7 +9,15 @@ import { requestSignInLink } from "@/lib/signin.functions";
 import { useEditionEyebrow } from "@/lib/useEdition";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import pittUltimateShield from "@/assets/pitt-ultimate-shield.png.asset.json";
-import { FieldLabel, Notice, fieldStyle, primaryButton, secondaryButton } from "@/components/claim/ui";
+import { isStructurallyValidEmail } from "@/lib/email-typos";
+import {
+  EmailSuggestion,
+  FieldLabel,
+  Notice,
+  fieldStyle,
+  primaryButton,
+  secondaryButton,
+} from "@/components/claim/ui";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -64,6 +72,10 @@ function AuthPage() {
 
   const sendLink = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isStructurallyValidEmail(email)) {
+      setError("That address doesn't look complete. Check for a missing @ or a typo.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -141,6 +153,7 @@ function AuthPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
+          <EmailSuggestion value={email} onAccept={setEmail} />
           <Notice>We'll email you a one-time link. No password, ever.</Notice>
           {error && (
             <p className="mt-3" style={{ fontSize: 13, color: "var(--pitt-royal)" }}>

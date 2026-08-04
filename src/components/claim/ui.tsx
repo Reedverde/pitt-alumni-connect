@@ -1,5 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
+import { suggestEmailCorrection } from "@/lib/email-typos";
+
 export const primaryButton: CSSProperties = {
   background: "var(--pitt-royal)",
   color: "var(--pure-white)",
@@ -48,6 +50,38 @@ export function Notice({ children }: { children: ReactNode }) {
   return (
     <p className="mt-3" style={{ fontSize: 13, color: "var(--steel-ink)" }}>
       {children}
+    </p>
+  );
+}
+/** Quiet one-tap correction for likely email typos. Never a block, never gold. */
+export function EmailSuggestion({
+  value,
+  onAccept,
+}: {
+  value: string;
+  onAccept: (corrected: string) => void;
+}) {
+  const suggestion = suggestEmailCorrection(value);
+  if (!suggestion) return null;
+  return (
+    <p className="label-caps mt-2" style={{ color: "var(--sterling)", textTransform: "none" }}>
+      Did you mean{" "}
+      <button
+        type="button"
+        onClick={() => onAccept(suggestion)}
+        style={{
+          background: "none",
+          border: "none",
+          padding: 0,
+          color: "var(--pitt-royal)",
+          textDecoration: "underline",
+          font: "inherit",
+          cursor: "pointer",
+        }}
+      >
+        {suggestion}
+      </button>
+      ?
     </p>
   );
 }

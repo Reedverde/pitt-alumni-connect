@@ -13,7 +13,8 @@ import { readRsvpSource } from "@/lib/rsvp-src";
 import { useEditionEyebrow } from "@/lib/useEdition";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimStamp } from "./ClaimStamp";
-import { FieldLabel, Notice, fieldStyle, primaryButton, secondaryButton } from "./ui";
+import { isStructurallyValidEmail } from "@/lib/email-typos";
+import { EmailSuggestion, FieldLabel, Notice, fieldStyle, primaryButton, secondaryButton } from "./ui";
 
 export type ClaimTarget = {
   id: string;
@@ -155,6 +156,10 @@ export function ClaimDialog({
 
   const submit = async () => {
     if (!status) return;
+    if (!isStructurallyValidEmail(email)) {
+      setError("That address doesn't look complete. Check for a missing @ or a typo.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -410,6 +415,7 @@ export function ClaimDialog({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
+                <EmailSuggestion value={email} onAccept={setEmail} />
                 <Notice>
                   We'll send you a sign-in link so you can update your record later. No password, ever.
                 </Notice>
