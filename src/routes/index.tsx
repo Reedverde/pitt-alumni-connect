@@ -351,17 +351,32 @@ function BoardPage() {
         effStatuses.includes(p.state),
     ).length;
 
-  const flatPeople = flatMode
-    ? (searching ? [...people, ...data.coaches] : people)
-        .filter((p) => !isHidden(p) && matchesSearch(p))
-        .sort(
-          (a, b) =>
-            b.board_year - a.board_year ||
-            `${a.last_name ?? a.first_name} ${a.first_name}`
-              .toLowerCase()
-              .localeCompare(`${b.last_name ?? b.first_name} ${b.first_name}`.toLowerCase()),
-        )
+  const byYearThenName = (a: BoardPerson, b: BoardPerson) =>
+    b.board_year - a.board_year ||
+    `${a.last_name ?? a.first_name} ${a.first_name}`
+      .toLowerCase()
+      .localeCompare(`${b.last_name ?? b.first_name} ${b.first_name}`.toLowerCase());
+
+  // Searching ranks by tier: direct, then nickname equivalence, then fuzzy.
+  // Tiers never interleave; the usual ordering applies inside each tier.
+  const ranked = searching
+    ? rankMatches(
+        searchQuery,
+        [...people, ...data.coaches].filter((p) => !isHidden(p)),
+      )
     : [];
+  const flatPeople = !flatMode
+    ? []
+    : searching
+      ? ([0, 1, 2] as MatchTier[]).flatMap((tier) =>
+          ranked
+            .filter((r) => r.tier === tier)
+            .map((r) => r.item)
+            .sort(byYearThenName),
+        )
+      : people.filter((p) => !isHidden(p)).sort(byYearThenName);
+  // Only-fuzzy results must never be presented as if they were exact.
+  const onlyFuzzy = searching && ranked.length > 0 && ranked.every((r) => r.tier === TIER_FUZZY);
 
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
