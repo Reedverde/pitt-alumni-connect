@@ -7,6 +7,7 @@ import { getBoard, type BoardPerson, type BoardPhoto } from "@/lib/board.functio
 import { getWeekendPage } from "@/lib/schedule.functions";
 import { buildYearGroups, claimedCount, type YearGroup } from "@/lib/board-grouping";
 import { equivalentNames } from "@/lib/name-equivalence";
+import { rankMatches, tokenizeQuery, TIER_FUZZY, type MatchTier } from "@/lib/name-match";
 import { NameChip } from "@/components/board/NameChip";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
@@ -302,8 +303,7 @@ function BoardPage() {
     setStatusFilter((prev) => (prev === code ? null : code));
 
   const filtered = statusFilter !== null;
-  const search = normalize(searchQuery);
-  const searchTokens = search.split(" ").filter(Boolean);
+  const searchTokens = tokenizeQuery(searchQuery);
   const searching = searchTokens.length > 0;
   // Either constraint flattens the wall into a list.
   const flatMode = filtered || searching;
@@ -331,22 +331,6 @@ function BoardPage() {
     // The fourth chip filters by role, not program: anyone who ever coached or managed.
     if (divisionFilter === "__coaches") return person.has_coached === true || person.is_coach === true;
     return (person.divisions ?? []).includes(divisionFilter);
-  };
-
-  const matchesSearch = (person: BoardPerson) => {
-    if (!searching) return true;
-    const haystack = normalize(
-      [person.first_name, person.last_name, person.played_as].filter(Boolean).join(" "),
-    );
-    // Equivalence applies to given names only, never surnames.
-    const givenNames = normalize([person.first_name, person.played_as].filter(Boolean).join(" "));
-    // Direct substring first; only then fall back to nickname equivalence,
-    // and only for the query token, never for the stored name.
-    return searchTokens.every(
-      (token) =>
-        haystack.includes(token) ||
-        equivalentNames(token).some((alt) => new RegExp(`(^| )${alt}`).test(givenNames)),
-    );
   };
 
   const isHidden = (person: BoardPerson) => {
