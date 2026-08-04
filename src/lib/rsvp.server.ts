@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { nameScore, nameScoreWithNicknames } from "./fuzzy";
+import { rankMatches } from "./name-match";
 import { currentEditionYear } from "./editions.server";
 import {
   evaluateRsvpThrottle,
