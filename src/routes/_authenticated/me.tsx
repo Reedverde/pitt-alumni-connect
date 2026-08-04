@@ -716,25 +716,28 @@ function AddEmailForm({ onAdd }: { onAdd: (email: string) => void }) {
   const [value, setValue] = useState("");
   return (
     <form
-      className="mt-3 flex flex-wrap gap-2"
+      className="mt-3"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!value.trim()) return;
+        if (!isStructurallyValidEmail(value)) return;
         onAdd(value);
         setValue("");
       }}
     >
-      <input
-        aria-label="Add another email"
-        type="email"
-        placeholder="another@address.com"
-        style={{ ...fieldStyle, flex: "1 1 220px", width: "auto" }}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-      />
-      <button type="submit" style={secondaryButton}>
-        Add email
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <input
+          aria-label="Add another email"
+          type="email"
+          placeholder="another@address.com"
+          style={{ ...fieldStyle, flex: "1 1 220px", width: "auto" }}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+        <button type="submit" style={secondaryButton}>
+          Add email
+        </button>
+      </div>
+      <EmailSuggestion value={value} onAccept={setValue} />
     </form>
   );
 }
