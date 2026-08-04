@@ -475,7 +475,9 @@ function BoardPage() {
               style={{ fontFamily: '"Space Mono", monospace', color: "var(--sterling)" }}
             >
               {searching
-                ? `${flatPeople.length} MATCHING "${searchQuery.trim().toUpperCase()}"`
+                ? onlyFuzzy
+                  ? `NO EXACT MATCH FOR "${searchQuery.trim().toUpperCase()}". CLOSEST:`
+                  : `${flatPeople.length} MATCHING "${searchQuery.trim().toUpperCase()}"`
                 : `${flatPeople.length} ${statusPhrase(phraseStatuses)}`}
             </p>
             {flatPeople.length > 0 ? (
