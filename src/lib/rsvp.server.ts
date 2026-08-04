@@ -137,20 +137,25 @@ export async function searchPeopleServer(query: string): Promise<PersonMatch[]> 
   const rows = ((data ?? []) as PersonRow[]).filter(
     (p) => !(p.seed_division && hidden.has(p.seed_division)),
   );
-  const scored = rows
-    .map((p) => {
-      const full = [p.first_name, p.last_name].filter(Boolean).join(" ");
-      const score = Math.max(
-        nameScoreWithNicknames(q, full),
-        nameScore(q, p.last_name ?? ""),
-        nameScoreWithNicknames(q, p.first_name),
-        p.played_as ? nameScore(q, p.played_as) : 0,
-      );
-      return { p, score };
+  // Three tiers, in order: direct, nickname equivalence, fuzzy. Rows here are
+  // already living people only, so no memorial record can reach any tier.
+  const ranked = rankMatches(q, rows).slice(0, 6);
+  const scored = ranked
+    .map(({ item, tier }) => {
+      const full = [item.first_name, item.last_name].filter(Boolean).join(" ");
+      return {
+        p: item,
+        tier,
+        score: Math.max(
+          nameScoreWithNicknames(q, full),
+          nameScore(q, item.last_name ?? ""),
+          nameScoreWithNicknames(q, item.first_name),
+          item.played_as ? nameScore(q, item.played_as) : 0,
+        ),
+      };
     })
-    .filter((row) => row.score >= 0.45)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 6);
+    // Tiers never interleave; score only breaks ties inside a tier.
+    .sort((a, b) => a.tier - b.tier || b.score - a.score);
 
   if (scored.length === 0) return [];
 
@@ -158,7 +163,7 @@ export async function searchPeopleServer(query: string): Promise<PersonMatch[]> 
   const [place, states] = await Promise.all([placement(ids), stateFor(ids)]);
 
   return Promise.all(
-    scored.map(async ({ p }) => {
+    scored.map(async ({ p, tier }) => {
       const pl = place.get(p.id);
       const boardYear = pl?.board_year ?? p.grad_year ?? null;
       const division = pl?.board_division ?? p.seed_division ?? null;
@@ -171,6 +176,7 @@ export async function searchPeopleServer(query: string): Promise<PersonMatch[]> 
         team_label: await teamLabel(division, boardYear),
         years_label: await yearsLabel(p.id, p.grad_year),
         state: resolveState(p.deceased, states.rsvp.get(p.id), states.verified.has(p.id)),
+        tier,
       } satisfies PersonMatch;
     }),
   );
