@@ -168,6 +168,7 @@ function normalize(value: string) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -301,7 +302,8 @@ function BoardPage() {
 
   const filtered = statusFilter !== null;
   const search = normalize(searchQuery);
-  const searching = search.length > 0;
+  const searchTokens = search.split(" ").filter(Boolean);
+  const searching = searchTokens.length > 0;
   // Either constraint flattens the wall into a list.
   const flatMode = filtered || searching;
   // CLAIMED means "has claimed their name", whatever they answered, so it is a
@@ -332,9 +334,10 @@ function BoardPage() {
 
   const matchesSearch = (person: BoardPerson) => {
     if (!searching) return true;
-    return [person.first_name, person.last_name, person.played_as]
-      .filter(Boolean)
-      .some((field) => normalize(String(field)).includes(search));
+    const haystack = normalize(
+      [person.first_name, person.last_name, person.played_as].filter(Boolean).join(" "),
+    );
+    return searchTokens.every((token) => haystack.includes(token));
   };
 
   const isHidden = (person: BoardPerson) => {
