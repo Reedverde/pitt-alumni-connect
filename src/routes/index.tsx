@@ -338,12 +338,14 @@ function BoardPage() {
     const haystack = normalize(
       [person.first_name, person.last_name, person.played_as].filter(Boolean).join(" "),
     );
+    // Equivalence applies to given names only, never surnames.
+    const givenNames = normalize([person.first_name, person.played_as].filter(Boolean).join(" "));
     // Direct substring first; only then fall back to nickname equivalence,
     // and only for the query token, never for the stored name.
     return searchTokens.every(
       (token) =>
         haystack.includes(token) ||
-        equivalentNames(token).some((alt) => new RegExp(`(^| )${alt}`).test(haystack)),
+        equivalentNames(token).some((alt) => new RegExp(`(^| )${alt}`).test(givenNames)),
     );
   };
 
