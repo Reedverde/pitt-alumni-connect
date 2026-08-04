@@ -6,6 +6,7 @@ import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { getBoard, type BoardPerson, type BoardPhoto } from "@/lib/board.functions";
 import { getWeekendPage } from "@/lib/schedule.functions";
 import { buildYearGroups, claimedCount, type YearGroup } from "@/lib/board-grouping";
+import { equivalentNames } from "@/lib/name-equivalence";
 import { NameChip } from "@/components/board/NameChip";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
@@ -337,7 +338,15 @@ function BoardPage() {
     const haystack = normalize(
       [person.first_name, person.last_name, person.played_as].filter(Boolean).join(" "),
     );
-    return searchTokens.every((token) => haystack.includes(token));
+    // Equivalence applies to given names only, never surnames.
+    const givenNames = normalize([person.first_name, person.played_as].filter(Boolean).join(" "));
+    // Direct substring first; only then fall back to nickname equivalence,
+    // and only for the query token, never for the stored name.
+    return searchTokens.every(
+      (token) =>
+        haystack.includes(token) ||
+        equivalentNames(token).some((alt) => new RegExp(`(^| )${alt}`).test(givenNames)),
+    );
   };
 
   const isHidden = (person: BoardPerson) => {

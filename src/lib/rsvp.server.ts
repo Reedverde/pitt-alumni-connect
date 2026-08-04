@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { nameScore } from "./fuzzy";
+import { nameScore, nameScoreWithNicknames } from "./fuzzy";
 import { currentEditionYear } from "./editions.server";
 import {
   evaluateRsvpThrottle,
@@ -141,9 +141,9 @@ export async function searchPeopleServer(query: string): Promise<PersonMatch[]> 
     .map((p) => {
       const full = [p.first_name, p.last_name].filter(Boolean).join(" ");
       const score = Math.max(
-        nameScore(q, full),
+        nameScoreWithNicknames(q, full),
         nameScore(q, p.last_name ?? ""),
-        nameScore(q, p.first_name),
+        nameScoreWithNicknames(q, p.first_name),
         p.played_as ? nameScore(q, p.played_as) : 0,
       );
       return { p, score };

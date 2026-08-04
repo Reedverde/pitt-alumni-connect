@@ -1,6 +1,8 @@
 /** Small, dependency-free fuzzy matching tuned for misspelled surnames
  *  (Thorne, DeGirolamo, McComb, Vatz, Kaczmarek). */
 
+import { equivalentNames } from "./name-equivalence";
+
 export function normalize(value: string) {
   return value
     .toLowerCase()
@@ -70,6 +72,25 @@ export function nameScore(query: string, candidate: string) {
       let tokenScore = Math.max(ratio(qt, ct), trigramSimilarity(qt, ct));
       if (ct.startsWith(qt)) tokenScore = Math.max(tokenScore, 0.88);
       best = Math.max(best, tokenScore * (qTokens.length > 1 ? 0.9 : 1));
+    }
+  }
+  return best;
+}
+
+/** nameScore, plus a slightly discounted pass over nickname equivalents of the
+ *  query's given-name tokens. Direct matches always outrank equivalence ones. */
+export function nameScoreWithNicknames(query: string, candidate: string) {
+  const direct = nameScore(query, candidate);
+  if (direct >= 1) return direct;
+  const tokens = normalize(query).split(" ").filter(Boolean);
+  let best = direct;
+  for (let i = 0; i < tokens.length; i++) {
+    for (const alt of equivalentNames(tokens[i])) {
+      if (alt === tokens[i]) continue;
+      const variant = tokens.slice();
+      variant[i] = alt;
+      const score = nameScore(variant.join(" "), candidate) * 0.99;
+      if (score > best) best = score;
     }
   }
   return best;
