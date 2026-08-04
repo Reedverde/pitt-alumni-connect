@@ -6,6 +6,7 @@ import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { getBoard, type BoardPerson, type BoardPhoto } from "@/lib/board.functions";
 import { getWeekendPage } from "@/lib/schedule.functions";
 import { buildYearGroups, claimedCount, type YearGroup } from "@/lib/board-grouping";
+import { equivalentNames } from "@/lib/name-equivalence";
 import { NameChip } from "@/components/board/NameChip";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
