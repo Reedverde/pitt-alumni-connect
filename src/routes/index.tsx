@@ -163,16 +163,6 @@ function flatEmptyCopy(statuses: string[]) {
   return "Nobody has answered yet. Be the first.";
 }
 
-/** Accent insensitive, case insensitive, substring anywhere. */
-function normalize(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function BoardPage() {
   const { data } = useSuspenseQuery(boardQuery);
   const { data: weekend } = useSuspenseQuery(weekendQuery);
