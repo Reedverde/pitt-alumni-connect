@@ -498,7 +498,6 @@ function BoardPage() {
           </div>
         ) : (
         <div>
-          {data.coaches.length > 0 && <CoachesRow people={data.coaches} onClaim={openChip} />}
           {orderedRows.map((row, i) =>
             row.kind === "anchor" ? (
               <AnchorRow
@@ -526,6 +525,7 @@ function BoardPage() {
               />
             ),
           )}
+          {data.coaches.length > 0 && <CoachesRow people={data.coaches} onClaim={openChip} />}
         </div>
         )}
 
