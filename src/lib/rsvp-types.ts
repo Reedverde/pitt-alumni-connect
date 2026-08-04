@@ -27,6 +27,8 @@ export type PersonMatch = {
   team_label: string | null;
   years_label: string | null;
   state: "unclaimed" | "claimed" | "going" | "maybe" | "memorial";
+  /** 0 direct, 1 nickname equivalence, 2 fuzzy. Fuzzy is offered, never assumed. */
+  tier?: 0 | 1 | 2;
 };
 
 export type RsvpResult = {

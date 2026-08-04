@@ -6,7 +6,7 @@ import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { getBoard, type BoardPerson, type BoardPhoto } from "@/lib/board.functions";
 import { getWeekendPage } from "@/lib/schedule.functions";
 import { buildYearGroups, claimedCount, type YearGroup } from "@/lib/board-grouping";
-import { equivalentNames } from "@/lib/name-equivalence";
+import { rankMatches, tokenizeQuery, TIER_FUZZY, type MatchTier } from "@/lib/name-match";
 import { NameChip } from "@/components/board/NameChip";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
@@ -163,16 +163,6 @@ function flatEmptyCopy(statuses: string[]) {
   return "Nobody has answered yet. Be the first.";
 }
 
-/** Accent insensitive, case insensitive, substring anywhere. */
-function normalize(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function BoardPage() {
   const { data } = useSuspenseQuery(boardQuery);
   const { data: weekend } = useSuspenseQuery(weekendQuery);
@@ -302,8 +292,7 @@ function BoardPage() {
     setStatusFilter((prev) => (prev === code ? null : code));
 
   const filtered = statusFilter !== null;
-  const search = normalize(searchQuery);
-  const searchTokens = search.split(" ").filter(Boolean);
+  const searchTokens = tokenizeQuery(searchQuery);
   const searching = searchTokens.length > 0;
   // Either constraint flattens the wall into a list.
   const flatMode = filtered || searching;
@@ -333,22 +322,6 @@ function BoardPage() {
     return (person.divisions ?? []).includes(divisionFilter);
   };
 
-  const matchesSearch = (person: BoardPerson) => {
-    if (!searching) return true;
-    const haystack = normalize(
-      [person.first_name, person.last_name, person.played_as].filter(Boolean).join(" "),
-    );
-    // Equivalence applies to given names only, never surnames.
-    const givenNames = normalize([person.first_name, person.played_as].filter(Boolean).join(" "));
-    // Direct substring first; only then fall back to nickname equivalence,
-    // and only for the query token, never for the stored name.
-    return searchTokens.every(
-      (token) =>
-        haystack.includes(token) ||
-        equivalentNames(token).some((alt) => new RegExp(`(^| )${alt}`).test(givenNames)),
-    );
-  };
-
   const isHidden = (person: BoardPerson) => {
     if (!matchesDivision(person)) return true;
     if (!filtered) return false;
@@ -367,17 +340,32 @@ function BoardPage() {
         effStatuses.includes(p.state),
     ).length;
 
-  const flatPeople = flatMode
-    ? (searching ? [...people, ...data.coaches] : people)
-        .filter((p) => !isHidden(p) && matchesSearch(p))
-        .sort(
-          (a, b) =>
-            b.board_year - a.board_year ||
-            `${a.last_name ?? a.first_name} ${a.first_name}`
-              .toLowerCase()
-              .localeCompare(`${b.last_name ?? b.first_name} ${b.first_name}`.toLowerCase()),
-        )
+  const byYearThenName = (a: BoardPerson, b: BoardPerson) =>
+    b.board_year - a.board_year ||
+    `${a.last_name ?? a.first_name} ${a.first_name}`
+      .toLowerCase()
+      .localeCompare(`${b.last_name ?? b.first_name} ${b.first_name}`.toLowerCase());
+
+  // Searching ranks by tier: direct, then nickname equivalence, then fuzzy.
+  // Tiers never interleave; the usual ordering applies inside each tier.
+  const ranked = searching
+    ? rankMatches(
+        searchQuery,
+        [...people, ...data.coaches].filter((p) => !isHidden(p)),
+      )
     : [];
+  const flatPeople = !flatMode
+    ? []
+    : searching
+      ? ([0, 1, 2] as MatchTier[]).flatMap((tier) =>
+          ranked
+            .filter((r) => r.tier === tier)
+            .map((r) => r.item)
+            .sort(byYearThenName),
+        )
+      : people.filter((p) => !isHidden(p)).sort(byYearThenName);
+  // Only-fuzzy results must never be presented as if they were exact.
+  const onlyFuzzy = searching && ranked.length > 0 && ranked.every((r) => r.tier === TIER_FUZZY);
 
   return (
     <div style={{ background: "var(--field-white)" }} className="min-h-screen">
@@ -476,7 +464,9 @@ function BoardPage() {
               style={{ fontFamily: '"Space Mono", monospace', color: "var(--sterling)" }}
             >
               {searching
-                ? `${flatPeople.length} MATCHING "${searchQuery.trim().toUpperCase()}"`
+                ? onlyFuzzy
+                  ? `NO EXACT MATCH FOR "${searchQuery.trim().toUpperCase()}". CLOSEST:`
+                  : `${flatPeople.length} MATCHING "${searchQuery.trim().toUpperCase()}"`
                 : `${flatPeople.length} ${statusPhrase(phraseStatuses)}`}
             </p>
             {flatPeople.length > 0 ? (

@@ -282,11 +282,17 @@ export function ClaimDialog({
                 <div className="mt-5">
                   {query.trim().length >= 2 && (
                     <p className="label-caps mb-3" style={{ color: "var(--sterling)" }}>
-                      {searching ? "Looking…" : matches.length ? "Did you mean…" : "No match yet"}
+                      {searching
+                        ? "Looking…"
+                        : matches.some((m) => (m.tier ?? 0) < 2)
+                          ? "Did you mean…"
+                          : "No match yet"}
                     </p>
                   )}
                   <ul className="flex flex-col gap-2">
-                      {matches.map((m) => (
+                      {matches
+                        .filter((m) => (m.tier ?? 0) < 2)
+                        .map((m) => (
                         <li key={m.id}>
                           <button
                             type="button"
@@ -311,6 +317,41 @@ export function ClaimDialog({
                           </button>
                         </li>
                       ))}
+                      {!searching && matches.some((m) => (m.tier ?? 0) === 2) && (
+                        <li>
+                          {/* Close spellings are offered, never preselected. */}
+                          <p className="label-caps mb-1 mt-2" style={{ color: "var(--sterling)" }}>
+                            Did you mean one of these?
+                          </p>
+                        </li>
+                      )}
+                      {matches
+                        .filter((m) => (m.tier ?? 0) === 2)
+                        .map((m) => (
+                          <li key={m.id}>
+                            <button
+                              type="button"
+                              onClick={() => pick(m)}
+                              className="flex w-full items-baseline justify-between gap-3 text-left"
+                              style={{
+                                border: "1px solid var(--chalk)",
+                                borderRadius: 7,
+                                padding: "11px 13px",
+                                background: "var(--pure-white)",
+                              }}
+                            >
+                              <span style={{ fontSize: 15, color: "var(--steel-ink)" }}>
+                                {personDisplayName(m)}
+                              </span>
+                              <span
+                                className="label-caps"
+                                style={{ color: "var(--sterling)", whiteSpace: "nowrap" }}
+                              >
+                                {[m.team_label, m.years_label].filter(Boolean).join(" · ")}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
                       <li>
                         <button type="button" onClick={pickNew} style={{ ...secondaryButton, width: "100%" }}>
                           I'm not on here, add me
