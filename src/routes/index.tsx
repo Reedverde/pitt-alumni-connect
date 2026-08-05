@@ -11,6 +11,7 @@ import { NameChip } from "@/components/board/NameChip";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
+import { secondaryButton } from "@/components/claim/ui";
 import { SiteNav } from "@/components/SiteNav";
 import { PersonPanel } from "@/components/board/PersonPanel";
 import { useSessionPerson } from "@/lib/useSessionPerson";
