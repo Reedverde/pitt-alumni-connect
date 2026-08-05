@@ -420,6 +420,25 @@ function BoardPage() {
 
         <header className="pt-6 pb-8">
           <SlashEyebrow>The board</SlashEyebrow>
+          {staleLink && (
+            <div
+              className="mb-6 rounded-[9px] px-4 py-3"
+              style={{ border: "1px solid var(--chalk)", background: "var(--field-white)" }}
+            >
+              <p style={{ fontSize: 15, color: "var(--steel-ink)" }}>
+                That link from your email has run out. No harm done, nothing changed. Find your
+                name below and answer here instead.
+              </p>
+              <button
+                type="button"
+                className="mt-3"
+                style={secondaryButton}
+                onClick={() => openClaim(undefined, "")}
+              >
+                I&apos;m not on here, add me
+              </button>
+            </div>
+          )}
           <h2 className="display-48 mt-3" style={{ color: "var(--sabah-black)" }}>
             FIND YOUR YEAR
           </h2>
