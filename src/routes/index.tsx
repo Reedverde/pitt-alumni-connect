@@ -190,6 +190,9 @@ function BoardPage() {
   const [claimPrefill, setClaimPrefill] = useState("");
   const [panelPerson, setPanelPerson] = useState<BoardPerson | null>(null);
   const [focusPersonId, setFocusPersonId] = useState<string | null>(null);
+  // Set when an answer link from email had expired or been tampered with. The
+  // page never dead-ends: it says so plainly and the claim flow is right there.
+  const [staleLink, setStaleLink] = useState(false);
   const navigate = useNavigate();
   const session = useSessionPerson();
 
@@ -264,6 +267,10 @@ function BoardPage() {
   }, [groups, anchorPeople, newestFirst]);
 
   const clock = countdown(data.edition, data.nextEdition);
+
+  useEffect(() => {
+    setStaleLink(new URLSearchParams(window.location.search).get("link") === "expired");
+  }, []);
 
   // Coming back from a claim, or arriving from another page with #person-<id>:
   // scroll the person's own chip into view once the board has re-rendered.
