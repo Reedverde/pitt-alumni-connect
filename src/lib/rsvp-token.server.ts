@@ -199,7 +199,11 @@ export async function commitRsvpToken(
       .from("identities")
       .update({ verified_at: new Date().toISOString() })
       .eq("id", identity.id);
-    await supabaseAdmin.rpc("promote_verified_primary", { _identity_id: identity.id }).catch?.(() => {});
+    try {
+      await supabaseAdmin.rpc("promote_verified_primary", { _identity_id: identity.id });
+    } catch {
+      /* promotion is best effort; the address is verified either way */
+    }
   }
 
   let signInUrl: string | null = null;
