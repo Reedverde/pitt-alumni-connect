@@ -79,7 +79,11 @@ function Stranded() {
 }
 
 function RsvpLinkPage() {
-  const view = Route.useLoaderData();
+  const view = Route.useLoaderData() as {
+    firstName: string | null;
+    eventYear: number | null;
+    currentStatus: RsvpStatus | null;
+  };
   const { t: token = "", a } = Route.useSearch();
   const navigate = useNavigate();
   const commit = useServerFn(confirmRsvpLink);
