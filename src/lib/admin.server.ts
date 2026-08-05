@@ -1518,14 +1518,31 @@ export type SendRow = {
   error: string | null;
 };
 
-export type SendTotals = { sent: number; blocked: number; failed: number; suppressed: number };
+export type SendTotals = {
+  sent: number;
+  blocked: number;
+  failed: number;
+  suppressed: number;
+  /** One-click answer links: loads versus taps. A wide gap between the two is
+   *  email security scanners opening links before the human ever sees them. */
+  linksOpened: number;
+  linksConfirmed: number;
+};
 
 /** Deliveries are counted on outcome, never on status and never on a null
  *  timestamp. A blocked attempt is not a send. */
 export async function sendTotals(): Promise<SendTotals> {
-  const totals: SendTotals = { sent: 0, blocked: 0, failed: 0, suppressed: 0 };
+  const totals: SendTotals = {
+    sent: 0,
+    blocked: 0,
+    failed: 0,
+    suppressed: 0,
+    linksOpened: 0,
+    linksConfirmed: 0,
+  };
+  const outcomes = ["sent", "blocked", "failed", "suppressed"] as const;
   await Promise.all(
-    (Object.keys(totals) as Array<keyof SendTotals>).map(async (outcome) => {
+    outcomes.map(async (outcome) => {
       const { count } = await supabaseAdmin
         .from("sends")
         .select("id", { count: "exact", head: true })
@@ -1533,6 +1550,10 @@ export async function sendTotals(): Promise<SendTotals> {
       totals[outcome] = count ?? 0;
     }),
   );
+  const { rsvpLinkTotals } = await import("./rsvp-token.server");
+  const links = await rsvpLinkTotals();
+  totals.linksOpened = links.opened;
+  totals.linksConfirmed = links.confirmed;
   return totals;
 }
 

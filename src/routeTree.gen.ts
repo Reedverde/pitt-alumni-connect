@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AlumniRouteImport } from './routes/alumni'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as RsvpRouteImport } from './routes/rsvp'
 import { Route as WeekendRouteImport } from './routes/weekend'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated/me'
@@ -43,6 +44,11 @@ const AlumniRoute = AlumniRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RsvpRoute = RsvpRouteImport.update({
+  id: '/rsvp',
+  path: '/rsvp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WeekendRoute = WeekendRouteImport.update({
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
+  '/rsvp': typeof RsvpRoute
   '/weekend': typeof WeekendRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
+  '/rsvp': typeof RsvpRoute
   '/weekend': typeof WeekendRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
+  '/rsvp': typeof RsvpRoute
   '/weekend': typeof WeekendRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/me': typeof AuthenticatedMeRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/'
     | '/alumni'
     | '/auth'
+    | '/rsvp'
     | '/weekend'
     | '/admin'
     | '/me'
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/'
     | '/alumni'
     | '/auth'
+    | '/rsvp'
     | '/weekend'
     | '/admin'
     | '/me'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/alumni'
     | '/auth'
+    | '/rsvp'
     | '/weekend'
     | '/_authenticated/admin'
     | '/_authenticated/me'
@@ -219,6 +231,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AlumniRoute: typeof AlumniRoute
   AuthRoute: typeof AuthRoute
+  RsvpRoute: typeof RsvpRoute
   WeekendRoute: typeof WeekendRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   EditionsYearRoute: typeof EditionsYearRoute
@@ -259,6 +272,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rsvp': {
+      id: '/rsvp'
+      path: '/rsvp'
+      fullPath: '/rsvp'
+      preLoaderRoute: typeof RsvpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/weekend': {
@@ -366,6 +386,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AlumniRoute: AlumniRoute,
   AuthRoute: AuthRoute,
+  RsvpRoute: RsvpRoute,
   WeekendRoute: WeekendRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   EditionsYearRoute: EditionsYearRoute,
