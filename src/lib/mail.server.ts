@@ -452,6 +452,13 @@ async function generateMagicLink(email: string, origin: string | null): Promise<
   return typeof link === "string" ? link : null;
 }
 
+/** An unspent one-time sign-in link for an address, generated and handed back
+ *  rather than mailed. Used by the one-click answer page, where possession of
+ *  the answer token has already proved inbox access. Sends nothing. */
+export async function sessionLinkFor(email: string, origin: string | null) {
+  return generateMagicLink(email, origin);
+}
+
 /** Confirmation copy only. This never appears in a sign-in link message: a
  *  sign-in link says one thing, here is your link. Carrying RSVP copy in the
  *  one kind that is allowed through while outbound email is paused turned every

@@ -11,6 +11,7 @@ import { NameChip } from "@/components/board/NameChip";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
+import { secondaryButton } from "@/components/claim/ui";
 import { SiteNav } from "@/components/SiteNav";
 import { PersonPanel } from "@/components/board/PersonPanel";
 import { useSessionPerson } from "@/lib/useSessionPerson";
@@ -190,6 +191,9 @@ function BoardPage() {
   const [claimPrefill, setClaimPrefill] = useState("");
   const [panelPerson, setPanelPerson] = useState<BoardPerson | null>(null);
   const [focusPersonId, setFocusPersonId] = useState<string | null>(null);
+  // Set when an answer link from email had expired or been tampered with. The
+  // page never dead-ends: it says so plainly and the claim flow is right there.
+  const [staleLink, setStaleLink] = useState(false);
   const navigate = useNavigate();
   const session = useSessionPerson();
 
@@ -264,6 +268,10 @@ function BoardPage() {
   }, [groups, anchorPeople, newestFirst]);
 
   const clock = countdown(data.edition, data.nextEdition);
+
+  useEffect(() => {
+    setStaleLink(new URLSearchParams(window.location.search).get("link") === "expired");
+  }, []);
 
   // Coming back from a claim, or arriving from another page with #person-<id>:
   // scroll the person's own chip into view once the board has re-rendered.
@@ -413,6 +421,25 @@ function BoardPage() {
 
         <header className="pt-6 pb-8">
           <SlashEyebrow>The board</SlashEyebrow>
+          {staleLink && (
+            <div
+              className="mb-6 rounded-[9px] px-4 py-3"
+              style={{ border: "1px solid var(--chalk)", background: "var(--field-white)" }}
+            >
+              <p style={{ fontSize: 15, color: "var(--steel-ink)" }}>
+                That link from your email has run out. No harm done, nothing changed. Find your
+                name below and answer here instead.
+              </p>
+              <button
+                type="button"
+                className="mt-3"
+                style={secondaryButton}
+                onClick={() => openClaim(undefined, "")}
+              >
+                I&apos;m not on here, add me
+              </button>
+            </div>
+          )}
           <h2 className="display-48 mt-3" style={{ color: "var(--sabah-black)" }}>
             FIND YOUR YEAR
           </h2>

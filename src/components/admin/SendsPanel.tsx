@@ -118,6 +118,12 @@ export function SendsPanel({ rows, totals }: { rows: SendRow[]; totals: SendTota
         <span style={mono}>{totals.suppressed}</span> held back. Only the first number
         counts as mail that left the building.
       </p>
+      <p className="mb-4" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
+        One-click answer links: <span style={mono}>{totals.linksOpened}</span> opened ·{" "}
+        <span style={mono}>{totals.linksConfirmed}</span> confirmed. Loading a link writes
+        nothing, so a wide gap between the two is security scanners opening mail, not people
+        changing their minds.
+      </p>
       {rows.length === 0 ? (
         <Empty>Nothing has been sent yet.</Empty>
       ) : (
