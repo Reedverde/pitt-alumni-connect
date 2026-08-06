@@ -822,7 +822,7 @@ function CounterBar({
           <button
             type="button"
             onClick={onIsolateGoing}
-            className="label-caps ml-auto shrink-0 rounded-[7px] px-2 py-1.5"
+            className="label-caps ml-2 shrink-0 rounded-[7px] px-2 py-1.5"
             style={{
               border: "1px solid var(--pitt-royal)",
               color: "var(--pitt-royal)",
