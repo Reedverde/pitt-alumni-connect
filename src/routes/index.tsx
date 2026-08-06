@@ -16,7 +16,6 @@ import { SiteNav } from "@/components/SiteNav";
 import { PersonPanel } from "@/components/board/PersonPanel";
 import { useSessionPerson } from "@/lib/useSessionPerson";
 import { SiteFooter } from "@/components/SiteFooter";
-import { StatusBar } from "@/components/board/StatusBar";
 import heroPeak from "@/assets/hero-peak.png.asset.json";
 import { NotchedBox } from "@/components/media/NotchedBox";
 import { NOTCH_ALL } from "@/components/media/notch";
@@ -379,7 +378,6 @@ function BoardPage() {
     <div style={{ background: "var(--field-white)" }} className="board-chrome min-h-screen">
       <SiteNav onClaim={() => openClaim()} />
       <Hero season={season} clock={clock} countdownLive={countdownLive} onClaim={() => openClaim()} />
-      <StatusBar />
       <CounterBar
         claimed={data.totals.claimed}
         going={data.totals.going}
