@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { useSessionPerson } from "@/lib/useSessionPerson";
+import { NavStatusMenu } from "@/components/nav/NavStatusMenu";
 import pittUltimateShield from "@/assets/pitt-ultimate-shield.png.asset.json";
 
 const linkStyle = { color: "var(--sterling)" } as const;
@@ -90,6 +91,7 @@ export function SiteNav(_props: { onClaim?: () => void }) {
 
       <span className="ml-auto flex items-center gap-3 pl-1">
         <IdentitySlot />
+        <NavStatusMenu />
       </span>
     </nav>
   );
