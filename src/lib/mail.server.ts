@@ -8,10 +8,12 @@ import {
   emailParagraph,
   emailPlainUrl,
   emailShell,
+  emailSocialBlock,
   escapeHtml,
 } from "./email-chrome";
 import { loadCurrentEdition } from "./editions.server";
 import { logAuthAttempt } from "./auth-attempts.server";
+import { DISCORD_INVITE_URL } from "./site-url";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
@@ -552,12 +554,53 @@ export function buildConfirmationBody(opts: {
       emailButton(opts.link, "Sign in"),
       emailPlainUrl(opts.link),
       emailMuted(change),
+      emailSocialBlock(DISCORD_INVITE_URL),
       emailFooter([
         "Pitt Club Ultimate Alumni",
         "You are receiving this because you answered for Alumni Weekend.",
       ]),
     ].join("\n"),
     "Your Alumni Weekend answer is recorded.",
+  );
+
+  return { text, html };
+}
+
+export const DISCORD_INVITE_SUBJECT = "Where the weekend actually gets sorted";
+
+/** The discord_invite drip. It carries information, not an ask: what is being
+ *  decided in there and when. One screen on a phone. Dormant until the
+ *  sequence row is switched on. */
+export function buildDiscordInviteBody(opts: { name: string; dates: string }) {
+  const lines = [
+    "Start times get locked in there first, and they move.",
+    "You can see who has said yes before you commit.",
+    "Rides and rooms get paired up in there, not over text.",
+  ];
+
+  const text = [
+    `${opts.name},`,
+    "",
+    ...(opts.dates ? [opts.dates, ""] : []),
+    ...lines,
+    "",
+    `Join the Discord: ${DISCORD_INVITE_URL}`,
+    "",
+    "Pitt Club Ultimate Alumni",
+  ].join("\n");
+
+  const html = emailShell(
+    [
+      emailParagraph(`${opts.name},`),
+      ...(opts.dates ? [emailMuted(opts.dates)] : []),
+      ...lines.map((l) => emailParagraph(l)),
+      emailSocialBlock(DISCORD_INVITE_URL),
+      emailFooter([
+        "Pitt Club Ultimate Alumni",
+        "You are receiving this because you have a record on the alumni board.",
+      ]),
+    ].join("\n"),
+    "Times, who is coming, rides and rooms.",
   );
 
   return { text, html };
