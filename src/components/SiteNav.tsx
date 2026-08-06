@@ -50,7 +50,7 @@ function IdentitySlot() {
 export function SiteNav(_props: { onClaim?: () => void }) {
   return (
     <nav
-      className="sticky top-0 z-30 flex h-[72px] items-center gap-2 px-3 sm:gap-3 sm:px-5"
+      className="site-nav sticky top-0 z-40 flex items-center gap-2 px-3 sm:gap-3 sm:px-5"
       style={{ background: "var(--pure-white)", borderBottom: "1px solid var(--chalk)" }}
     >
       <Link to="/" className="flex items-center gap-[6px] sm:gap-[10px]" aria-label="Pitt Club Ultimate">
