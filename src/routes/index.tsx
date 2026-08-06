@@ -387,7 +387,14 @@ function BoardPage() {
         clock={clock}
         goldLive={goldLive}
         countdownLive={countdownLive}
-        onIsolateGoing={() => setStatusFilter("going")}
+        onIsolateGoing={() => {
+          setStatusFilter("going");
+          if (typeof document !== "undefined") {
+            requestAnimationFrame(() =>
+              document.getElementById("board")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+            );
+          }
+        }}
       />
       {statusFilter === "going" && (
         <div
@@ -419,7 +426,7 @@ function BoardPage() {
           />
         )}
 
-        <header className="pt-6 pb-8">
+        <header id="board" className="chrome-anchor pt-6 pb-8">
           <SlashEyebrow>The board</SlashEyebrow>
           {staleLink && (
             <div
@@ -775,6 +782,20 @@ function CounterBar({
           </div>
           ),
         )}
+        {goldLive && (
+          <button
+            type="button"
+            onClick={onIsolateGoing}
+            className="label-caps ml-auto rounded-[7px] px-3 py-2"
+            style={{
+              border: "1px solid var(--pitt-royal)",
+              color: "var(--pitt-royal)",
+              background: "var(--pure-white)",
+            }}
+          >
+            See who&apos;s coming
+          </button>
+        )}
       </div>
       <div className="relative mx-auto flex h-14 max-w-[1320px] items-center px-5 md:hidden" style={{ fontSize: 13 }}>
         <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--pitt-royal)" }}>{claimed} claimed</span>
@@ -797,6 +818,20 @@ function CounterBar({
         <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}>
           {countdownLive ? `${clock.value} ${clock.label.toLowerCase()}` : `${total} on the board`}
         </span>
+        {goldLive && (
+          <button
+            type="button"
+            onClick={onIsolateGoing}
+            className="label-caps ml-auto shrink-0 rounded-[7px] px-2 py-1.5"
+            style={{
+              border: "1px solid var(--pitt-royal)",
+              color: "var(--pitt-royal)",
+              background: "var(--pure-white)",
+            }}
+          >
+            Who&apos;s coming
+          </button>
+        )}
       </div>
     </div>
   );
