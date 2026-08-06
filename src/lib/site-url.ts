@@ -18,4 +18,4 @@ export const OG_IMAGE = absoluteUrl("/og-card.jpg");
  * The one place the Discord invite is defined. Site chrome and every outbound
  * message read it from here; it is never written out a second time.
  */
-export const DISCORD_INVITE_URL = "https://discord.gg/wN45WHM6";
+export const DISCORD_INVITE_URL = "https://discord.gg/vj9AwhHDcz";
