@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 
 import pittUltimateShield from "@/assets/pitt-ultimate-shield.png.asset.json";
+import { DISCORD_INVITE_URL } from "@/lib/site-url";
 
 /** Shield, the three permanent links, and the endowment. Footer only. */
 export function SiteFooter() {
@@ -47,6 +48,15 @@ export function SiteFooter() {
             style={{ color: "var(--pitt-royal)", textDecoration: "none" }}
           >
             Endowment
+          </a>
+          <a
+            href={DISCORD_INVITE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="label-caps"
+            style={{ color: "var(--pitt-royal)", textDecoration: "none" }}
+          >
+            Discord
           </a>
           <a
             href="https://everde.co"
