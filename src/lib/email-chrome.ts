@@ -149,3 +149,32 @@ export function emailPlainUrl(href: string) {
   const url = escapeHtml(href);
   return `<p class="e-url" style="margin:0 0 20px;font-family:${FONT_STACK};font-size:13px;line-height:1.5;word-break:break-all;color:${STERLING}">Or paste this into your browser:<br><a href="${url}" style="color:${ROYAL};text-decoration:underline">${url}</a></p>`;
 }
+
+/** Optional hosted PNG of the Discord mark. Email clients do not render inline
+ *  SVG, so the glyph is a PNG or it is omitted entirely; the words never move
+ *  into the image, so nothing is lost when images are blocked. */
+function discordGlyphUrl(): string | null {
+  const raw = process.env.MAIL_DISCORD_ICON_URL?.trim();
+  return raw && /^https:\/\/\S+$/.test(raw) ? raw : null;
+}
+
+/** The social row that sits above the unsubscribe line in every drip message.
+ *  Royal fill, white text, 7px radius. Never gold. The second cell is left
+ *  empty on purpose: an Instagram button will sit beside Discord later. */
+export function emailSocialBlock(discordUrl: string) {
+  const href = escapeHtml(discordUrl);
+  const glyph = discordGlyphUrl();
+  const glyphImg = glyph
+    ? `<img src="${escapeHtml(
+        glyph,
+      )}" width="16" height="16" alt="Discord" style="display:inline-block;vertical-align:middle;border:0;margin-right:8px"> `
+    : "";
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 0"><tr>
+<td align="left" class="e-btn" bgcolor="${ROYAL}" style="background-color:${ROYAL};border-radius:7px">
+<a href="${href}" style="display:inline-block;padding:12px 22px;font-family:${FONT_STACK};font-size:14px;font-weight:bold;letter-spacing:0.02em;color:#ffffff;text-decoration:none">${glyphImg}Join the Discord</a></td>
+<!-- Instagram button sits here once a handle exists. -->
+<td width="12" style="width:12px">&nbsp;</td>
+<td align="left">&nbsp;</td>
+</tr></table>
+<p class="e-url" style="margin:8px 0 0;font-family:${FONT_STACK};font-size:12px;line-height:1.5;word-break:break-all;color:${STERLING}"><a href="${href}" style="color:${ROYAL};text-decoration:underline">${href}</a></p>`;
+}
