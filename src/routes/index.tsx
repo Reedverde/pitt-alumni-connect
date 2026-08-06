@@ -376,7 +376,7 @@ function BoardPage() {
   const onlyFuzzy = searching && ranked.length > 0 && ranked.every((r) => r.tier === TIER_FUZZY);
 
   return (
-    <div style={{ background: "var(--field-white)" }} className="min-h-screen">
+    <div style={{ background: "var(--field-white)" }} className="board-chrome min-h-screen">
       <SiteNav onClaim={() => openClaim()} />
       <Hero season={season} clock={clock} countdownLive={countdownLive} onClaim={() => openClaim()} />
       <StatusBar />
@@ -737,7 +737,7 @@ function CounterBar({
   ];
   return (
     <div
-      className="sticky top-14 z-20 relative isolate overflow-hidden"
+      className="counter-bar sticky z-30 isolate overflow-hidden"
       style={{ background: "var(--pure-white)", borderBottom: "1px solid var(--chalk)" }}
     >
       <SidelineLoop />
@@ -877,7 +877,7 @@ function DecadeRail({ groups }: { groups: YearGroup[] }) {
   return (
     <nav
       aria-label="Jump to a decade"
-      className="sticky top-[112px] z-10 mt-6 flex flex-wrap items-center gap-3 py-3"
+      className="decade-rail sticky z-20 mt-6 flex flex-wrap items-center gap-3 py-3"
       style={{ background: "var(--field-white)", borderBottom: "1px solid var(--chalk)" }}
     >
       {DECADES.map((decade, i) => {
@@ -913,7 +913,7 @@ function CoachesRow({
   return (
     <section
       id="coaches"
-      className="flex scroll-mt-[180px] flex-col gap-4 py-7 md:flex-row md:gap-8"
+      className="chrome-anchor flex flex-col gap-4 py-7 md:flex-row md:gap-8"
       style={{ borderBottom: "1px solid var(--chalk)" }}
     >
       <div className="flex items-center gap-4 md:w-[240px] md:shrink-0 md:flex-col md:items-start md:gap-3">
@@ -1102,7 +1102,7 @@ function YearRow({
   return (
     <section
       id={group.key}
-      className="flex scroll-mt-[180px] flex-col gap-4 py-7 md:flex-row md:gap-8"
+      className="chrome-anchor flex flex-col gap-4 py-7 md:flex-row md:gap-8"
       style={{ borderBottom: "1px solid var(--chalk)" }}
     >
       <div className="flex items-center gap-4 md:w-[240px] md:shrink-0 md:flex-col md:items-start md:gap-3">

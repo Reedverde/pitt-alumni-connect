@@ -60,6 +60,7 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 - RSVP rate limiting: built. Three dimensions, soft and hard tiers
 - Unmatched names as review requests with an hourly admin digest: built
 - Privacy policy, analytics, automated tests: not started
+- Sticky chrome geometry is CSS-defined: nav 72px on every route; board counter 57px and decade rail 49px. Anchor offsets use the resulting route-specific `--chrome-height` with no runtime measurement.
 
 ## RESOLVED TONIGHT (2026-07-31)
 

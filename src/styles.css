@@ -85,6 +85,10 @@
   --radius: 0.625rem;
   --notch-sm: 16px;
   --notch-lg: 28px;
+  --nav-height: 72px;
+  --counter-height: 57px;
+  --decade-rail-height: 49px;
+  --chrome-height: var(--nav-height);
   --sabah-black: #0B0B0C;
   --pitt-royal: #003594;
   --pitt-gold: #FFB81C;
@@ -126,6 +130,30 @@
   --sidebar-accent-foreground: oklch(0.25 0.065 95.354);
   --sidebar-border: oklch(0.85 0.025 264.695);
   --sidebar-ring: oklch(0.55 0.08 262.088);
+}
+
+/* The board has two persistent bars plus its sticky jump rail. Every other
+ * route inherits the nav-only chrome height above. */
+.board-chrome {
+  --chrome-height: calc(var(--nav-height) + var(--counter-height) + var(--decade-rail-height));
+}
+
+.site-nav {
+  height: var(--nav-height);
+}
+
+.counter-bar {
+  top: var(--nav-height);
+  min-height: var(--counter-height);
+}
+
+.decade-rail {
+  top: calc(var(--nav-height) + var(--counter-height));
+  min-height: var(--decade-rail-height);
+}
+
+.chrome-anchor {
+  scroll-margin-top: var(--chrome-height);
 }
 
 .dark {

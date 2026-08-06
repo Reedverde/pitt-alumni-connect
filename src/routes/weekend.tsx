@@ -348,7 +348,7 @@ function WhereToStay({ edition }: { edition: EditionSummary }) {
   const travel = edition.travel_note?.trim();
   if (!lodging && !travel) return null;
   return (
-    <section id="where-to-stay" className="mt-16 scroll-mt-24">
+    <section id="where-to-stay" className="chrome-anchor mt-16">
       <SlashEyebrow>Where to stay</SlashEyebrow>
       <h2 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
         GETTING HERE
