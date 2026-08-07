@@ -11,7 +11,7 @@ const STATE_WORDS: Record<BoardPerson["state"], string> = {
 function chipStyle(state: BoardPerson["state"]): React.CSSProperties {
   switch (state) {
     case "claimed":
-      return { background: "var(--pitt-royal)", color: "var(--pure-white)", border: "1px solid transparent" };
+      return { background: "transparent", color: "var(--pitt-royal)", border: "1px solid var(--pitt-royal)" };
     case "going":
       return { background: "var(--pitt-gold)", color: "var(--sabah-black)", border: "1px solid transparent" };
     case "maybe":
@@ -26,7 +26,7 @@ function chipStyle(state: BoardPerson["state"]): React.CSSProperties {
 function dotColor(state: BoardPerson["state"]) {
   switch (state) {
     case "claimed":
-      return "rgba(255,255,255,0.4)";
+      return "var(--pitt-royal)";
     case "going":
       return "var(--sabah-black)";
     case "maybe":
