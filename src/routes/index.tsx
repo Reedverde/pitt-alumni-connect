@@ -894,6 +894,40 @@ function StatusRadioChips({
   );
 }
 
+/** Small legend that maps the board chip colors to what they mean. */
+function BoardKey() {
+  const items = [
+    { label: "Not claimed", dot: "var(--chalk)", border: "1px solid var(--chalk)", bg: "transparent", text: "var(--sterling)" },
+    { label: "Claimed", dot: "var(--pitt-royal)", border: "1px solid var(--pitt-royal)", bg: "transparent", text: "var(--pitt-royal)" },
+    { label: "Going", dot: "var(--sabah-black)", border: "1px solid transparent", bg: "var(--pitt-gold)", text: "var(--sabah-black)" },
+    { label: "Maybe", dot: "var(--pitt-gold)", border: "1px solid var(--pitt-gold)", bg: "transparent", text: "var(--steel-ink)" },
+    { label: "Remembered", dot: "var(--pure-white)", border: "1px solid transparent", bg: "var(--sabah-black)", text: "var(--pure-white)" },
+  ];
+  return (
+    <div className="mt-5">
+      <p className="label-caps mb-2" style={{ color: "var(--sterling)" }}>
+        Key
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {items.map((item) => (
+          <span
+            key={item.label}
+            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5"
+            style={{ background: item.bg, border: item.border, color: item.text, fontSize: 12, fontWeight: 500 }}
+          >
+            <span
+              aria-hidden="true"
+              className="inline-block rounded-full"
+              style={{ width: 6, height: 6, background: item.dot }}
+            />
+            <span className="label-caps" style={{ fontSize: 10 }}>{item.label}</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function buildDecades(groups: YearGroup[]) {
   const years = groups.flatMap((g) => g.years);
   if (years.length === 0) return [] as { label: string; from: number; to: number }[];
