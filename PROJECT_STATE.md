@@ -13,7 +13,7 @@
 | 7 | Performance | Light | Gap: the board renders every chip with no virtualization. 468 people today |
 | 8 | SEO | Standard | In place: full meta, Open Graph and Twitter card in __root.tsx. Gap: no sitemap, and og:image points at a Lovable R2 preview screenshot that will rot |
 | 9 | Analytics | Light | Not started. The only signal today is rsvps.src captured from the query string |
-| 10 | Email & Notifications | Standard | In place: Resend wrapper, sends log, suppressions, HMAC one click unsubscribe, Resend webhook, hourly admin digest. Gap: sending domain not delegated, all 8 sequences dormant |
+| 10 | Email & Notifications | Standard | In place: Resend wrapper, sends log, suppressions, HMAC one click unsubscribe, Resend webhook, hourly admin digest, verified sending domain alumni.pittultimate.org live. Gap: no dispatcher, all ten sequences remain dormant even though copy is written for seven |
 | 11 | Compliance & Legal | Standard | Gap: no privacy policy or terms on a site holding 468 real names and 120 email addresses |
 | 12 | Discovery & Planning | Standard | In place: CONTEXT.md, BUILD_SPEC.md, DESIGN.md, URL_MANIFEST.md. Gap: they live outside this repo |
 | 13 | Testing | Light | Not started. No Vitest, no Playwright. 005_verify.sql has 29 checks never confirmed PASS in a browser |
