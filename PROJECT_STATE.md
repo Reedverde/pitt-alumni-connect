@@ -88,6 +88,8 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 
 **Both GroupMe links received** after five asks. `groupme_b` Swagger Jacked, alumni only: https://groupme.com/join_group/25525883/XmguKcz4. `groupme_a` The Program, alumni and current: https://groupme.com/join_group/87254367/OrOti41l. Legacy bare `groupme` source value was retired and existing rows now read as null or were backfilled to the appropriate label where known.
 
+**1978 question RESOLVED.** Brody's season page shows the 1977-1978 Pitt Fastbacks, organised by Randy Strausser via fliers on telephone poles. `team_names` now carries `Fastbacks` for 1978-1978 with confidence verified, and `Pitt Club Ultimate` for 1979-1997 as an explicit unknown placeholder to provoke corrections. Randy Strausser's 1978 `MENS_A` stint role is now `captain`.
+
 **Duplicate-name rulings** from the previous session stand. Nothing merged.
 
 ## 2026-08-01
