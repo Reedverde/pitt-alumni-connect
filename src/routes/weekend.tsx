@@ -120,6 +120,40 @@ const tileStyle: CSSProperties = {
   padding: 20,
 };
 
+/** House pattern for an address: a small ghost text link, never gold. */
+const directionsLink: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  background: "transparent",
+  border: "none",
+  padding: 0,
+  color: "var(--pitt-royal)",
+  fontFamily: '"Space Grotesk", sans-serif',
+  fontSize: 13,
+  fontWeight: 700,
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+  textDecoration: "underline",
+  textUnderlineOffset: 3,
+};
+
+const HOTEL_MAP_URL =
+  "https://www.google.com/maps/search/?api=1&query=Hilton+Garden+Inn+Pittsburgh+University+Place%2C+3454+Forbes+Ave%2C+Pittsburgh%2C+PA+15213";
+
+function Directions({ href, label }: { href: string; label?: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={directionsLink}
+      aria-label={label ? `Directions to ${label}` : undefined}
+    >
+      Directions
+    </a>
+  );
+}
+
 function timeLabel(event: ScheduleEvent) {
   if (event.time_tbd || !event.starts_at) return "TBD";
   return new Intl.DateTimeFormat("en-US", {
@@ -492,6 +526,11 @@ function EventTile({
       {event.location && (
         <p className="mt-2" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
           {event.location}
+        </p>
+      )}
+      {event.map_url && (
+        <p className="mt-2">
+          <Directions href={event.map_url} label={event.location ?? event.title} />
         </p>
       )}
       {event.notes && (
