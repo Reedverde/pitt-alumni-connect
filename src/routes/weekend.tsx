@@ -138,7 +138,7 @@ const directionsLink: CSSProperties = {
 };
 
 const HOTEL_MAP_URL =
-  "https://www.google.com/maps/search/?api=1&query=Hilton+Garden+Inn+Pittsburgh+University+Place%2C+3454+Forbes+Ave%2C+Pittsburgh%2C+PA+15213";
+  "https://www.google.com/maps/place/Hilton+Garden+Inn+Pittsburgh+University+Place/@40.4395111,-79.9618132,1120m/data=!3m1!1e3!4m9!3m8!1s0x8834f180c7629df3:0x29371aa7788f0544!5m2!4m1!1i2!8m2!3d40.4395111!4d-79.9592383!16s%2Fg%2F1tff880d";
 
 function Directions({ href, label }: { href: string; label?: string }) {
   return (
