@@ -20,7 +20,7 @@
 | 14 | Documentation | Standard | In place: this file, AGENTS.md, src/routes/README.md, project knowledge set 2026-07-30 |
 | 15 | Graceful Degradation | Standard | In place: mail.server.ts never throws, falls back to the built in mailer, and the RSVP record saves regardless of send outcome |
 | 16 | Loading/Empty/Error States | Standard | Partial: dashed prompt cards and invitation style empty states specified in DESIGN.md. Not verified across every route |
-| 17 | Environment & Secrets | Standard | Partial: Supabase vars set. RESEND_API_KEY, MAIL_FROM_ADDRESS, MAIL_UNSUBSCRIBE_SECRET, PUBLIC_SITE_URL, SUPABASE_SERVICE_ROLE_KEY status unconfirmed |
+| 17 | Environment & Secrets | Standard | Partial: Supabase vars set. RESEND_API_KEY, MAIL_FROM_ADDRESS, MAIL_REPLY_TO, and PUBLIC_SITE_URL now configured and live. MAIL_UNSUBSCRIBE_SECRET and SUPABASE_SERVICE_ROLE_KEY status unconfirmed |
 | 18 | Responsive & Mobile | Standard | In place: use-mobile hook, mobile type clamps, counter bar collapses to one line. Most alumni are on a phone |
 | 19 | Backup & Recovery | Light | Gap: no export of the people table outside Supabase. Lovable Cloud defaults only |
 | 20 | Rate Limiting | Standard | In place: three dimension throttle on `throttle_events`, service role only. Soft trip saves the RSVP and holds the mail, hard trip writes nothing, both return an identical response. Gap: no pruning job, the table grows forever |
