@@ -326,6 +326,48 @@ A decline is a signup. An unmatched name still becomes a pending `new_person` su
 
 Add-me is a control everywhere, worded "I'm not on here, add me". The board search empty state has a real button that opens the dialog with the typed text prefilled, the claim dialog shows the add-me button from the first keystroke rather than the third, the ActionRail circle opens the dialog in place instead of linking home, and /alumni FIND YOUR NAME and its closing button open the dialog. No gold anywhere in any of it.
 
+## 2026-08-07
+
+SENDING DOMAIN, now live
+
+- `alumni.pittultimate.org` verified in Resend at 12:27 PM Aug 7. DKIM, SPF TXT on `send.alumni`, and MX on `send.alumni` all verified.
+- DNS is in the `pittultimate.org` zone at DreamHost, entered by Brody. DreamHost cannot create MX on a subdomain through the DNS panel. The fix was creating `send.alumni.pittultimate.org` as its own domain entry, then using the Custom MX page scoped to that subdomain. Record this; it will be needed again.
+- No DMARC record exists and none is planned. DreamHost's form strips the leading underscore so `_dmarc.alumni` cannot be created. DMARC is optional in Resend.
+- The Resend API key was domain-restricted to `pitt.everde.co` and returned 403 on the new domain. Now scoped to `alumni.pittultimate.org`. Note: `checkSendingDomain()` verifies the domain is verified but not that the key is authorised for it, which let a doomed send through.
+- From address is Pitt Club Ultimate <weekend@alumni.pittultimate.org>, set by the `MAIL_FROM_ADDRESS` secret which overrides the code constant. `MAIL_REPLY_TO` is `weekend@alumni.pittultimate.org`. `PUBLIC_SITE_URL` is `https://alumni.pittultimate.org`. Lovable secrets cannot be overwritten by the agent, only deleted and recreated by hand.
+- Magic links confirmed delivering to inbox with DKIM pass.
+
+DRIP COPY, written, all dormant
+
+- Six sequences now have copy in `src/lib/mail.server.ts`: `t_minus_45`, `t_minus_28`, `t_minus_14`, `t_minus_10_headcount`, `t_minus_2`, `t_plus_3`. `discord_invite` already had copy.
+- All ten sequences remain `active = false`. There is NO dispatcher. Nothing reads the `sequences` table and sends. Setting `active = true` currently does nothing.
+- `t_minus_42` renamed to `t_minus_45` to match its actual offset. Resolves to Aug 18 2026.
+- `t_minus_60` passed on Aug 3 with no copy and no sender.
+- Copy lives in TypeScript, not the database, so every wording change requires a deploy. Only Reed can edit. Flagged as a structural problem for handover.
+
+OTHER SHIPPED TODAY
+
+- `rsvps.src` widened to: text, email, discord, groupme_a, groupme_b, facebook, instagram, x, esn, qr. Bare `groupme` retired. Unrecognised values store null. Existing rows: 28 text, 4 discord, 5 null.
+- New unlisted route `/qr`, a printable QR poster encoding the board with `src=qr`. Black on white, generated in bundle, print stylesheet.
+- Map Directions links added for Schenley Overlook Shelter, Ambrose Urbanic Field, and the Hilton. Schenley address `10430 Overlook Dr` now shown.
+- Hotel named: Hilton Garden Inn Pittsburgh University Place, 3454 Forbes Ave. No room block, no group rate.
+- Both GroupMe links received. `groupme_a` is The Program, alumni and current. `groupme_b` is Swagger Jacked, alumni only. Legacy names kept deliberately.
+- `team_names`: Fastbacks 1978 to 1978 verified. Pitt Club Ultimate 1979 to 1997 confidence unknown, a deliberate placeholder to provoke corrections, not history. Randy Strausser's 1978 stint set to `captain`.
+- 1978 question RESOLVED. Brody's season page shows the 1977-1978 Pitt Fastbacks, organised by Randy Strausser via fliers on telephone poles.
+- Duplicate detection: last name is now a hard gate at 0.85 evaluated first, exact match required for surnames under 5 characters.
+- Merge is now reversible. Losing record is archived, not deleted, with before and after state in `audit_log` and an Undo merge action.
+
+STILL OPEN
+
+- No dispatcher. Nothing automates.
+- KEEP SEPARATE PERMANENTLY button does not work. MERGE and NOT NOW do.
+- DUPLICATES badge and REVIEW QUEUE badge both show counts that do not match their lists. Likely the same root cause, a count query that does not exclude what the list excludes.
+- First name matching, second stage, undecided. Reed asked for 60 percent fuzzy. Flagged that nickname equivalence must run first: Ben against Benjamin scores 37 percent, Dan against Daniel 50, Matt against Matthew 57. Sibling false positives are the risk on the other side.
+- Supabase Auth Site URL may still read `pitt-alumni-connect.lovable.app`. Never confirmed changed.
+- Admin page says three people share it. There are six admins.
+- Sabah B to BITT changeover year still unknown.
+- Off-site: Danger database disclosure to Christie Lawry or Bailey Moorhead, still overdue. Micah's 48 name roster. Sunday alumni game field, still nobody's name against it.
+
 ## 2026-08-04
 - Coaches and managers row moved to the bottom of the board, below the oldest year row. The 1978 anchor block is unchanged.
 - Email typo guard added in `src/lib/email-typos.ts` with the `EmailSuggestion` control in `src/components/claim/ui.tsx`. Wired into the claim dialog email step, `/auth`, and the add an email field on `/me`. Structural validation blocks submit, a domain suspicion never does.
