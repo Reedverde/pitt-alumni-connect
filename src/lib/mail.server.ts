@@ -10,8 +10,10 @@ import {
   emailShell,
   emailSocialBlock,
   escapeHtml,
+  FONT_STACK,
+  INK,
 } from "./email-chrome";
-import { loadCurrentEdition } from "./editions.server";
+import { currentEditionYear, loadCurrentEdition } from "./editions.server";
 import { logAuthAttempt } from "./auth-attempts.server";
 import { DISCORD_INVITE_URL } from "./site-url";
 
@@ -663,6 +665,224 @@ export function buildTMinus45Body(opts: { name: string }) {
       ]),
     ].join("\n"),
     "See who is already coming.",
+  );
+
+  return { text, html };
+}
+
+/** ---------------------------------------------------------------------------
+ *  t_minus_28: who from your years is coming.
+ *  Copy is fixed. Dormant: no dispatcher reads this, and the sequence row stays
+ *  active = false until someone switches it on deliberately.
+ *  ------------------------------------------------------------------------ */
+
+export const T_MINUS_28_BOARD_URL = "https://alumni.pittultimate.org/?src=email";
+
+/** The subject carries the recipient's own board year. */
+export function tMinus28Subject(year: number) {
+  return `Who from ${year} is coming`;
+}
+
+export type CohortGoing = {
+  /** The recipient's own board year. Null means we cannot compute a cohort. */
+  year: number | null;
+  /** Everyone going within plus or minus 3 board years, recipient excluded. */
+  count: number;
+  /** At most 12 names, already sorted by board year then last name. */
+  names: string[];
+};
+
+/** Per recipient cohort: status 'going', board year within plus or minus 3 of
+ *  the recipient's own, recipient excluded, deceased excluded, archived
+ *  excluded. Sorted by board year then last name, list capped at 12 with no
+ *  "and others" line. count is the full qualifying total, not the capped list. */
+export async function loadCohortGoing(personId: string): Promise<CohortGoing> {
+  const editionYear = await currentEditionYear();
+
+  const { data: mine } = await supabaseAdmin
+    .from("person_board_placement")
+    .select("board_year")
+    .eq("person_id", personId)
+    .maybeSingle();
+  let year = (mine as { board_year?: number | null } | null)?.board_year ?? null;
+  if (year == null) {
+    const { data: person } = await supabaseAdmin
+      .from("people")
+      .select("grad_year")
+      .eq("id", personId)
+      .maybeSingle();
+    year = (person as { grad_year?: number | null } | null)?.grad_year ?? null;
+  }
+  if (year == null) return { year: null, count: 0, names: [] };
+
+  const { data: going } = await supabaseAdmin
+    .from("rsvps")
+    .select("person_id")
+    .eq("event_year", editionYear)
+    .eq("status", "going");
+  const ids = Array.from(
+    new Set(
+      ((going ?? []) as { person_id: string }[])
+        .map((r) => r.person_id)
+        .filter((id) => id && id !== personId),
+    ),
+  );
+  if (ids.length === 0) return { year, count: 0, names: [] };
+
+  const [{ data: people }, { data: placement }] = await Promise.all([
+    supabaseAdmin
+      .from("people")
+      .select("id, first_name, last_name, grad_year, deceased, archived")
+      .in("id", ids),
+    supabaseAdmin.from("person_board_placement").select("person_id, board_year").in("person_id", ids),
+  ]);
+
+  const placed = new Map<string, number | null>();
+  for (const row of (placement ?? []) as { person_id: string; board_year: number | null }[]) {
+    placed.set(row.person_id, row.board_year);
+  }
+
+  type Row = { year: number; last: string; name: string };
+  const rows: Row[] = [];
+  for (const p of (people ?? []) as {
+    id: string;
+    first_name: string;
+    last_name: string | null;
+    grad_year: number | null;
+    deceased: boolean;
+    archived: boolean;
+  }[]) {
+    if (p.deceased || p.archived) continue;
+    const by = placed.get(p.id) ?? p.grad_year;
+    if (by == null || Math.abs(by - year) > 3) continue;
+    const last = p.last_name ?? "";
+    rows.push({ year: by, last, name: [p.first_name, last].filter(Boolean).join(" ") });
+  }
+
+  rows.sort((a, b) => a.year - b.year || a.last.localeCompare(b.last) || a.name.localeCompare(b.name));
+
+  return { year, count: rows.length, names: rows.slice(0, 12).map((r) => r.name) };
+}
+
+/** The t_minus_28 body. Returns null when the cohort is empty: a zero-count
+ *  recipient must be skipped, never sent an email saying nobody is coming.
+ *  The skip is enforced here, at the builder, so no future dispatcher can
+ *  produce that message by forgetting to check. */
+export function buildTMinus28Body(opts: {
+  name: string;
+  cohort: CohortGoing;
+}): { text: string; html: string } | null {
+  const { count, names } = opts.cohort;
+  if (count <= 0 || names.length === 0) return null;
+
+  const lead = `${count} ${count === 1 ? "person" : "people"} from your years ${
+    count === 1 ? "has" : "have"
+  } said they are coming to Alumni Weekend, October 2 to 4.`;
+
+  const text = [
+    `${opts.name},`,
+    "",
+    lead,
+    "",
+    ...names,
+    "",
+    "See the rest and add your answer:",
+    "",
+    T_MINUS_28_BOARD_URL,
+    "",
+    "Pitt Club Ultimate Alumni",
+  ].join("\n");
+
+  const html = emailShell(
+    [
+      emailParagraph(`${opts.name},`),
+      emailParagraph(lead),
+      `<p style="margin:0 0 20px;font-family:${FONT_STACK};font-size:15px;line-height:26px;color:${INK};">${names
+        .map((n) => escapeHtml(n))
+        .join("<br />")}</p>`,
+      emailParagraph("See the rest and add your answer:"),
+      emailButton(T_MINUS_28_BOARD_URL, "See who is coming"),
+      emailPlainUrl(T_MINUS_28_BOARD_URL),
+      emailFooter([
+        "Pitt Club Ultimate Alumni",
+        "You are receiving this because you have a record on the alumni board.",
+      ]),
+    ].join("\n"),
+    "Names from your years.",
+  );
+
+  return { text, html };
+}
+
+/** ---------------------------------------------------------------------------
+ *  t_minus_14: the schedule is locked.
+ *  ------------------------------------------------------------------------ */
+
+export const T_MINUS_14_WEEKEND_URL = "https://alumni.pittultimate.org/weekend?src=email";
+
+export const T_MINUS_14_SUBJECT = "Times are locked";
+
+/** Plain schedule lines for the current edition: day, time, title, location.
+ *  time_tbd renders as TBD. A time is never guessed and an event is never
+ *  dropped for lacking one. */
+export async function loadScheduleLines(): Promise<string[]> {
+  const { loadEvents } = await import("./ics.server");
+  const { editionDay, dayName } = await import("./edition-format");
+  const edition = await loadCurrentEdition();
+  const events = await loadEvents(edition.event_year);
+
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  return events.map((e) => {
+    const day = dayName(editionDay(edition, e.day_number ?? 1));
+    const time = e.time_tbd || !e.starts_at ? "TBD" : fmt.format(new Date(e.starts_at));
+    return [day, time, e.title, e.location].filter(Boolean).join(", ");
+  });
+}
+
+/** The t_minus_14 body. Copy is fixed and reproduced verbatim. */
+export function buildTMinus14Body(opts: { name: string; schedule: string[] }) {
+  const lead = "Alumni Weekend is two weeks out. The schedule is set.";
+  const after = "Everything is on the site, and you can add it to your calendar in one click.";
+  const nudge = "If you have not told us yet, now is a good time.";
+
+  const text = [
+    `${opts.name},`,
+    "",
+    lead,
+    "",
+    ...opts.schedule,
+    "",
+    after,
+    "",
+    T_MINUS_14_WEEKEND_URL,
+    "",
+    nudge,
+    "",
+    "Pitt Club Ultimate Alumni",
+  ].join("\n");
+
+  const html = emailShell(
+    [
+      emailParagraph(`${opts.name},`),
+      emailParagraph(lead),
+      `<p style="margin:0 0 20px;font-family:${FONT_STACK};font-size:15px;line-height:26px;color:${INK};">${opts.schedule
+        .map((l) => escapeHtml(l))
+        .join("<br />")}</p>`,
+      emailParagraph(after),
+      emailButton(T_MINUS_14_WEEKEND_URL, "See the schedule"),
+      emailPlainUrl(T_MINUS_14_WEEKEND_URL),
+      emailParagraph(nudge),
+      emailFooter([
+        "Pitt Club Ultimate Alumni",
+        "You are receiving this because you have a record on the alumni board.",
+      ]),
+    ].join("\n"),
+    "The full schedule.",
   );
 
   return { text, html };
