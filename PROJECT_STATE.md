@@ -46,8 +46,8 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 
 ## BUILD STATUS
 
-- Board at `/`: built. Year rows, division filter, decade rail, five chip states
-- Weekend schedule at `/weekend`: built. Equal width division lanes, no division nested under another
+- Board at `/`: built. Year rows, division filter, decade rail, five chip states, board key, and status filter
+- Weekend schedule at `/weekend`: built. Equal width division lanes, no division nested under another. Directions links added for Schenley Overlook Shelter (10430 Overlook Dr), Ambrose Urbanic Field, and the Hilton Garden Inn
 - RSVP as signup with fuzzy match: built
 - Magic link and Google auth: built
 - Profile at `/me`: built
@@ -56,11 +56,17 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 - Calendar .ics export: built
 - Peer verification within plus or minus 3 years: built, never exercised against real data
 - Real person import: complete. 368 rows, 362 on the board, 6 hidden (test account plus the five records with no grad year). Women's divisions hold zero rows, import deferred
-- Drip sequences: seeded dormant, awaiting a verified sending domain
+- Sending domain: verified and live. `alumni.pittultimate.org` is verified in Resend (DKIM, SPF, MX on `send.alumni`). Magic links confirmed in inbox with DKIM pass. From address: Pitt Club Ultimate <weekend@alumni.pittultimate.org>
+- Drip sequences: copy written for seven sequences (t_minus_45, t_minus_28, t_minus_14, t_minus_10_headcount, t_minus_2, t_plus_3, discord_invite). All ten sequences remain `active = false`; there is no dispatcher, so flipping `active` does nothing
 - RSVP rate limiting: built. Three dimensions, soft and hard tiers
+- RSVP source tracking: `src` values widened to text, email, discord, groupme_a, groupme_b, facebook, instagram, x, esn, qr. Bare `groupme` retired
 - Unmatched names as review requests with an hourly admin digest: built
+- `/qr` route: built. Printable, full-screen QR poster for the board with `src=qr`, black on white, generated in bundle, print stylesheet
+- Duplicate detection: surname hard gate at 0.85 evaluated before first-name scoring; exact match required for surnames under five characters
+- Merge tool: reversible. Losing record is archived (`archived = true`, `merged_into_person_id`), not deleted, with full before and after state in `audit_log`; an Undo merge action restores it
 - Privacy policy, analytics, automated tests: not started
 - Sticky chrome geometry is CSS-defined: nav 72px on every route; board counter 57px and decade rail 49px. Anchor offsets use the resulting route-specific `--chrome-height` with no runtime measurement.
+
 
 ## RESOLVED TONIGHT (2026-07-31)
 
