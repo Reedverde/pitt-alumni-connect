@@ -360,7 +360,7 @@ function HotelBlock() {
           campus and the BBQ. No room block and no group rate, just somewhere to point people. Book
           direct.
         </p>
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap items-center gap-4">
           <a
             href="https://www.hilton.com/en/hotels/pitucgi-hilton-garden-inn-pittsburgh-university-place/"
             target="_blank"
@@ -369,6 +369,7 @@ function HotelBlock() {
           >
             Book direct
           </a>
+          <Directions href={HOTEL_MAP_URL} label="Hilton Garden Inn Pittsburgh University Place" />
         </div>
       </NotchedBox>
     </div>
@@ -395,6 +396,9 @@ function WhereToStay({ edition }: { edition: EditionSummary }) {
             </p>
             <p className="mt-2 max-w-[560px] whitespace-pre-line" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
               {lodging}
+            </p>
+            <p className="mt-3">
+              <Directions href={HOTEL_MAP_URL} label="Hilton Garden Inn Pittsburgh University Place" />
             </p>
           </NotchedBox>
         )}
