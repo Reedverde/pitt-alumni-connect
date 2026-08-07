@@ -820,6 +820,9 @@ export async function duplicateCandidates(): Promise<DuplicatePair[]> {
       const a = rows[i];
       const b = rows[j];
       if (ruled.has(pairKey(a.id, b.id))) continue;
+      // Hard gate: different surnames are never duplicate candidates, no matter
+      // how well the first names, grad year, or division line up.
+      if (!surnameGate(a.last_name, b.last_name)) continue;
       const score = nameScore(fullName(a), fullName(b));
       if (score < 0.86) continue;
       const ya = ctx.placement.get(a.id)?.board_year ?? a.grad_year;
