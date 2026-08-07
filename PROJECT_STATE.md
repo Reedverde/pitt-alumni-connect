@@ -118,7 +118,7 @@ BUILD CHANGES SHIPPED TODAY (all deployed):
 
 DATABASE CHANGE:
 
-The `sequences` row keyed `t_minus_42` now has `offset_days = -45`. The key name was deliberately not renamed because it may be referenced in cron code. Record this mismatch as a known issue.
+The `sequences` row formerly keyed `t_minus_42` has been renamed to `t_minus_45` and its `offset_days` remains `-45`, resolving to Aug 18 2026. The mismatch is fixed.
 
 KNOWN ISSUES TO RECORD:
 
