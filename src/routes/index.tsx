@@ -899,8 +899,8 @@ function BoardKey() {
   const items = [
     { label: "Not claimed", dot: "var(--chalk)", border: "1px solid var(--chalk)", bg: "transparent", text: "var(--sterling)" },
     { label: "Claimed", dot: "var(--pitt-royal)", border: "1px solid var(--pitt-royal)", bg: "transparent", text: "var(--pitt-royal)" },
-    { label: "Going", dot: "var(--sabah-black)", border: "1px solid transparent", bg: "var(--pitt-gold)", text: "var(--sabah-black)" },
     { label: "Maybe", dot: "var(--pitt-gold)", border: "1px solid var(--pitt-gold)", bg: "transparent", text: "var(--steel-ink)" },
+    { label: "Going", dot: "var(--sabah-black)", border: "1px solid transparent", bg: "var(--pitt-gold)", text: "var(--sabah-black)" },
     { label: "Remembered", dot: "var(--pure-white)", border: "1px solid transparent", bg: "var(--sabah-black)", text: "var(--pure-white)" },
   ];
   return (
