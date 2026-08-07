@@ -4,7 +4,7 @@
  * VITE_PUBLIC_SITE_URL); nothing else hardcodes a domain.
  */
 export const SITE_ORIGIN = (
-  import.meta.env.VITE_PUBLIC_SITE_URL || "https://pitt.everde.co"
+  import.meta.env.VITE_PUBLIC_SITE_URL || "https://alumni.pittultimate.org"
 ).replace(/\/+$/, "");
 
 /** Absolute URL for a site-relative path. Unfurlers reject relative og:image. */
