@@ -451,6 +451,7 @@ function BoardPage() {
           <p className="mt-3 max-w-[560px] text-left" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
             Every person who ever played. Grey until they say they are coming.
           </p>
+          <BoardKey />
         </header>
 
         <BoardSearch
