@@ -2,8 +2,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { adminKeepPairSeparate, adminMergeDuplicatePair } from "@/lib/admin.functions";
-import type { AdminPerson, DuplicatePair } from "@/lib/admin.server";
+import {
+  adminKeepPairSeparate,
+  adminMergeDuplicatePair,
+  adminUndoMerge,
+} from "@/lib/admin.functions";
+import type { AdminPerson, ArchivedRecord, DuplicatePair } from "@/lib/admin.server";
 import { Empty, Num, Section, cellStyle, hairline, headStyle, secondaryButton } from "./ui";
 
 function Side({ person, survivor }: { person: AdminPerson; survivor: boolean }) {
@@ -16,7 +20,7 @@ function Side({ person, survivor }: { person: AdminPerson; survivor: boolean }) 
       }}
     >
       <p className="label-caps" style={{ color: survivor ? "var(--pitt-royal)" : "var(--sterling)" }}>
-        {survivor ? "Survivor, kept" : "Folded in, deleted"}
+        {survivor ? "Survivor, kept" : "Folded in, archived"}
       </p>
       <table className="mt-2 w-full" style={{ borderCollapse: "collapse" }}>
         <tbody>
@@ -47,6 +51,12 @@ function Side({ person, survivor }: { person: AdminPerson; survivor: boolean }) 
 
 function name(p: AdminPerson) {
   return [p.first_name, p.last_name].filter(Boolean).join(" ");
+}
+
+/** Two records in a collision almost always share a display name, so the
+ *  member number travels with it everywhere. */
+function labelled(p: AdminPerson) {
+  return `${name(p)}, no ${p.member_no}`;
 }
 
 function PairRow({
