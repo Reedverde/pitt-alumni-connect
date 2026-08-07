@@ -146,7 +146,7 @@ function PairRow({
           <>
             <button
               type="button"
-              style={secondaryButton}
+              style={{ ...secondaryButton, cursor: "pointer" }}
               disabled={busy}
               onClick={runMerge}
             >
@@ -154,7 +154,7 @@ function PairRow({
             </button>
             <button
               type="button"
-              style={{ ...secondaryButton, opacity: 0.7 }}
+              style={{ ...secondaryButton, opacity: 0.7, cursor: "pointer" }}
               disabled={busy}
               onClick={() => setConfirming(false)}
             >
@@ -164,19 +164,19 @@ function PairRow({
         ) : (
           <button
             type="button"
-            style={secondaryButton}
+            style={{ ...secondaryButton, cursor: "pointer" }}
             disabled={busy}
             onClick={() => setConfirming(true)}
           >
             Merge
           </button>
         )}
-        <button type="button" style={secondaryButton} disabled={busy} onClick={runKeep}>
+        <button type="button" style={{ ...secondaryButton, cursor: "pointer" }} disabled={busy} onClick={runKeep}>
           Keep separate, permanently
         </button>
         <button
           type="button"
-          style={{ ...secondaryButton, opacity: 0.7 }}
+          style={{ ...secondaryButton, opacity: 0.7, cursor: "pointer" }}
           disabled={busy}
           onClick={onDismiss}
         >
