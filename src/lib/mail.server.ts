@@ -10,8 +10,10 @@ import {
   emailShell,
   emailSocialBlock,
   escapeHtml,
+  FONT_STACK,
+  INK,
 } from "./email-chrome";
-import { loadCurrentEdition } from "./editions.server";
+import { currentEditionYear, loadCurrentEdition } from "./editions.server";
 import { logAuthAttempt } from "./auth-attempts.server";
 import { DISCORD_INVITE_URL } from "./site-url";
 
