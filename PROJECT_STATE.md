@@ -185,8 +185,8 @@ Note: Lovable secrets cannot be overwritten by the agent; they must be deleted a
 
 ## LAUNCH PLAN, CURRENT
 
-- T-60, Monday Aug 3: committee members hand-send personal invites to their own anchors from their own inboxes and phones. No app email. The dormant T-60 sequence stays inactive permanently because a person does its job.
-- T-45, Monday Aug 17: launch mass email. This is the old T-42 shifted three days. Everything after it keeps existing spacing: T-28 peer proof, T-21, T-14, T-7, T-2, T+3. NOTE: the sequence offsets have NOT been changed yet. One row goes dormant, one offset changes 42 to 45.
+- T-60, Monday Aug 3: committee members hand-send personal invites to their own anchors from their own inboxes and phones. No app email. The T-60 sequence passed on Aug 3 with no copy and no sender; it will not be used.
+- T-45, Monday Aug 17: launch mass email. Sending domain `alumni.pittultimate.org` is now verified and live. Sequence key renamed from `t_minus_42` to `t_minus_45` to match its `-45` offset (resolves Aug 18 2026). Copy is written for t_minus_45, t_minus_28, t_minus_14, t_minus_10_headcount, t_minus_2, and t_plus_3. There is still no dispatcher; sequences will not send until one is built and they are deliberately activated.
 - Outreach coverage so far: Ben Morgenstern taking graduating years 2018 to 2024, Micah Davis taking the last four years. 2023 and 2024 are double covered. No shared coverage sheet exists.
 
 ## OPEN, NOT CODE
