@@ -888,6 +888,156 @@ export function buildTMinus14Body(opts: { name: string; schedule: string[] }) {
   return { text, html };
 }
 
+/** ---------------------------------------------------------------------------
+ *  t_minus_10_headcount: how many are you bringing.
+ *  Audience is status 'going' only. party_size stays private: it is never
+ *  added to a public view and the link below changes that one number and
+ *  nothing else. Dormant until the sequence row is switched on.
+ *  ------------------------------------------------------------------------ */
+
+export const T_MINUS_10_SUBJECT = "How many are you bringing?";
+
+/** The body needs the recipient's own one-click link, minted by the existing
+ *  builder in party-token.server.ts. Returns null when no link can be made,
+ *  so a headcount email is never sent without the tap it asks for. */
+export function buildTMinus10Body(opts: {
+  name: string;
+  oneClickLink: string | null;
+}): { text: string; html: string } | null {
+  const link = opts.oneClickLink;
+  if (!link) return null;
+
+  const lead = "Glad you are coming. One quick thing so we can plan food and seating.";
+  const ask = "How many people total, including you?";
+  const close = "Takes one tap. Kids count.";
+
+  const text = [
+    `${opts.name},`,
+    "",
+    lead,
+    "",
+    ask,
+    "",
+    link,
+    "",
+    close,
+    "",
+    "Pitt Club Ultimate Alumni",
+  ].join("\n");
+
+  const html = emailShell(
+    [
+      emailParagraph(`${opts.name},`),
+      emailParagraph(lead),
+      emailParagraph(ask),
+      emailButton(link, "Set my headcount"),
+      emailPlainUrl(link),
+      emailParagraph(close),
+      emailFooter([
+        "Pitt Club Ultimate Alumni",
+        "You are receiving this because you have a record on the alumni board.",
+      ]),
+    ].join("\n"),
+    "One tap, so we can plan.",
+  );
+
+  return { text, html };
+}
+
+/** ---------------------------------------------------------------------------
+ *  t_minus_2: this weekend. Audience is status 'going' only.
+ *  ------------------------------------------------------------------------ */
+
+export const T_MINUS_2_SUBJECT = "This weekend";
+
+/** Schedule lines come from loadScheduleLines(): same source, same TBD rule. */
+export function buildTMinus2Body(opts: { name: string; schedule: string[] }) {
+  const lead = "See you Friday.";
+  const logistics =
+    "Parking near Schenley Park is tight on a football Saturday, so give yourself extra time. The shelter has no electricity. Bring a chair if you want one.";
+
+  const text = [
+    `${opts.name},`,
+    "",
+    lead,
+    "",
+    ...opts.schedule,
+    "",
+    logistics,
+    "",
+    T_MINUS_14_WEEKEND_URL,
+    "",
+    "Pitt Club Ultimate Alumni",
+  ].join("\n");
+
+  const html = emailShell(
+    [
+      emailParagraph(`${opts.name},`),
+      emailParagraph(lead),
+      `<p style="margin:0 0 20px;font-family:${FONT_STACK};font-size:15px;line-height:26px;color:${INK};">${opts.schedule
+        .map((l) => escapeHtml(l))
+        .join("<br />")}</p>`,
+      emailParagraph(logistics),
+      emailButton(T_MINUS_14_WEEKEND_URL, "See the schedule"),
+      emailPlainUrl(T_MINUS_14_WEEKEND_URL),
+      emailFooter([
+        "Pitt Club Ultimate Alumni",
+        "You are receiving this because you have a record on the alumni board.",
+      ]),
+    ].join("\n"),
+    "See you Friday.",
+  );
+
+  return { text, html };
+}
+
+/** ---------------------------------------------------------------------------
+ *  t_plus_3: thank you, and next year.
+ *  Goes to everyone who touched it, including people who said not this year,
+ *  so the copy never assumes attendance. No headcount, no photos, and no 2027
+ *  date: we do not know it yet.
+ *  ------------------------------------------------------------------------ */
+
+export const T_PLUS_3_SUBJECT = "Thank you, and next year";
+
+export function buildTPlus3Body(opts: { name: string }) {
+  const lines = [
+    "Thank you. That was a good weekend.",
+    "We will announce next year's dates by email once they are set. Look out for that one.",
+    "Your record stays where it is. If anything on it is wrong, fix it and we will find you again next year.",
+  ];
+
+  const text = [
+    `${opts.name},`,
+    "",
+    lines[0],
+    "",
+    lines[1],
+    "",
+    lines[2],
+    "",
+    T_MINUS_28_BOARD_URL,
+    "",
+    "Pitt Club Ultimate Alumni",
+  ].join("\n");
+
+  const html = emailShell(
+    [
+      emailParagraph(`${opts.name},`),
+      ...lines.map((l) => emailParagraph(l)),
+      emailButton(T_MINUS_28_BOARD_URL, "Check your record"),
+      emailPlainUrl(T_MINUS_28_BOARD_URL),
+      emailFooter([
+        "Pitt Club Ultimate Alumni",
+        "You are receiving this because you have a record on the alumni board.",
+      ]),
+    ].join("\n"),
+    "Thank you.",
+  );
+
+  return { text, html };
+}
+
 /** One sign-in link per address per minute. A person clicking through three
  *  answers in a row gets one email, not three, and the link they already hold
  *  stays valid because we hand back the one we minted rather than issuing a new
