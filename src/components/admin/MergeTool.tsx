@@ -72,6 +72,7 @@ function PairRow({
   const keepSeparate = useServerFn(adminKeepPairSeparate);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [gone, setGone] = useState(false);
 
   const survivor = pair.survivorId === pair.a.id ? pair.a : pair.b;
   const loser = pair.survivorId === pair.a.id ? pair.b : pair.a;
@@ -80,7 +81,8 @@ function PairRow({
     setBusy(true);
     try {
       await merge({ data: { survivorId: pair.survivorId, loserId: pair.loserId } });
-      toast.success("Merged. Child rows repointed and the ruling recorded.");
+      toast.success("Merged. The other record is archived and can be restored.");
+      setGone(true);
       onDone();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Merge failed.");
@@ -95,6 +97,7 @@ function PairRow({
     try {
       await keepSeparate({ data: { aId: pair.a.id, bId: pair.b.id, note: null } });
       toast.success("Ruled separate. This pair will not surface again.");
+      setGone(true);
       onDone();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Couldn't record the ruling.");
@@ -102,6 +105,8 @@ function PairRow({
       setBusy(false);
     }
   };
+
+  if (gone) return null;
 
   return (
     <div style={{ borderTop: hairline, padding: "16px 0" }}>
