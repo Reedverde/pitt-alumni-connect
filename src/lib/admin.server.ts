@@ -806,7 +806,11 @@ async function ruledPairKeys(): Promise<Set<string>> {
 }
 
 export async function duplicateCandidates(): Promise<DuplicatePair[]> {
-  const { data } = await supabaseAdmin.from("people").select(PERSON_COLUMNS).limit(3000);
+  const { data } = await supabaseAdmin
+    .from("people")
+    .select(PERSON_COLUMNS)
+    .eq("archived", false)
+    .limit(3000);
   const [ctx, ruled] = await Promise.all([loadContext(), ruledPairKeys()]);
   const rows = (data ?? []) as PersonRow[];
   const pairs: { a: PersonRow; b: PersonRow; score: number }[] = [];
