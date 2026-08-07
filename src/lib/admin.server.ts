@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
 import { nameScore, normalize } from "./fuzzy";
+import { normalizeRsvpSource, rsvpSourceLabel } from "./rsvp-src";
 import { teamLabel } from "./rsvp.server";
 import {
   currentEditionYear,
