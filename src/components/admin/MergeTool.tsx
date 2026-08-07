@@ -182,29 +182,111 @@ function PairRow({
   );
 }
 
-export function MergeTool({ pairs, onDone }: { pairs: DuplicatePair[]; onDone: () => void }) {
+function ArchivedRow({ row, onDone }: { row: ArchivedRecord; onDone: () => void }) {
+  const undo = useServerFn(adminUndoMerge);
+  const [busy, setBusy] = useState(false);
+  const [gone, setGone] = useState(false);
+
+  if (gone) return null;
+
+  const run = async () => {
+    setBusy(true);
+    try {
+      await undo({ data: { loserId: row.id } });
+      toast.success(`Restored ${row.name}, no ${row.member_no}.`);
+      setGone(true);
+      onDone();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Undo failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      style={{ borderTop: hairline, padding: "12px 0", fontSize: 13, color: "var(--steel-ink)" }}
+      className="flex flex-wrap items-center justify-between gap-2"
+    >
+      <span>
+        <strong>
+          {row.name}, no <Num>{row.member_no}</Num>
+        </strong>{" "}
+        folded into{" "}
+        {row.merged_into_name ? (
+          <strong>
+            {row.merged_into_name}, no <Num>{row.merged_into_member_no}</Num>
+          </strong>
+        ) : (
+          "another record"
+        )}
+        {row.merged_at ? ` on ${new Date(row.merged_at).toLocaleDateString()}` : null}
+        {row.restorable ? null : (
+          <em style={{ color: "var(--sterling)" }}>
+            {" "}
+            No before state was recorded, so this one cannot be restored automatically.
+          </em>
+        )}
+      </span>
+      <button
+        type="button"
+        style={{ ...secondaryButton, cursor: "pointer", opacity: row.restorable ? 1 : 0.5 }}
+        disabled={busy || !row.restorable}
+        onClick={run}
+      >
+        {busy ? "Restoring" : "Undo merge"}
+      </button>
+    </div>
+  );
+}
+
+export function MergeTool({
+  pairs,
+  archived,
+  onDone,
+}: {
+  pairs: DuplicatePair[];
+  archived: ArchivedRecord[];
+  onDone: () => void;
+}) {
   const [dismissed, setDismissed] = useState<string[]>([]);
   const visible = pairs.filter((p) => !dismissed.includes(p.key));
 
   return (
-    <Section eyebrow="Name collisions" title="Duplicate rulings">
-      <p className="mb-2" style={{ fontSize: 13, color: "var(--sterling)" }}>
-        Merging repoints stints, identities, RSVPs, verifications and suggestions onto the survivor,
-        then deletes the other record and records a ruling. Keep separate is permanent and the pair
-        never surfaces again. Not now stores nothing, so the pair returns on the next scan.
-      </p>
-      {visible.length === 0 ? (
-        <Empty>No unruled candidate pairs by name and overlapping years.</Empty>
-      ) : (
-        visible.map((pair) => (
-          <PairRow
-            key={pair.key}
-            pair={pair}
-            onDone={onDone}
-            onDismiss={() => setDismissed((d) => [...d, pair.key])}
-          />
-        ))
-      )}
-    </Section>
+    <>
+      <Section eyebrow="Name collisions" title="Duplicate rulings">
+        <p className="mb-2" style={{ fontSize: 13, color: "var(--sterling)" }}>
+          Merging repoints stints, identities, RSVPs, verifications and suggestions onto the
+          survivor, archives the other record and records a ruling. Nothing is deleted: the archived
+          record can be restored below. Keep separate is permanent and the pair never surfaces
+          again. Not now stores nothing, so the pair returns on the next scan.
+        </p>
+        {visible.length === 0 ? (
+          <Empty>No unruled candidate pairs by name and overlapping years.</Empty>
+        ) : (
+          visible.map((pair) => (
+            <PairRow
+              key={pair.key}
+              pair={pair}
+              onDone={onDone}
+              onDismiss={() => setDismissed((d) => [...d, pair.key])}
+            />
+          ))
+        )}
+      </Section>
+
+      <Section eyebrow="Reversible" title="Archived records">
+        <p className="mb-2" style={{ fontSize: 13, color: "var(--sterling)" }}>
+          Off the board, out of every count and out of the match pool at signup. Undo merge puts the
+          record back and repoints every row that moved, using the before state captured at merge
+          time.
+        </p>
+        {archived.length === 0 ? (
+          <Empty>Nothing is archived.</Empty>
+        ) : (
+          archived.map((row) => <ArchivedRow key={row.id} row={row} onDone={onDone} />)
+        )}
+      </Section>
+    </>
   );
 }
