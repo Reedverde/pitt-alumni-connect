@@ -166,6 +166,16 @@ export const adminKeepPairSeparate = createServerFn({ method: "POST" })
     });
   });
 
+export const adminUndoMerge = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { loserId: string }) => input)
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) throw new Error("Admins only.");
+    return mod.undoMerge(actor, data);
+  });
+
 export const adminExportCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<{ filename: string; csv: string; rows: number } | null> => {

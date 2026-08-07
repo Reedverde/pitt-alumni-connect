@@ -660,6 +660,7 @@ export async function rosterDryRun(text: string): Promise<{
   const { data } = await supabaseAdmin
     .from("people")
     .select("id, first_name, last_name, played_as, grad_year")
+    .eq("archived", false)
     .limit(3000);
   const people = (data ?? []) as {
     id: string;
@@ -805,7 +806,11 @@ async function ruledPairKeys(): Promise<Set<string>> {
 }
 
 export async function duplicateCandidates(): Promise<DuplicatePair[]> {
-  const { data } = await supabaseAdmin.from("people").select(PERSON_COLUMNS).limit(3000);
+  const { data } = await supabaseAdmin
+    .from("people")
+    .select(PERSON_COLUMNS)
+    .eq("archived", false)
+    .limit(3000);
   const [ctx, ruled] = await Promise.all([loadContext(), ruledPairKeys()]);
   const rows = (data ?? []) as PersonRow[];
   const pairs: { a: PersonRow; b: PersonRow; score: number }[] = [];
@@ -928,14 +933,51 @@ export async function mergePeople(
 ) {
   if (input.survivorId === input.loserId) throw new Error("Pick two different records.");
   const [survivorRes, loserRes] = await Promise.all([
-    supabaseAdmin.from("people").select(PERSON_COLUMNS).eq("id", input.survivorId).maybeSingle(),
-    supabaseAdmin.from("people").select(PERSON_COLUMNS).eq("id", input.loserId).maybeSingle(),
+    supabaseAdmin.from("people").select("*").eq("id", input.survivorId).maybeSingle(),
+    supabaseAdmin.from("people").select("*").eq("id", input.loserId).maybeSingle(),
   ]);
-  const survivor = survivorRes.data as PersonRow | null;
-  const loser = loserRes.data as PersonRow | null;
+  const survivor = survivorRes.data as (PersonRow & Record<string, unknown>) | null;
+  const loser = loserRes.data as (PersonRow & Record<string, unknown>) | null;
   if (!survivor || !loser) throw new Error("One of those records is gone.");
+  if (loser.archived) throw new Error("That record is already archived.");
 
-  const before = { survivor, loser };
+  // Capture the exact before state of every row this merge is about to touch.
+  // Undo replays these ids, so nothing here may be approximated.
+  const ids = async (table: string, column: string) =>
+    ((
+      await supabaseAdmin
+        .from(table as "stints")
+        .select("id")
+        .eq(column as "person_id", input.loserId)
+    ).data ?? []).map((r) => (r as { id: string }).id);
+
+  const identityRows =
+    (
+      await supabaseAdmin
+        .from("identities")
+        .select("id, is_primary")
+        .eq("person_id", input.loserId)
+    ).data ?? [];
+
+  const before = {
+    survivor,
+    loser,
+    moved: {
+      stints: await ids("stints", "person_id"),
+      identities: identityRows.map((r) => ({
+        id: r.id as string,
+        is_primary: r.is_primary as boolean,
+      })),
+      verifications_person: await ids("verifications", "person_id"),
+      verifications_verified_by: await ids("verifications", "verified_by"),
+      suggestions_submitted_by: await ids("suggestions", "submitted_by"),
+      suggestions_peer_verified_by: await ids("suggestions", "peer_verified_by"),
+      suggestions_reviewed_by: await ids("suggestions", "reviewed_by"),
+      sends: await ids("sends", "person_id"),
+      rsvps_moved: [] as string[],
+      rsvps_deleted: [] as Record<string, unknown>[],
+    },
+  };
 
   // Repoint every child row before the delete so nothing is orphaned.
   await supabaseAdmin.from("stints").update({ person_id: input.survivorId }).eq("person_id", input.loserId);
@@ -958,16 +1000,19 @@ export async function mergePeople(
   const heldYears = new Set((survivorRsvps ?? []).map((r) => r.event_year as number));
   const { data: loserRsvps } = await supabaseAdmin
     .from("rsvps")
-    .select("id, event_year")
+    .select("*")
     .eq("person_id", input.loserId);
   for (const row of loserRsvps ?? []) {
-    if (heldYears.has(row.event_year as number))
+    if (heldYears.has(row.event_year as number)) {
+      before.moved.rsvps_deleted.push(row as Record<string, unknown>);
       await supabaseAdmin.from("rsvps").delete().eq("id", row.id as string);
-    else
+    } else {
+      before.moved.rsvps_moved.push(row.id as string);
       await supabaseAdmin
         .from("rsvps")
         .update({ person_id: input.survivorId })
         .eq("id", row.id as string);
+    }
   }
 
   const playedAs = input.playedAs?.trim().slice(0, 80) || survivor.played_as;
@@ -982,17 +1027,215 @@ export async function mergePeople(
     })
     .eq("id", input.survivorId);
 
-  const { error } = await supabaseAdmin.from("people").delete().eq("id", input.loserId);
+  // Soft archive. The losing record keeps every column it had so an undo can
+  // restore it byte for byte; only the archive markers change.
+  const { error } = await supabaseAdmin
+    .from("people")
+    .update({
+      archived: true,
+      merged_into_person_id: input.survivorId,
+      merged_at: new Date().toISOString(),
+      show_on_board: false,
+    } as never)
+    .eq("id", input.loserId);
   if (error) throw new Error(error.message);
 
-  const { data: after } = await supabaseAdmin
-    .from("people")
-    .select(PERSON_COLUMNS)
-    .eq("id", input.survivorId)
-    .maybeSingle();
+  const [{ data: afterSurvivor }, { data: afterLoser }] = await Promise.all([
+    supabaseAdmin.from("people").select("*").eq("id", input.survivorId).maybeSingle(),
+    supabaseAdmin.from("people").select("*").eq("id", input.loserId).maybeSingle(),
+  ]);
   await audit(actor, "admin_merge_people", "people", input.survivorId, before, {
-    survivor: after,
-    deleted_person_id: input.loserId,
+    survivor: afterSurvivor,
+    loser: afterLoser,
+    archived_person_id: input.loserId,
+  });
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------- undo merge
+
+export type ArchivedRecord = {
+  id: string;
+  member_no: number;
+  name: string;
+  merged_at: string | null;
+  merged_into_person_id: string | null;
+  merged_into_name: string | null;
+  merged_into_member_no: number | null;
+  restorable: boolean;
+};
+
+/** Archived records stay visible here, and nowhere else. */
+export async function archivedRecords(): Promise<ArchivedRecord[]> {
+  const { data } = await supabaseAdmin
+    .from("people")
+    .select("id, member_no, first_name, last_name, merged_at, merged_into_person_id")
+    .eq("archived", true)
+    .order("merged_at", { ascending: false })
+    .limit(200);
+  const rows = (data ?? []) as Record<string, unknown>[];
+  if (rows.length === 0) return [];
+
+  const targetIds = [
+    ...new Set(rows.map((r) => r.merged_into_person_id as string | null).filter(Boolean)),
+  ] as string[];
+  const { data: targets } = await supabaseAdmin
+    .from("people")
+    .select("id, member_no, first_name, last_name")
+    .in("id", targetIds.length > 0 ? targetIds : ["00000000-0000-0000-0000-000000000000"]);
+  const byId = new Map(
+    (targets ?? []).map((t) => [
+      t.id as string,
+      {
+        name: [t.first_name, t.last_name].filter(Boolean).join(" "),
+        member_no: t.member_no as number,
+      },
+    ]),
+  );
+
+  const out: ArchivedRecord[] = [];
+  for (const r of rows) {
+    const target = byId.get((r.merged_into_person_id as string) ?? "");
+    out.push({
+      id: r.id as string,
+      member_no: r.member_no as number,
+      name: [r.first_name, r.last_name].filter(Boolean).join(" "),
+      merged_at: (r.merged_at as string | null) ?? null,
+      merged_into_person_id: (r.merged_into_person_id as string | null) ?? null,
+      merged_into_name: target?.name ?? null,
+      merged_into_member_no: target?.member_no ?? null,
+      restorable: (await mergeSnapshot(r.id as string)) !== null,
+    });
+  }
+  return out;
+}
+
+type MergeSnapshot = {
+  auditId: number;
+  survivorId: string;
+  before: {
+    survivor: Record<string, unknown>;
+    loser: Record<string, unknown>;
+    moved: {
+      stints: string[];
+      identities: { id: string; is_primary: boolean }[];
+      verifications_person: string[];
+      verifications_verified_by: string[];
+      suggestions_submitted_by: string[];
+      suggestions_peer_verified_by: string[];
+      suggestions_reviewed_by: string[];
+      sends: string[];
+      rsvps_moved: string[];
+      rsvps_deleted: Record<string, unknown>[];
+    };
+  };
+};
+
+/** The newest merge snapshot that archived this person, or null when the merge
+ *  predates snapshotting and therefore cannot be undone exactly. */
+async function mergeSnapshot(loserId: string): Promise<MergeSnapshot | null> {
+  const { data } = await supabaseAdmin
+    .from("audit_log")
+    .select("id, record_id, before, after")
+    .eq("action", "admin_merge_people")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  for (const row of (data ?? []) as Record<string, unknown>[]) {
+    const after = row.after as { archived_person_id?: string } | null;
+    const before = row.before as MergeSnapshot["before"] | null;
+    if (!before || !before.moved || !before.loser) continue;
+    if (after?.archived_person_id !== loserId) continue;
+    return {
+      auditId: row.id as number,
+      survivorId: row.record_id as string,
+      before,
+    };
+  }
+  return null;
+}
+
+/** Exact reversal of a merge: every repointed row goes back by id, deleted
+ *  RSVP rows are reinserted with their original ids, the survivor's edited
+ *  fields are restored, and the archive markers are cleared. */
+export async function undoMerge(actor: string | null, input: { loserId: string }) {
+  const snap = await mergeSnapshot(input.loserId);
+  if (!snap)
+    throw new Error(
+      "No complete before state was recorded for this merge, so it cannot be undone exactly. Restore it by hand instead.",
+    );
+  const { survivorId, before } = snap;
+  const m = before.moved;
+  const back = async (table: string, column: string, rowIds: string[]) => {
+    if (rowIds.length === 0) return;
+    const { error } = await supabaseAdmin
+      .from(table as "stints")
+      .update({ [column]: input.loserId } as never)
+      .in("id", rowIds);
+    if (error) throw new Error(error.message);
+  };
+
+  await back("stints", "person_id", m.stints);
+  for (const ident of m.identities) {
+    const { error } = await supabaseAdmin
+      .from("identities")
+      .update({ person_id: input.loserId, is_primary: ident.is_primary })
+      .eq("id", ident.id);
+    if (error) throw new Error(error.message);
+  }
+  await back("verifications", "person_id", m.verifications_person);
+  await back("verifications", "verified_by", m.verifications_verified_by);
+  await back("suggestions", "submitted_by", m.suggestions_submitted_by);
+  await back("suggestions", "peer_verified_by", m.suggestions_peer_verified_by);
+  await back("suggestions", "reviewed_by", m.suggestions_reviewed_by);
+  await back("sends", "person_id", m.sends);
+  await back("rsvps", "person_id", m.rsvps_moved);
+
+  if (m.rsvps_deleted.length > 0) {
+    const { error } = await supabaseAdmin
+      .from("rsvps")
+      .upsert(m.rsvps_deleted as never, { onConflict: "id" });
+    if (error) throw new Error(error.message);
+  }
+
+  const s = before.survivor;
+  const { error: survivorError } = await supabaseAdmin
+    .from("people")
+    .update({
+      played_as: (s.played_as as string | null) ?? null,
+      grad_year: (s.grad_year as number | null) ?? null,
+      current_city: (s.current_city as string | null) ?? null,
+      seed_division: (s.seed_division as string | null) ?? null,
+      is_anchor: Boolean(s.is_anchor),
+    })
+    .eq("id", survivorId);
+  if (survivorError) throw new Error(survivorError.message);
+
+  const l = before.loser;
+  const { error: loserError } = await supabaseAdmin
+    .from("people")
+    .update({
+      archived: false,
+      merged_into_person_id: null,
+      merged_at: null,
+      show_on_board: Boolean(l.show_on_board),
+    } as never)
+    .eq("id", input.loserId);
+  if (loserError) throw new Error(loserError.message);
+
+  // The pair goes back on the candidate list; the merge ruling no longer holds.
+  const [first, second] =
+    survivorId < input.loserId ? [survivorId, input.loserId] : [input.loserId, survivorId];
+  await supabaseAdmin
+    .from("duplicate_rulings")
+    .delete()
+    .eq("person_a_id", first)
+    .eq("person_b_id", second)
+    .eq("ruling", "merged");
+
+  await audit(actor, "admin_undo_merge", "people", input.loserId, before, {
+    restored_person_id: input.loserId,
+    survivor_id: survivorId,
+    from_audit_log_id: snap.auditId,
   });
   return { ok: true };
 }
@@ -1453,6 +1696,7 @@ export type AdminDashboard = {
   digest: DigestCohort[];
   drip: DripData;
   duplicates: DuplicatePair[];
+  archived: ArchivedRecord[];
   seasonYear: number;
   editions: EditionRow[];
   sends: SendRow[];
@@ -1462,7 +1706,7 @@ export type AdminDashboard = {
 };
 
 export async function dashboard(): Promise<AdminDashboard> {
-  const [queue, teamRes, divisionRes, gaps, heads, digest, drip, duplicates, editions, sends, totals, sources, breakdown] = await Promise.all([
+  const [queue, teamRes, divisionRes, gaps, heads, digest, drip, duplicates, archived, editions, sends, totals, sources, breakdown] = await Promise.all([
     reviewQueue(),
     supabaseAdmin
       .from("team_names")
@@ -1475,6 +1719,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     organizerDigest(),
     dripData(),
     duplicateCandidates(),
+    archivedRecords(),
     listEditions(),
     recentSends(),
     sendTotals(),
@@ -1491,6 +1736,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     digest,
     drip,
     duplicates,
+    archived,
     editions,
     sends,
     sendTotals: totals,

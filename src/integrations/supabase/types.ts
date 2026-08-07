@@ -552,6 +552,7 @@ export type Database = {
       }
       people: {
         Row: {
+          archived: boolean
           created_at: string
           current_city: string | null
           deceased: boolean
@@ -564,6 +565,8 @@ export type Database = {
           is_anchor: boolean
           last_name: string | null
           member_no: number
+          merged_at: string | null
+          merged_into_person_id: string | null
           needs_review: boolean
           open_to_network: boolean
           played_as: string | null
@@ -574,6 +577,7 @@ export type Database = {
           show_on_board: boolean
         }
         Insert: {
+          archived?: boolean
           created_at?: string
           current_city?: string | null
           deceased?: boolean
@@ -586,6 +590,8 @@ export type Database = {
           is_anchor?: boolean
           last_name?: string | null
           member_no?: number
+          merged_at?: string | null
+          merged_into_person_id?: string | null
           needs_review?: boolean
           open_to_network?: boolean
           played_as?: string | null
@@ -596,6 +602,7 @@ export type Database = {
           show_on_board?: boolean
         }
         Update: {
+          archived?: boolean
           created_at?: string
           current_city?: string | null
           deceased?: boolean
@@ -608,6 +615,8 @@ export type Database = {
           is_anchor?: boolean
           last_name?: string | null
           member_no?: number
+          merged_at?: string | null
+          merged_into_person_id?: string | null
           needs_review?: boolean
           open_to_network?: boolean
           played_as?: string | null
@@ -642,6 +651,34 @@ export type Database = {
           {
             foreignKeyName: "people_deceased_confirmed_by_fkey"
             columns: ["deceased_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "people_merged_into_person_id_fkey"
+            columns: ["merged_into_person_id"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_merged_into_person_id_fkey"
+            columns: ["merged_into_person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_merged_into_person_id_fkey"
+            columns: ["merged_into_person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_merged_into_person_id_fkey"
+            columns: ["merged_into_person_id"]
             isOneToOne: false
             referencedRelation: "person_board_placement"
             referencedColumns: ["person_id"]

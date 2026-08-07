@@ -2,8 +2,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { adminKeepPairSeparate, adminMergeDuplicatePair } from "@/lib/admin.functions";
-import type { AdminPerson, DuplicatePair } from "@/lib/admin.server";
+import {
+  adminKeepPairSeparate,
+  adminMergeDuplicatePair,
+  adminUndoMerge,
+} from "@/lib/admin.functions";
+import type { AdminPerson, ArchivedRecord, DuplicatePair } from "@/lib/admin.server";
 import { Empty, Num, Section, cellStyle, hairline, headStyle, secondaryButton } from "./ui";
 
 function Side({ person, survivor }: { person: AdminPerson; survivor: boolean }) {
@@ -16,7 +20,7 @@ function Side({ person, survivor }: { person: AdminPerson; survivor: boolean }) 
       }}
     >
       <p className="label-caps" style={{ color: survivor ? "var(--pitt-royal)" : "var(--sterling)" }}>
-        {survivor ? "Survivor, kept" : "Folded in, deleted"}
+        {survivor ? "Survivor, kept" : "Folded in, archived"}
       </p>
       <table className="mt-2 w-full" style={{ borderCollapse: "collapse" }}>
         <tbody>
@@ -49,6 +53,12 @@ function name(p: AdminPerson) {
   return [p.first_name, p.last_name].filter(Boolean).join(" ");
 }
 
+/** Two records in a collision almost always share a display name, so the
+ *  member number travels with it everywhere. */
+function labelled(p: AdminPerson) {
+  return `${name(p)}, no ${p.member_no}`;
+}
+
 function PairRow({
   pair,
   onDone,
@@ -62,6 +72,7 @@ function PairRow({
   const keepSeparate = useServerFn(adminKeepPairSeparate);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [gone, setGone] = useState(false);
 
   const survivor = pair.survivorId === pair.a.id ? pair.a : pair.b;
   const loser = pair.survivorId === pair.a.id ? pair.b : pair.a;
@@ -70,7 +81,8 @@ function PairRow({
     setBusy(true);
     try {
       await merge({ data: { survivorId: pair.survivorId, loserId: pair.loserId } });
-      toast.success("Merged. Child rows repointed and the ruling recorded.");
+      toast.success("Merged. The other record is archived and can be restored.");
+      setGone(true);
       onDone();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Merge failed.");
@@ -85,6 +97,7 @@ function PairRow({
     try {
       await keepSeparate({ data: { aId: pair.a.id, bId: pair.b.id, note: null } });
       toast.success("Ruled separate. This pair will not surface again.");
+      setGone(true);
       onDone();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Couldn't record the ruling.");
@@ -92,6 +105,8 @@ function PairRow({
       setBusy(false);
     }
   };
+
+  if (gone) return null;
 
   return (
     <div style={{ borderTop: hairline, padding: "16px 0" }}>
@@ -111,14 +126,15 @@ function PairRow({
           What moves
         </p>
         <p className="mt-2" style={{ color: "var(--steel-ink)" }}>
-          Before: <strong>{name(survivor)}</strong> keeps its own rows.{" "}
-          <strong>{name(loser)}</strong> holds <Num>{pair.moves.stints}</Num> stints,{" "}
+          Before: <strong>{labelled(survivor)}</strong> keeps its own rows.{" "}
+          <strong>{labelled(loser)}</strong> holds <Num>{pair.moves.stints}</Num> stints,{" "}
           <Num>{pair.moves.identities}</Num> identities and <Num>{pair.moves.rsvps}</Num> RSVPs.
         </p>
         <p className="mt-1" style={{ color: "var(--steel-ink)" }}>
-          After: all of those point at <strong>{name(survivor)}</strong>, member no{" "}
-          <Num>{survivor.member_no}</Num>, and the record for <strong>{name(loser)}</strong>, member
-          no <Num>{loser.member_no}</Num>, is deleted. There is no undo.
+          After: all of those point at <strong>{labelled(survivor)}</strong>, and the record for{" "}
+          <strong>{labelled(loser)}</strong> is archived, not deleted. It leaves the board, the
+          counts and the match pool, stays visible here under Archived records, and can be restored
+          exactly with Undo merge.
         </p>
         <p className="mt-1" style={{ color: "var(--sterling)" }}>
           Survivor picked automatically: more stints, ties to the lower member number.
@@ -130,7 +146,7 @@ function PairRow({
           <>
             <button
               type="button"
-              style={secondaryButton}
+              style={{ ...secondaryButton, cursor: "pointer" }}
               disabled={busy}
               onClick={runMerge}
             >
@@ -138,7 +154,7 @@ function PairRow({
             </button>
             <button
               type="button"
-              style={{ ...secondaryButton, opacity: 0.7 }}
+              style={{ ...secondaryButton, opacity: 0.7, cursor: "pointer" }}
               disabled={busy}
               onClick={() => setConfirming(false)}
             >
@@ -148,19 +164,19 @@ function PairRow({
         ) : (
           <button
             type="button"
-            style={secondaryButton}
+            style={{ ...secondaryButton, cursor: "pointer" }}
             disabled={busy}
             onClick={() => setConfirming(true)}
           >
             Merge
           </button>
         )}
-        <button type="button" style={secondaryButton} disabled={busy} onClick={runKeep}>
+        <button type="button" style={{ ...secondaryButton, cursor: "pointer" }} disabled={busy} onClick={runKeep}>
           Keep separate, permanently
         </button>
         <button
           type="button"
-          style={{ ...secondaryButton, opacity: 0.7 }}
+          style={{ ...secondaryButton, opacity: 0.7, cursor: "pointer" }}
           disabled={busy}
           onClick={onDismiss}
         >
@@ -171,29 +187,111 @@ function PairRow({
   );
 }
 
-export function MergeTool({ pairs, onDone }: { pairs: DuplicatePair[]; onDone: () => void }) {
+function ArchivedRow({ row, onDone }: { row: ArchivedRecord; onDone: () => void }) {
+  const undo = useServerFn(adminUndoMerge);
+  const [busy, setBusy] = useState(false);
+  const [gone, setGone] = useState(false);
+
+  if (gone) return null;
+
+  const run = async () => {
+    setBusy(true);
+    try {
+      await undo({ data: { loserId: row.id } });
+      toast.success(`Restored ${row.name}, no ${row.member_no}.`);
+      setGone(true);
+      onDone();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Undo failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      style={{ borderTop: hairline, padding: "12px 0", fontSize: 13, color: "var(--steel-ink)" }}
+      className="flex flex-wrap items-center justify-between gap-2"
+    >
+      <span>
+        <strong>
+          {row.name}, no <Num>{row.member_no}</Num>
+        </strong>{" "}
+        folded into{" "}
+        {row.merged_into_name ? (
+          <strong>
+            {row.merged_into_name}, no <Num>{row.merged_into_member_no}</Num>
+          </strong>
+        ) : (
+          "another record"
+        )}
+        {row.merged_at ? ` on ${new Date(row.merged_at).toLocaleDateString()}` : null}
+        {row.restorable ? null : (
+          <em style={{ color: "var(--sterling)" }}>
+            {" "}
+            No before state was recorded, so this one cannot be restored automatically.
+          </em>
+        )}
+      </span>
+      <button
+        type="button"
+        style={{ ...secondaryButton, cursor: "pointer", opacity: row.restorable ? 1 : 0.5 }}
+        disabled={busy || !row.restorable}
+        onClick={run}
+      >
+        {busy ? "Restoring" : "Undo merge"}
+      </button>
+    </div>
+  );
+}
+
+export function MergeTool({
+  pairs,
+  archived,
+  onDone,
+}: {
+  pairs: DuplicatePair[];
+  archived: ArchivedRecord[];
+  onDone: () => void;
+}) {
   const [dismissed, setDismissed] = useState<string[]>([]);
   const visible = pairs.filter((p) => !dismissed.includes(p.key));
 
   return (
-    <Section eyebrow="Name collisions" title="Duplicate rulings">
-      <p className="mb-2" style={{ fontSize: 13, color: "var(--sterling)" }}>
-        Merging repoints stints, identities, RSVPs, verifications and suggestions onto the survivor,
-        then deletes the other record and records a ruling. Keep separate is permanent and the pair
-        never surfaces again. Not now stores nothing, so the pair returns on the next scan.
-      </p>
-      {visible.length === 0 ? (
-        <Empty>No unruled candidate pairs by name and overlapping years.</Empty>
-      ) : (
-        visible.map((pair) => (
-          <PairRow
-            key={pair.key}
-            pair={pair}
-            onDone={onDone}
-            onDismiss={() => setDismissed((d) => [...d, pair.key])}
-          />
-        ))
-      )}
-    </Section>
+    <>
+      <Section eyebrow="Name collisions" title="Duplicate rulings">
+        <p className="mb-2" style={{ fontSize: 13, color: "var(--sterling)" }}>
+          Merging repoints stints, identities, RSVPs, verifications and suggestions onto the
+          survivor, archives the other record and records a ruling. Nothing is deleted: the archived
+          record can be restored below. Keep separate is permanent and the pair never surfaces
+          again. Not now stores nothing, so the pair returns on the next scan.
+        </p>
+        {visible.length === 0 ? (
+          <Empty>No unruled candidate pairs by name and overlapping years.</Empty>
+        ) : (
+          visible.map((pair) => (
+            <PairRow
+              key={pair.key}
+              pair={pair}
+              onDone={onDone}
+              onDismiss={() => setDismissed((d) => [...d, pair.key])}
+            />
+          ))
+        )}
+      </Section>
+
+      <Section eyebrow="Reversible" title="Archived records">
+        <p className="mb-2" style={{ fontSize: 13, color: "var(--sterling)" }}>
+          Off the board, out of every count and out of the match pool at signup. Undo merge puts the
+          record back and repoints every row that moved, using the before state captured at merge
+          time.
+        </p>
+        {archived.length === 0 ? (
+          <Empty>Nothing is archived.</Empty>
+        ) : (
+          archived.map((row) => <ArchivedRow key={row.id} row={row} onDone={onDone} />)
+        )}
+      </Section>
+    </>
   );
 }

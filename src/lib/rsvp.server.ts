@@ -127,6 +127,7 @@ export async function searchPeopleServer(query: string): Promise<PersonMatch[]> 
       .from("people")
       .select("id, first_name, last_name, played_as, grad_year, seed_division, deceased")
       .eq("deceased", false)
+      .eq("archived", false)
       .limit(5000),
     supabaseAdmin.from("divisions").select("code, visible"),
   ]);
@@ -391,10 +392,13 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
   if (input.personId) {
     const { data } = await supabaseAdmin
       .from("people")
-      .select("id, first_name, last_name, played_as, grad_year, seed_division, deceased")
+      .select("id, first_name, last_name, played_as, grad_year, seed_division, deceased, archived")
       .eq("id", input.personId)
       .maybeSingle();
-    if (!data || (data as PersonRow).deceased) throw new Error("Something went wrong. Try again.");
+    // Archived records are folded into a survivor; nobody may claim or be
+    // mailed through one.
+    if (!data || (data as PersonRow).deceased || (data as { archived?: boolean }).archived)
+      throw new Error("Something went wrong. Try again.");
     person = data as PersonRow;
   } else {
     const firstName = cleanName(input.firstName);
