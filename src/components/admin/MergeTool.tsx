@@ -121,14 +121,15 @@ function PairRow({
           What moves
         </p>
         <p className="mt-2" style={{ color: "var(--steel-ink)" }}>
-          Before: <strong>{name(survivor)}</strong> keeps its own rows.{" "}
-          <strong>{name(loser)}</strong> holds <Num>{pair.moves.stints}</Num> stints,{" "}
+          Before: <strong>{labelled(survivor)}</strong> keeps its own rows.{" "}
+          <strong>{labelled(loser)}</strong> holds <Num>{pair.moves.stints}</Num> stints,{" "}
           <Num>{pair.moves.identities}</Num> identities and <Num>{pair.moves.rsvps}</Num> RSVPs.
         </p>
         <p className="mt-1" style={{ color: "var(--steel-ink)" }}>
-          After: all of those point at <strong>{name(survivor)}</strong>, member no{" "}
-          <Num>{survivor.member_no}</Num>, and the record for <strong>{name(loser)}</strong>, member
-          no <Num>{loser.member_no}</Num>, is deleted. There is no undo.
+          After: all of those point at <strong>{labelled(survivor)}</strong>, and the record for{" "}
+          <strong>{labelled(loser)}</strong> is archived, not deleted. It leaves the board, the
+          counts and the match pool, stays visible here under Archived records, and can be restored
+          exactly with Undo merge.
         </p>
         <p className="mt-1" style={{ color: "var(--sterling)" }}>
           Survivor picked automatically: more stints, ties to the lower member number.
