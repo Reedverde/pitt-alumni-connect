@@ -395,7 +395,8 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
       .select("id, first_name, last_name, played_as, grad_year, seed_division, deceased")
       .eq("id", input.personId)
       .maybeSingle();
-    if (!data || (data as PersonRow).deceased) throw new Error("Something went wrong. Try again.");
+    if (!data || (data as PersonRow).deceased)
+      throw new Error("Something went wrong. Try again.");
     person = data as PersonRow;
   } else {
     const firstName = cleanName(input.firstName);
