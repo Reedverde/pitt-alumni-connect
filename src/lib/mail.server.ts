@@ -17,6 +17,12 @@ import { DISCORD_INVITE_URL } from "./site-url";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
+/** The verified Resend sending domain. Verified 2026-08-07. Any MAIL_FROM_ADDRESS
+ *  secret pointing somewhere else is ignored: sending off a verified domain is
+ *  a silent deliverability failure, so the domain is pinned here. */
+export const SENDING_DOMAIN = "alumni.pittultimate.org";
+const DEFAULT_FROM_ADDRESS = `weekend@${SENDING_DOMAIN}`;
+
 /** The kinds allowed out while outbound email is paused. The allow list is by
  *  message kind, not by calling function: a test send or a party-size link is
  *  not a sign-in link even though it shares the code path. RSVP confirmations
@@ -157,7 +163,9 @@ async function resendDeliver(
  *  project's own domain is delegated: that is a secret change, not a deploy. */
 function mailConfig() {
   const apiKey = process.env.RESEND_API_KEY?.trim() || null;
-  const fromAddress = process.env.MAIL_FROM_ADDRESS?.trim() || null;
+  const configured = process.env.MAIL_FROM_ADDRESS?.trim().toLowerCase() || null;
+  const fromAddress =
+    configured && configured.endsWith(`@${SENDING_DOMAIN}`) ? configured : DEFAULT_FROM_ADDRESS;
   const fromName = process.env.MAIL_FROM_NAME?.trim() || "Pitt Club Ultimate";
   const replyTo = process.env.MAIL_REPLY_TO?.trim() || null;
   return { apiKey, fromAddress, fromName, replyTo };
