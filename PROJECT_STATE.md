@@ -192,7 +192,6 @@ Note: Lovable secrets cannot be overwritten by the agent; they must be deleted a
 ## OPEN, NOT CODE
 
 - Danger database disclosure to Christie Lawry or Bailey Moorhead. Overdue.
-- DNS for alumni.pittultimate.org. Six records sent to Brody for the DreamHost zone: A alumni, TXT _lovable.alumni, TXT resend._domainkey.alumni, MX send.alumni, TXT send.alumni, TXT _dmarc.alumni. The DMARC record is deliberately scoped to _dmarc.alumni and must not be placed at the zone root. Brody supplied SFTP credentials, which are server access and not DNS. DreamHost will not create a co-manager account without a service, so he must add the records himself.
 - Redirect from pitt.everde.co to the new domain, if and when it cuts over. Not built. The Discord post promises old links keep working.
 - Nick Kaczmarek's coaching years, Mick van Ness's B coaching years. Never invent these.
 - Micah Davis's 48-name 2026 roster, still zero emails.
