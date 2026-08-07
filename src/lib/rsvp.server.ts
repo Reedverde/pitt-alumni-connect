@@ -392,10 +392,12 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
   if (input.personId) {
     const { data } = await supabaseAdmin
       .from("people")
-      .select("id, first_name, last_name, played_as, grad_year, seed_division, deceased")
+      .select("id, first_name, last_name, played_as, grad_year, seed_division, deceased, archived")
       .eq("id", input.personId)
       .maybeSingle();
-    if (!data || (data as PersonRow).deceased)
+    // Archived records are folded into a survivor; nobody may claim or be
+    // mailed through one.
+    if (!data || (data as PersonRow).deceased || (data as { archived?: boolean }).archived)
       throw new Error("Something went wrong. Try again.");
     person = data as PersonRow;
   } else {
