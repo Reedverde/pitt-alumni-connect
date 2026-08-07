@@ -13,6 +13,8 @@ export type ScheduleEvent = {
   notes: string | null;
   division: string | null;
   sort_order: number;
+  /** Optional directions link for the event's physical location. */
+  map_url: string | null;
 };
 
 export type ScheduleData = {
