@@ -381,6 +381,7 @@ export type Database = {
           id: string
           is_placeholder: boolean
           location: string | null
+          map_url: string | null
           notes: string | null
           sort_order: number
           starts_at: string | null
@@ -395,6 +396,7 @@ export type Database = {
           id?: string
           is_placeholder?: boolean
           location?: string | null
+          map_url?: string | null
           notes?: string | null
           sort_order?: number
           starts_at?: string | null
@@ -409,6 +411,7 @@ export type Database = {
           id?: string
           is_placeholder?: boolean
           location?: string | null
+          map_url?: string | null
           notes?: string | null
           sort_order?: number
           starts_at?: string | null
