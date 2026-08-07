@@ -604,10 +604,7 @@ export async function resolveSuggestion(
         .eq("event_year", eventYear)
         .maybeSingle();
       if (!already) {
-        const src =
-          payload.src === "discord" || payload.src === "groupme" || payload.src === "email"
-            ? payload.src
-            : null;
+        const src = normalizeRsvpSource(payload.src);
         await supabaseAdmin.from("rsvps").insert({
           person_id: createdId,
           event_year: eventYear,
@@ -1439,7 +1436,7 @@ export async function rsvpSources(): Promise<SourceCount[]> {
   return [...tally.entries()]
     .map(([src, count]) => ({
       src,
-      label: src === "__null__" ? "unknown" : src,
+      label: src === "__null__" ? "unknown" : rsvpSourceLabel(src),
       count,
     }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
