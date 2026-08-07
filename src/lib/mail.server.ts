@@ -614,6 +614,60 @@ export function buildDiscordInviteBody(opts: { name: string; dates: string }) {
   return { text, html };
 }
 
+/** The literal board link for the t_minus_45 invitation. Hardcoded on purpose:
+ *  the src=email tag is how the channel is attributed, so it never resolves
+ *  through PUBLIC_SITE_URL and the query string is never stripped. */
+const INVITE_BOARD_URL = "https://alumni.pittultimate.org/?src=email";
+
+export const T_MINUS_45_SUBJECT =
+  "You're invited: Alumni Weekend, October 2 to 4";
+
+/** The t_minus_45 invitation. Copy is fixed and reproduced verbatim. Dormant
+ *  until the sequence row is switched on. */
+export function buildTMinus45Body(opts: { name: string }) {
+  const lines = [
+    "You are invited to Pitt Club Ultimate Alumni Weekend, October 2 to 4 in Pittsburgh.",
+    "The board is live. Find your name, see who has already said yes, and tell us whether you are coming.",
+  ];
+  const after = [
+    "Coming, maybe, or not this year. Any answer is a good one, and saying so is the whole signup.",
+    "We are building this to last, so however you answer, you stay connected to it from here on.",
+  ];
+
+  const text = [
+    `${opts.name},`,
+    "",
+    lines[0],
+    "",
+    lines[1],
+    "",
+    INVITE_BOARD_URL,
+    "",
+    after[0],
+    "",
+    after[1],
+    "",
+    "Pitt Club Ultimate Alumni",
+  ].join("\n");
+
+  const html = emailShell(
+    [
+      emailParagraph(`${opts.name},`),
+      ...lines.map((l) => emailParagraph(l)),
+      emailButton(INVITE_BOARD_URL, "Find your name"),
+      emailPlainUrl(INVITE_BOARD_URL),
+      ...after.map((l) => emailParagraph(l)),
+      emailFooter([
+        "Pitt Club Ultimate Alumni",
+        "You are receiving this because you have a record on the alumni board.",
+      ]),
+    ].join("\n"),
+    "See who is already coming.",
+  );
+
+  return { text, html };
+}
+
 /** One sign-in link per address per minute. A person clicking through three
  *  answers in a row gets one email, not three, and the link they already hold
  *  stays valid because we hand back the one we minted rather than issuing a new
