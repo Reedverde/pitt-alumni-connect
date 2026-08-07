@@ -77,6 +77,82 @@ export function nameScore(query: string, candidate: string) {
   return best;
 }
 
+function damerauRatio(a: string, b: string) {
+  if (a === b) return 1;
+  if (!a || !b) return 0;
+  const al = a.length;
+  const bl = b.length;
+  const d: number[][] = Array.from({ length: al + 1 }, () => new Array(bl + 1).fill(0));
+  for (let i = 0; i <= al; i++) d[i][0] = i;
+  for (let j = 0; j <= bl; j++) d[0][j] = j;
+  for (let i = 1; i <= al; i++) {
+    for (let j = 1; j <= bl; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+  }
+  return 1 - d[al][bl] / Math.max(al, bl);
+}
+
+function jaroWinkler(a: string, b: string) {
+  if (a === b) return 1;
+  if (!a || !b) return 0;
+  const window = Math.max(0, Math.floor(Math.max(a.length, b.length) / 2) - 1);
+  const aFlags = new Array(a.length).fill(false);
+  const bFlags = new Array(b.length).fill(false);
+  let matches = 0;
+  for (let i = 0; i < a.length; i++) {
+    const start = Math.max(0, i - window);
+    const end = Math.min(i + window + 1, b.length);
+    for (let j = start; j < end; j++) {
+      if (bFlags[j] || a[i] !== b[j]) continue;
+      aFlags[i] = true;
+      bFlags[j] = true;
+      matches++;
+      break;
+    }
+  }
+  if (!matches) return 0;
+  let transpositions = 0;
+  let k = 0;
+  for (let i = 0; i < a.length; i++) {
+    if (!aFlags[i]) continue;
+    while (!bFlags[k]) k++;
+    if (a[i] !== b[k]) transpositions++;
+    k++;
+  }
+  transpositions /= 2;
+  const jaro =
+    (matches / a.length + matches / b.length + (matches - transpositions) / matches) / 3;
+  let prefix = 0;
+  while (prefix < 4 && prefix < a.length && prefix < b.length && a[prefix] === b[prefix]) prefix++;
+  return jaro + prefix * 0.1 * (1 - jaro);
+}
+
+/** Surname-only similarity. Tolerant of single-character misspellings and
+ *  letter transpositions, which is how real surname typos look. */
+export function surnameSimilarity(a: string, b: string) {
+  const x = normalize(a ?? "");
+  const y = normalize(b ?? "");
+  if (!x || !y) return 0;
+  if (x === y) return 1;
+  return Math.max(damerauRatio(x, y), jaroWinkler(x, y), trigramSimilarity(x, y));
+}
+
+/** Hard gate applied BEFORE any other duplicate signal. Different surnames are
+ *  never duplicate candidates. Short surnames must match exactly, because fuzzy
+ *  comparison scores deceptively high on 2 to 4 character strings (Wu vs Xu). */
+export function surnameGate(a: string | null | undefined, b: string | null | undefined) {
+  const x = normalize(a ?? "");
+  const y = normalize(b ?? "");
+  if (!x || !y) return false;
+  if (x.length < 5 || y.length < 5) return x === y;
+  return surnameSimilarity(x, y) >= 0.85;
+}
+
 /** nameScore, plus a slightly discounted pass over nickname equivalents of the
  *  query's given-name tokens. Direct matches always outrank equivalence ones. */
 export function nameScoreWithNicknames(query: string, candidate: string) {
