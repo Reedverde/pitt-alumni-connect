@@ -86,7 +86,7 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 
 **Hotel named.** Hilton Garden Inn Pittsburgh University Place, 3454 Forbes Ave, Oakland. No block, no group rate. Appears both as the `HotelBlock` on /weekend and in `editions.lodging_note`, which was updated tonight. Schenley Overlook Shelter street address: 10430 Overlook Dr. Directions links added for the shelter, Ambrose Urbanic Field, and the hotel.
 
-**Both GroupMe links received** after five asks. Alumni only: https://groupme.com/join_group/25525883/XmguKcz4. Alumni and current: https://groupme.com/join_group/87254367/OrOti41l.
+**Both GroupMe links received** after five asks. `groupme_b` Swagger Jacked, alumni only: https://groupme.com/join_group/25525883/XmguKcz4. `groupme_a` The Program, alumni and current: https://groupme.com/join_group/87254367/OrOti41l. Legacy bare `groupme` source value was retired and existing rows now read as null or were backfilled to the appropriate label where known.
 
 **Duplicate-name rulings** from the previous session stand. Nothing merged.
 
