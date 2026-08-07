@@ -74,7 +74,7 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 
 **Source tracking never worked.** `?src=` was never read anywhere. `ClaimDialog` passed a literal `"email"` and the server had a hardcoded `"email"` fallback, so all historic src values were meaningless and have been set to NULL. Now captured on first touch of any route in `__root.tsx`, held in sessionStorage, validated, written at insert only so first touch wins. Unknown or absent writes NULL, never a default.
 
-**Allowed src values** (constraint `rsvps_src_check`): text, discord, groupme_alumni, groupme_all, groupme, email, website, facebook. Tagged links are `https://pitt.everde.co/?src=<value>`.
+**Allowed src values** (constraint `rsvps_src_check`): text, email, discord, groupme_a, groupme_b, facebook, instagram, x, esn, qr. Tagged links are `https://alumni.pittultimate.org/?src=<value>`.
 
 **Board read parity.** `rsvps` had an anon SELECT policy but no authenticated equivalent, so signing in emptied the board (0 going vs 8). Added `public board rsvps authenticated`. Column grants on `rsvps` narrowed to id, person_id, event_year, status for both roles; party_size, src and responded_at now only via the `admin_rsvp_detail` security definer function, execute granted to authenticated only.
 
