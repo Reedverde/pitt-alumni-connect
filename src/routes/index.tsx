@@ -449,7 +449,7 @@ function BoardPage() {
             FIND YOUR YEAR
           </h2>
           <p className="mt-3 max-w-[560px] text-left" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
-            Every person who ever played. Grey until they say they are coming.
+            Every person who ever played. Grey until they say whether or not they are coming.
           </p>
           <BoardKey />
         </header>
