@@ -151,10 +151,17 @@ KNOWN ISSUES TO RECORD:
 
 - The four canonical docs (CONTEXT.md, BUILD_SPEC.md, DESIGN.md, URL_MANIFEST.md) describe a site that does not exist in at least six places. Not yet reconciled. Four of them still describe a `/why` route that does not exist; that content lives at `/alumni`.
 - The hotel now lives in two places, the HotelBlock component and editions.lodging_note. Two sources of truth for one fact.
-- No standing access-verification script exists. Ad hoc checks were run tonight against the live database.
-- Sequence key `t_minus_42` now carries offset `-45`. The key name was deliberately not renamed.
+- No standing access-verification script exists. Ad hoc checks were run earlier against the live database.
 - The hero shows the CLAIM YOUR NAME button to signed-in visitors. For someone who has already claimed this is a dead button and wrong.
 - The agent sandbox browser cannot render authenticated routes, so `/me` and the signed-in status bar are code-verified but not visually verified.
+- No dispatcher exists. Even though copy is written and `alumni.pittultimate.org` is verified, the sequences table is not read by any sender. Setting `active = true` currently does nothing.
+- KEEP SEPARATE PERMANENTLY button in the admin Duplicates tab does not work. MERGE and NOT NOW do.
+- Admin Duplicates and Review Queue badge counts do not match their lists. Likely the count query excludes differently than the list query.
+- Second-stage first-name matching is undecided. Nickname equivalence must run before fuzzy percentage: Ben vs Benjamin scores 37 percent, Dan vs Daniel 50, Matt vs Matthew 57. Sibling false positives are the risk on the other side.
+- Supabase Auth Site URL may still read `pitt-alumni-connect.lovable.app`. Not confirmed changed.
+- The admin page says three people share it. There are six admins.
+- Sabah B to BITT changeover year is still unknown.
+- Off-site: danger database disclosure to Christie Lawry or Bailey Moorhead is overdue. Micah's 48-name 2026 roster and Sunday alumni game field still have no owner.
 
 
 ## ENV / SECRETS
