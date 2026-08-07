@@ -8,19 +8,19 @@
 | 2 | Security | Standard | In place: RLS on every table, current_person_id() and is_admin() helpers, service role key server side only, 8 security fixes shipped 2026-07-30, anon email leak on identities closed and verified by impersonating anon and a real non-admin, admin privilege scoped to /admin only. Gap: no standing access-verification script, rsvps.party_size still readable by ordinary signed-in alumni |
 | 3 | Accessibility | Standard | Partial: DESIGN.md sets aria-label on every chip, 2px Pitt Royal focus rings, real checkbox filters, prefers-reduced-motion. Not verified in code |
 | 4 | Data & Backend | Standard | In place: 16 migrations, typed Supabase client, TanStack Query v5, derived board views, real person import complete. 368 people (367 real plus one test account), zero sample- rows remaining, 125 identities, 890 stints. Gap: no women's division rows exist yet, that import is deferred |
-| 5 | Auth & Accounts | Standard | In place: magic link first with Google second, server side link generation via auth admin API, _authenticated route guard, three seeded admins |
+| 5 | Auth & Accounts | Standard | In place: magic link first with Google second, server side link generation via auth admin API, _authenticated route guard, six admins (original three seeded: Reed Verdesoto, Brody Brotman, Nick Kaczmarek) |
 | 6 | Design System | Standard | In place: full token set in styles.css, Archivo / Space Grotesk / Space Mono, one accent rule where gold means attending |
 | 7 | Performance | Light | Gap: the board renders every chip with no virtualization. 468 people today |
 | 8 | SEO | Standard | In place: full meta, Open Graph and Twitter card in __root.tsx. Gap: no sitemap, and og:image points at a Lovable R2 preview screenshot that will rot |
 | 9 | Analytics | Light | Not started. The only signal today is rsvps.src captured from the query string |
-| 10 | Email & Notifications | Standard | In place: Resend wrapper, sends log, suppressions, HMAC one click unsubscribe, Resend webhook, hourly admin digest. Gap: sending domain not delegated, all 8 sequences dormant |
+| 10 | Email & Notifications | Standard | In place: Resend wrapper, sends log, suppressions, HMAC one click unsubscribe, Resend webhook, hourly admin digest, verified sending domain alumni.pittultimate.org live. Gap: no dispatcher, all ten sequences remain dormant even though copy is written for seven |
 | 11 | Compliance & Legal | Standard | Gap: no privacy policy or terms on a site holding 468 real names and 120 email addresses |
 | 12 | Discovery & Planning | Standard | In place: CONTEXT.md, BUILD_SPEC.md, DESIGN.md, URL_MANIFEST.md. Gap: they live outside this repo |
 | 13 | Testing | Light | Not started. No Vitest, no Playwright. 005_verify.sql has 29 checks never confirmed PASS in a browser |
 | 14 | Documentation | Standard | In place: this file, AGENTS.md, src/routes/README.md, project knowledge set 2026-07-30 |
 | 15 | Graceful Degradation | Standard | In place: mail.server.ts never throws, falls back to the built in mailer, and the RSVP record saves regardless of send outcome |
 | 16 | Loading/Empty/Error States | Standard | Partial: dashed prompt cards and invitation style empty states specified in DESIGN.md. Not verified across every route |
-| 17 | Environment & Secrets | Standard | Partial: Supabase vars set. RESEND_API_KEY, MAIL_FROM_ADDRESS, MAIL_UNSUBSCRIBE_SECRET, PUBLIC_SITE_URL, SUPABASE_SERVICE_ROLE_KEY status unconfirmed |
+| 17 | Environment & Secrets | Standard | Partial: Supabase vars set. RESEND_API_KEY, MAIL_FROM_ADDRESS, MAIL_REPLY_TO, and PUBLIC_SITE_URL now configured and live. MAIL_UNSUBSCRIBE_SECRET and SUPABASE_SERVICE_ROLE_KEY status unconfirmed |
 | 18 | Responsive & Mobile | Standard | In place: use-mobile hook, mobile type clamps, counter bar collapses to one line. Most alumni are on a phone |
 | 19 | Backup & Recovery | Light | Gap: no export of the people table outside Supabase. Lovable Cloud defaults only |
 | 20 | Rate Limiting | Standard | In place: three dimension throttle on `throttle_events`, service role only. Soft trip saves the RSVP and holds the mail, hard trip writes nothing, both return an identical response. Gap: no pruning job, the table grows forever |
@@ -46,8 +46,8 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 
 ## BUILD STATUS
 
-- Board at `/`: built. Year rows, division filter, decade rail, five chip states
-- Weekend schedule at `/weekend`: built. Equal width division lanes, no division nested under another
+- Board at `/`: built. Year rows, division filter, decade rail, five chip states, board key, and status filter
+- Weekend schedule at `/weekend`: built. Equal width division lanes, no division nested under another. Directions links added for Schenley Overlook Shelter (10430 Overlook Dr), Ambrose Urbanic Field, and the Hilton Garden Inn
 - RSVP as signup with fuzzy match: built
 - Magic link and Google auth: built
 - Profile at `/me`: built
@@ -56,11 +56,17 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 - Calendar .ics export: built
 - Peer verification within plus or minus 3 years: built, never exercised against real data
 - Real person import: complete. 368 rows, 362 on the board, 6 hidden (test account plus the five records with no grad year). Women's divisions hold zero rows, import deferred
-- Drip sequences: seeded dormant, awaiting a verified sending domain
+- Sending domain: verified and live. `alumni.pittultimate.org` is verified in Resend (DKIM, SPF, MX on `send.alumni`). Magic links confirmed in inbox with DKIM pass. From address: Pitt Club Ultimate <weekend@alumni.pittultimate.org>
+- Drip sequences: copy written for seven sequences (t_minus_45, t_minus_28, t_minus_14, t_minus_10_headcount, t_minus_2, t_plus_3, discord_invite). All ten sequences remain `active = false`; there is no dispatcher, so flipping `active` does nothing
 - RSVP rate limiting: built. Three dimensions, soft and hard tiers
+- RSVP source tracking: `src` values widened to text, email, discord, groupme_a, groupme_b, facebook, instagram, x, esn, qr. Bare `groupme` retired
 - Unmatched names as review requests with an hourly admin digest: built
+- `/qr` route: built. Printable, full-screen QR poster for the board with `src=qr`, black on white, generated in bundle, print stylesheet
+- Duplicate detection: surname hard gate at 0.85 evaluated before first-name scoring; exact match required for surnames under five characters
+- Merge tool: reversible. Losing record is archived (`archived = true`, `merged_into_person_id`), not deleted, with full before and after state in `audit_log`; an Undo merge action restores it
 - Privacy policy, analytics, automated tests: not started
 - Sticky chrome geometry is CSS-defined: nav 72px on every route; board counter 57px and decade rail 49px. Anchor offsets use the resulting route-specific `--chrome-height` with no runtime measurement.
+
 
 ## RESOLVED TONIGHT (2026-07-31)
 
@@ -68,7 +74,7 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 
 **Source tracking never worked.** `?src=` was never read anywhere. `ClaimDialog` passed a literal `"email"` and the server had a hardcoded `"email"` fallback, so all historic src values were meaningless and have been set to NULL. Now captured on first touch of any route in `__root.tsx`, held in sessionStorage, validated, written at insert only so first touch wins. Unknown or absent writes NULL, never a default.
 
-**Allowed src values** (constraint `rsvps_src_check`): text, discord, groupme_alumni, groupme_all, groupme, email, website, facebook. Tagged links are `https://pitt.everde.co/?src=<value>`.
+**Allowed src values** (constraint `rsvps_src_check`): text, email, discord, groupme_a, groupme_b, facebook, instagram, x, esn, qr. Tagged links are `https://alumni.pittultimate.org/?src=<value>`.
 
 **Board read parity.** `rsvps` had an anon SELECT policy but no authenticated equivalent, so signing in emptied the board (0 going vs 8). Added `public board rsvps authenticated`. Column grants on `rsvps` narrowed to id, person_id, event_year, status for both roles; party_size, src and responded_at now only via the `admin_rsvp_detail` security definer function, execute granted to authenticated only.
 
@@ -76,11 +82,13 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 
 **Interest-form RSVPs cleared.** 14 rows imported in bulk from the interest form were deleted. They were real answers but not given through the site, so those people will be asked again. The source CSV still holds them and they are the warmest anchor list available. Live RSVPs are now Reed Verdesoto (going), Ben Morgenstern (going), Test Account (going, hidden from board).
 
-**Schedule locked.** Friday Oct 2: Open Team Event/Dinner 7:00 to 10:30 PM (Pitt at Virginia Tech kicks off 7 PM on ESPN), Bar Crawl 9 PM onward. Both carry "Two options tonight, same night: come to either, both, or neither." Saturday Oct 3: BBQ 12:00 to 4:00 PM at Schenley Overlook, women's soccer vs Miami 7:00 PM. Still TBD: Sunday alumni games time and field, the two program gatherings, the bar name.
+**Schedule locked.** Friday Oct 2: Open Team Event/Dinner 7:00 to 10:30 PM (Pitt at Virginia Tech kicks off 7 PM on ESPN), Bar Crawl 9 PM onward. Both carry "Two options tonight, same night: come to either, both, or neither." Saturday Oct 3: BBQ 12:00 to 4:00 PM at Schenley Overlook, women's soccer vs Miami 7:00 PM. Sunday alumni games time and field still TBD.
 
-**Hotel named.** Hilton Garden Inn Pittsburgh University Place, 3454 Forbes Ave, Oakland. No block, no group rate. Appears both as the `HotelBlock` on /weekend and in `editions.lodging_note`, which was updated tonight. Rejected: the Oaklander (Autograph rate), Hampton Inn (Pitt has used it as student housing), Residence Inn (poor recent reviews), Courtyard (further from the park).
+**Hotel named.** Hilton Garden Inn Pittsburgh University Place, 3454 Forbes Ave, Oakland. No block, no group rate. Appears both as the `HotelBlock` on /weekend and in `editions.lodging_note`, which was updated tonight. Schenley Overlook Shelter street address: 10430 Overlook Dr. Directions links added for the shelter, Ambrose Urbanic Field, and the hotel.
 
-**Both GroupMe links received** after five asks. Alumni only: https://groupme.com/join_group/25525883/XmguKcz4. Alumni and current: https://groupme.com/join_group/87254367/OrOti41l.
+**Both GroupMe links received** after five asks. `groupme_b` Swagger Jacked, alumni only: https://groupme.com/join_group/25525883/XmguKcz4. `groupme_a` The Program, alumni and current: https://groupme.com/join_group/87254367/OrOti41l. Legacy bare `groupme` source value was retired and existing rows now read as null or were backfilled to the appropriate label where known.
+
+**1978 question RESOLVED.** Brody's season page shows the 1977-1978 Pitt Fastbacks, organised by Randy Strausser via fliers on telephone poles. `team_names` now carries `Fastbacks` for 1978-1978 with confidence verified, and `Pitt Club Ultimate` for 1979-1997 as an explicit unknown placeholder to provoke corrections. Randy Strausser's 1978 `MENS_A` stint role is now `captain`.
 
 **Duplicate-name rulings** from the previous session stand. Nothing merged.
 
@@ -110,7 +118,7 @@ BUILD CHANGES SHIPPED TODAY (all deployed):
 
 DATABASE CHANGE:
 
-The `sequences` row keyed `t_minus_42` now has `offset_days = -45`. The key name was deliberately not renamed because it may be referenced in cron code. Record this mismatch as a known issue.
+The `sequences` row formerly keyed `t_minus_42` has been renamed to `t_minus_45` and its `offset_days` remains `-45`, resolving to Aug 18 2026. The mismatch is fixed.
 
 KNOWN ISSUES TO RECORD:
 
@@ -143,10 +151,17 @@ KNOWN ISSUES TO RECORD:
 
 - The four canonical docs (CONTEXT.md, BUILD_SPEC.md, DESIGN.md, URL_MANIFEST.md) describe a site that does not exist in at least six places. Not yet reconciled. Four of them still describe a `/why` route that does not exist; that content lives at `/alumni`.
 - The hotel now lives in two places, the HotelBlock component and editions.lodging_note. Two sources of truth for one fact.
-- No standing access-verification script exists. Ad hoc checks were run tonight against the live database.
-- Sequence key `t_minus_42` now carries offset `-45`. The key name was deliberately not renamed.
+- No standing access-verification script exists. Ad hoc checks were run earlier against the live database.
 - The hero shows the CLAIM YOUR NAME button to signed-in visitors. For someone who has already claimed this is a dead button and wrong.
 - The agent sandbox browser cannot render authenticated routes, so `/me` and the signed-in status bar are code-verified but not visually verified.
+- No dispatcher exists. Even though copy is written and `alumni.pittultimate.org` is verified, the sequences table is not read by any sender. Setting `active = true` currently does nothing.
+- KEEP SEPARATE PERMANENTLY button in the admin Duplicates tab does not work. MERGE and NOT NOW do.
+- Admin Duplicates and Review Queue badge counts do not match their lists. Likely the count query excludes differently than the list query.
+- Second-stage first-name matching is undecided. Nickname equivalence must run before fuzzy percentage: Ben vs Benjamin scores 37 percent, Dan vs Daniel 50, Matt vs Matthew 57. Sibling false positives are the risk on the other side.
+- Supabase Auth Site URL may still read `pitt-alumni-connect.lovable.app`. Not confirmed changed.
+- The admin page says three people share it. There are six admins.
+- Sabah B to BITT changeover year is still unknown.
+- Off-site: danger database disclosure to Christie Lawry or Bailey Moorhead is overdue. Micah's 48-name 2026 roster and Sunday alumni game field still have no owner.
 
 
 ## ENV / SECRETS
@@ -156,26 +171,27 @@ Client side, configured:
 
 Server side, configured:
 - SUPABASE_URL, SUPABASE_PROJECT_ID, SUPABASE_PUBLISHABLE_KEY
+- RESEND_API_KEY, domain-restricted to `alumni.pittultimate.org` (was briefly scoped to `pitt.everde.co` and returned 403 after the domain cutover)
+- MAIL_FROM_ADDRESS, currently `weekend@alumni.pittultimate.org`, overriding the code constant
+- MAIL_FROM_NAME, defaults to "Pitt Club Ultimate"
+- MAIL_REPLY_TO, currently `weekend@alumni.pittultimate.org`
+- PUBLIC_SITE_URL, currently `https://alumni.pittultimate.org`
 
 Server side, status unconfirmed:
 - SUPABASE_SERVICE_ROLE_KEY, required for magic link generation
-- RESEND_API_KEY, required or mail falls back to the capped built in mailer
-- MAIL_FROM_ADDRESS, required alongside RESEND_API_KEY
-- MAIL_FROM_NAME, defaults to "Pitt Club Ultimate"
-- MAIL_REPLY_TO, optional
 - MAIL_UNSUBSCRIBE_SECRET, required for a valid unsubscribe token
-- PUBLIC_SITE_URL, fallback origin for links in mail
+
+Note: Lovable secrets cannot be overwritten by the agent; they must be deleted and recreated by hand if a value changes.
 
 ## LAUNCH PLAN, CURRENT
 
-- T-60, Monday Aug 3: committee members hand-send personal invites to their own anchors from their own inboxes and phones. No app email. The dormant T-60 sequence stays inactive permanently because a person does its job.
-- T-45, Monday Aug 17: launch mass email. This is the old T-42 shifted three days. Everything after it keeps existing spacing: T-28 peer proof, T-21, T-14, T-7, T-2, T+3. NOTE: the sequence offsets have NOT been changed yet. One row goes dormant, one offset changes 42 to 45.
+- T-60, Monday Aug 3: committee members hand-send personal invites to their own anchors from their own inboxes and phones. No app email. The T-60 sequence passed on Aug 3 with no copy and no sender; it will not be used.
+- T-45, Monday Aug 17: launch mass email. Sending domain `alumni.pittultimate.org` is now verified and live. Sequence key renamed from `t_minus_42` to `t_minus_45` to match its `-45` offset (resolves Aug 18 2026). Copy is written for t_minus_45, t_minus_28, t_minus_14, t_minus_10_headcount, t_minus_2, and t_plus_3. There is still no dispatcher; sequences will not send until one is built and they are deliberately activated.
 - Outreach coverage so far: Ben Morgenstern taking graduating years 2018 to 2024, Micah Davis taking the last four years. 2023 and 2024 are double covered. No shared coverage sheet exists.
 
 ## OPEN, NOT CODE
 
 - Danger database disclosure to Christie Lawry or Bailey Moorhead. Overdue.
-- DNS for alumni.pittultimate.org. Six records sent to Brody for the DreamHost zone: A alumni, TXT _lovable.alumni, TXT resend._domainkey.alumni, MX send.alumni, TXT send.alumni, TXT _dmarc.alumni. The DMARC record is deliberately scoped to _dmarc.alumni and must not be placed at the zone root. Brody supplied SFTP credentials, which are server access and not DNS. DreamHost will not create a co-manager account without a service, so he must add the records himself.
 - Redirect from pitt.everde.co to the new domain, if and when it cuts over. Not built. The Discord post promises old links keep working.
 - Nick Kaczmarek's coaching years, Mick van Ness's B coaching years. Never invent these.
 - Micah Davis's 48-name 2026 roster, still zero emails.
@@ -186,13 +202,13 @@ Server side, status unconfirmed:
 
 NOW: write the standing access-verification script that runs as anon and as a non-admin and asserts per-role read and write on every table plus what can leave the mail system while paused. Narrow rsvps so party_size is admin only. Confirm or delete the remaining placeholder events. Add a pg_cron job pruning throttle_events older than 48 hours. Replace the og:image with a stable hosted asset. Publish a privacy policy and link it in the footer. Reconcile CONTEXT.md, BUILD_SPEC.md, DESIGN.md and URL_MANIFEST.md, all four now describe a site that does not exist.
 
-NEXT: activate the eight drip sequences once the sending domain verifies. Import the 2026 roster of 48 names. Discord, GroupMe and Facebook syndication with src tracking. Analytics on claim and RSVP conversion. Virtualize the board. Women's division import, roughly 102 people, only after Christie Lawry and Bailey Moorhead have been contacted.
+NEXT: build a dispatcher that reads the sequences table and sends the active drips. Copy lives in TypeScript, so every wording change requires a deploy. Only activate when ready. Import the 2026 roster of 48 names. Discord, GroupMe and Facebook syndication with src tracking. Analytics on claim and RSVP conversion. Virtualize the board. Women's division import, roughly 102 people, only after Christie Lawry and Bailey Moorhead have been contacted.
 
 LATER: tournament tracker. Alumni job network built on the open_to_network consent flag. Edition rollover so the weekend repeats every year without a migration. Per year photo library.
 
 ## MASTER OS
 
-- Retrofitted: 2026-07-30. Last synced 2026-08-01
+- Retrofitted: 2026-07-30. Last synced 2026-08-07
 - Hub card: pitt-alumni-connect in project 45df6587-f345-46bd-bccc-3c2fa55467a7
 - Hub article file: src/data/pitt-alumni-connect-articles.ts
 - Lovable project ID: da83b43b-b24b-4b80-b9ec-619b1b431cbb
@@ -309,6 +325,48 @@ Magic link honours preapproved_emails. `requestSignInLink` used to look up `iden
 A decline is a signup. An unmatched name still becomes a pending `new_person` suggestion, but the typed email now receives a sign-in link on every answer including not_this_year, and `party_size` is carried in the payload. Clicking the link marks the pending request `email_verified`, and approval then attaches that address as a verified identity, so the person is signed in on arrival. The answer was already written as a real rsvp row at approval time and still is.
 
 Add-me is a control everywhere, worded "I'm not on here, add me". The board search empty state has a real button that opens the dialog with the typed text prefilled, the claim dialog shows the add-me button from the first keystroke rather than the third, the ActionRail circle opens the dialog in place instead of linking home, and /alumni FIND YOUR NAME and its closing button open the dialog. No gold anywhere in any of it.
+
+## 2026-08-07
+
+SENDING DOMAIN, now live
+
+- `alumni.pittultimate.org` verified in Resend at 12:27 PM Aug 7. DKIM, SPF TXT on `send.alumni`, and MX on `send.alumni` all verified.
+- DNS is in the `pittultimate.org` zone at DreamHost, entered by Brody. DreamHost cannot create MX on a subdomain through the DNS panel. The fix was creating `send.alumni.pittultimate.org` as its own domain entry, then using the Custom MX page scoped to that subdomain. Record this; it will be needed again.
+- No DMARC record exists and none is planned. DreamHost's form strips the leading underscore so `_dmarc.alumni` cannot be created. DMARC is optional in Resend.
+- The Resend API key was domain-restricted to `pitt.everde.co` and returned 403 on the new domain. Now scoped to `alumni.pittultimate.org`. Note: `checkSendingDomain()` verifies the domain is verified but not that the key is authorised for it, which let a doomed send through.
+- From address is Pitt Club Ultimate <weekend@alumni.pittultimate.org>, set by the `MAIL_FROM_ADDRESS` secret which overrides the code constant. `MAIL_REPLY_TO` is `weekend@alumni.pittultimate.org`. `PUBLIC_SITE_URL` is `https://alumni.pittultimate.org`. Lovable secrets cannot be overwritten by the agent, only deleted and recreated by hand.
+- Magic links confirmed delivering to inbox with DKIM pass.
+
+DRIP COPY, written, all dormant
+
+- Six sequences now have copy in `src/lib/mail.server.ts`: `t_minus_45`, `t_minus_28`, `t_minus_14`, `t_minus_10_headcount`, `t_minus_2`, `t_plus_3`. `discord_invite` already had copy.
+- All ten sequences remain `active = false`. There is NO dispatcher. Nothing reads the `sequences` table and sends. Setting `active = true` currently does nothing.
+- `t_minus_42` renamed to `t_minus_45` to match its actual offset. Resolves to Aug 18 2026.
+- `t_minus_60` passed on Aug 3 with no copy and no sender.
+- Copy lives in TypeScript, not the database, so every wording change requires a deploy. Only Reed can edit. Flagged as a structural problem for handover.
+
+OTHER SHIPPED TODAY
+
+- `rsvps.src` widened to: text, email, discord, groupme_a, groupme_b, facebook, instagram, x, esn, qr. Bare `groupme` retired. Unrecognised values store null. Existing rows: 28 text, 4 discord, 5 null.
+- New unlisted route `/qr`, a printable QR poster encoding the board with `src=qr`. Black on white, generated in bundle, print stylesheet.
+- Map Directions links added for Schenley Overlook Shelter, Ambrose Urbanic Field, and the Hilton. Schenley address `10430 Overlook Dr` now shown.
+- Hotel named: Hilton Garden Inn Pittsburgh University Place, 3454 Forbes Ave. No room block, no group rate.
+- Both GroupMe links received. `groupme_a` is The Program, alumni and current. `groupme_b` is Swagger Jacked, alumni only. Legacy names kept deliberately.
+- `team_names`: Fastbacks 1978 to 1978 verified. Pitt Club Ultimate 1979 to 1997 confidence unknown, a deliberate placeholder to provoke corrections, not history. Randy Strausser's 1978 stint set to `captain`.
+- 1978 question RESOLVED. Brody's season page shows the 1977-1978 Pitt Fastbacks, organised by Randy Strausser via fliers on telephone poles.
+- Duplicate detection: last name is now a hard gate at 0.85 evaluated first, exact match required for surnames under 5 characters.
+- Merge is now reversible. Losing record is archived, not deleted, with before and after state in `audit_log` and an Undo merge action.
+
+STILL OPEN
+
+- No dispatcher. Nothing automates.
+- KEEP SEPARATE PERMANENTLY button does not work. MERGE and NOT NOW do.
+- DUPLICATES badge and REVIEW QUEUE badge both show counts that do not match their lists. Likely the same root cause, a count query that does not exclude what the list excludes.
+- First name matching, second stage, undecided. Reed asked for 60 percent fuzzy. Flagged that nickname equivalence must run first: Ben against Benjamin scores 37 percent, Dan against Daniel 50, Matt against Matthew 57. Sibling false positives are the risk on the other side.
+- Supabase Auth Site URL may still read `pitt-alumni-connect.lovable.app`. Never confirmed changed.
+- Admin page says three people share it. There are six admins.
+- Sabah B to BITT changeover year still unknown.
+- Off-site: Danger database disclosure to Christie Lawry or Bailey Moorhead, still overdue. Micah's 48 name roster. Sunday alumni game field, still nobody's name against it.
 
 ## 2026-08-04
 - Coaches and managers row moved to the bottom of the board, below the oldest year row. The 1978 anchor block is unchanged.
