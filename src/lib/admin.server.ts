@@ -1696,6 +1696,7 @@ export type AdminDashboard = {
   digest: DigestCohort[];
   drip: DripData;
   duplicates: DuplicatePair[];
+  archived: ArchivedRecord[];
   seasonYear: number;
   editions: EditionRow[];
   sends: SendRow[];
@@ -1705,7 +1706,7 @@ export type AdminDashboard = {
 };
 
 export async function dashboard(): Promise<AdminDashboard> {
-  const [queue, teamRes, divisionRes, gaps, heads, digest, drip, duplicates, editions, sends, totals, sources, breakdown] = await Promise.all([
+  const [queue, teamRes, divisionRes, gaps, heads, digest, drip, duplicates, archived, editions, sends, totals, sources, breakdown] = await Promise.all([
     reviewQueue(),
     supabaseAdmin
       .from("team_names")
@@ -1718,6 +1719,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     organizerDigest(),
     dripData(),
     duplicateCandidates(),
+    archivedRecords(),
     listEditions(),
     recentSends(),
     sendTotals(),
@@ -1734,6 +1736,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     digest,
     drip,
     duplicates,
+    archived,
     editions,
     sends,
     sendTotals: totals,
