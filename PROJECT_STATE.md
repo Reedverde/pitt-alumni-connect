@@ -84,7 +84,7 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 
 **Schedule locked.** Friday Oct 2: Open Team Event/Dinner 7:00 to 10:30 PM (Pitt at Virginia Tech kicks off 7 PM on ESPN), Bar Crawl 9 PM onward. Both carry "Two options tonight, same night: come to either, both, or neither." Saturday Oct 3: BBQ 12:00 to 4:00 PM at Schenley Overlook, women's soccer vs Miami 7:00 PM. Sunday alumni games time and field still TBD.
 
-**Hotel named.** Hilton Garden Inn Pittsburgh University Place, 3454 Forbes Ave, Oakland. No block, no group rate. Appears both as the `HotelBlock` on /weekend and in `editions.lodging_note`, which was updated tonight. Rejected: the Oaklander (Autograph rate), Hampton Inn (Pitt has used it as student housing), Residence Inn (poor recent reviews), Courtyard (further from the park).
+**Hotel named.** Hilton Garden Inn Pittsburgh University Place, 3454 Forbes Ave, Oakland. No block, no group rate. Appears both as the `HotelBlock` on /weekend and in `editions.lodging_note`, which was updated tonight. Schenley Overlook Shelter street address: 10430 Overlook Dr. Directions links added for the shelter, Ambrose Urbanic Field, and the hotel.
 
 **Both GroupMe links received** after five asks. Alumni only: https://groupme.com/join_group/25525883/XmguKcz4. Alumni and current: https://groupme.com/join_group/87254367/OrOti41l.
 
