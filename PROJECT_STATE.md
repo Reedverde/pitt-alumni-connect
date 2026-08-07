@@ -171,15 +171,17 @@ Client side, configured:
 
 Server side, configured:
 - SUPABASE_URL, SUPABASE_PROJECT_ID, SUPABASE_PUBLISHABLE_KEY
+- RESEND_API_KEY, domain-restricted to `alumni.pittultimate.org` (was briefly scoped to `pitt.everde.co` and returned 403 after the domain cutover)
+- MAIL_FROM_ADDRESS, currently `weekend@alumni.pittultimate.org`, overriding the code constant
+- MAIL_FROM_NAME, defaults to "Pitt Club Ultimate"
+- MAIL_REPLY_TO, currently `weekend@alumni.pittultimate.org`
+- PUBLIC_SITE_URL, currently `https://alumni.pittultimate.org`
 
 Server side, status unconfirmed:
 - SUPABASE_SERVICE_ROLE_KEY, required for magic link generation
-- RESEND_API_KEY, required or mail falls back to the capped built in mailer
-- MAIL_FROM_ADDRESS, required alongside RESEND_API_KEY
-- MAIL_FROM_NAME, defaults to "Pitt Club Ultimate"
-- MAIL_REPLY_TO, optional
 - MAIL_UNSUBSCRIBE_SECRET, required for a valid unsubscribe token
-- PUBLIC_SITE_URL, fallback origin for links in mail
+
+Note: Lovable secrets cannot be overwritten by the agent; they must be deleted and recreated by hand if a value changes.
 
 ## LAUNCH PLAN, CURRENT
 
