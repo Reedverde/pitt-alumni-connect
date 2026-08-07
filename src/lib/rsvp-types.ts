@@ -1,7 +1,12 @@
 export const RSVP_STATUSES = ["going", "maybe", "not_this_year"] as const;
 export type RsvpStatus = (typeof RSVP_STATUSES)[number];
 
-export { RSVP_SOURCES, normalizeRsvpSource } from "./rsvp-src";
+export {
+  RSVP_SOURCES,
+  RSVP_SOURCE_LABELS,
+  normalizeRsvpSource,
+  rsvpSourceLabel,
+} from "./rsvp-src";
 export type { RsvpSource } from "./rsvp-src";
 
 /** Heads, including the person themselves. Meaningful only for "going". */

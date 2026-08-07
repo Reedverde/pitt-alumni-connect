@@ -4,16 +4,43 @@
  *  this field exists to produce. */
 export const RSVP_SOURCES = [
   "text",
-  "discord",
-  "groupme_alumni",
-  "groupme_all",
-  "groupme",
   "email",
-  "website",
+  "discord",
+  "groupme_a",
+  "groupme_b",
   "facebook",
+  "instagram",
+  "x",
+  "esn",
+  "qr",
 ] as const;
 
 export type RsvpSource = (typeof RSVP_SOURCES)[number];
+
+/** Readable labels for admin reporting. Retired keys are kept here so historical
+ *  rows still render as words rather than raw values. */
+export const RSVP_SOURCE_LABELS: Record<string, string> = {
+  text: "Text message",
+  email: "Email",
+  discord: "Discord",
+  groupme_a: "GroupMe (A side)",
+  groupme_b: "GroupMe (B side)",
+  facebook: "Facebook",
+  instagram: "Instagram",
+  x: "X",
+  esn: "esnultimate.org",
+  qr: "QR code",
+  // retired, historical rows only
+  groupme: "GroupMe (retired)",
+  groupme_alumni: "GroupMe alumni (retired)",
+  groupme_all: "GroupMe all (retired)",
+  website: "Website (retired)",
+};
+
+export function rsvpSourceLabel(src: string | null): string {
+  if (!src) return "unknown";
+  return RSVP_SOURCE_LABELS[src] ?? src;
+}
 
 export function normalizeRsvpSource(raw: unknown): RsvpSource | null {
   if (typeof raw !== "string") return null;
