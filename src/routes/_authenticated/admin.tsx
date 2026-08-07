@@ -159,7 +159,9 @@ function AdminPage() {
 
       {active === "review" ? <ReviewQueue queue={data.queue} onRefresh={refresh} /> : null}
       {active === "people" ? <PeopleTable /> : null}
-      {active === "duplicates" ? <MergeTool pairs={data.duplicates} onDone={refresh} /> : null}
+      {active === "duplicates" ? (
+        <MergeTool pairs={data.duplicates} archived={data.archived} onDone={refresh} />
+      ) : null}
       {active === "roster" ? <RosterImport seasonYear={data.seasonYear} onDone={refresh} /> : null}
       {active === "editions" ? <EditionsPanel rows={data.editions} onSaved={refresh} /> : null}
       {active === "schedule" ? (
