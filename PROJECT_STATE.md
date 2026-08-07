@@ -82,7 +82,7 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 
 **Interest-form RSVPs cleared.** 14 rows imported in bulk from the interest form were deleted. They were real answers but not given through the site, so those people will be asked again. The source CSV still holds them and they are the warmest anchor list available. Live RSVPs are now Reed Verdesoto (going), Ben Morgenstern (going), Test Account (going, hidden from board).
 
-**Schedule locked.** Friday Oct 2: Open Team Event/Dinner 7:00 to 10:30 PM (Pitt at Virginia Tech kicks off 7 PM on ESPN), Bar Crawl 9 PM onward. Both carry "Two options tonight, same night: come to either, both, or neither." Saturday Oct 3: BBQ 12:00 to 4:00 PM at Schenley Overlook, women's soccer vs Miami 7:00 PM. Still TBD: Sunday alumni games time and field, the two program gatherings, the bar name.
+**Schedule locked.** Friday Oct 2: Open Team Event/Dinner 7:00 to 10:30 PM (Pitt at Virginia Tech kicks off 7 PM on ESPN), Bar Crawl 9 PM onward. Both carry "Two options tonight, same night: come to either, both, or neither." Saturday Oct 3: BBQ 12:00 to 4:00 PM at Schenley Overlook, women's soccer vs Miami 7:00 PM. Sunday alumni games time and field still TBD.
 
 **Hotel named.** Hilton Garden Inn Pittsburgh University Place, 3454 Forbes Ave, Oakland. No block, no group rate. Appears both as the `HotelBlock` on /weekend and in `editions.lodging_note`, which was updated tonight. Rejected: the Oaklander (Autograph rate), Hampton Inn (Pitt has used it as student housing), Residence Inn (poor recent reviews), Courtyard (further from the park).
 
