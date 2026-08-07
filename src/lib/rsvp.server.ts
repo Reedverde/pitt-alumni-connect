@@ -127,6 +127,7 @@ export async function searchPeopleServer(query: string): Promise<PersonMatch[]> 
       .from("people")
       .select("id, first_name, last_name, played_as, grad_year, seed_division, deceased")
       .eq("deceased", false)
+      .eq("archived", false)
       .limit(5000),
     supabaseAdmin.from("divisions").select("code, visible"),
   ]);
