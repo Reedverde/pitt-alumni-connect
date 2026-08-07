@@ -660,6 +660,7 @@ export async function rosterDryRun(text: string): Promise<{
   const { data } = await supabaseAdmin
     .from("people")
     .select("id, first_name, last_name, played_as, grad_year")
+    .eq("archived", false)
     .limit(3000);
   const people = (data ?? []) as {
     id: string;
