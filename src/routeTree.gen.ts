@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AlumniRouteImport } from './routes/alumni'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as QrRouteImport } from './routes/qr'
 import { Route as RsvpRouteImport } from './routes/rsvp'
 import { Route as WeekendRouteImport } from './routes/weekend'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -44,6 +45,11 @@ const AlumniRoute = AlumniRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QrRoute = QrRouteImport.update({
+  id: '/qr',
+  path: '/qr',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RsvpRoute = RsvpRouteImport.update({
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
+  '/qr': typeof QrRoute
   '/rsvp': typeof RsvpRoute
   '/weekend': typeof WeekendRoute
   '/admin': typeof AuthenticatedAdminRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
+  '/qr': typeof QrRoute
   '/rsvp': typeof RsvpRoute
   '/weekend': typeof WeekendRoute
   '/admin': typeof AuthenticatedAdminRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
+  '/qr': typeof QrRoute
   '/rsvp': typeof RsvpRoute
   '/weekend': typeof WeekendRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/'
     | '/alumni'
     | '/auth'
+    | '/qr'
     | '/rsvp'
     | '/weekend'
     | '/admin'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/'
     | '/alumni'
     | '/auth'
+    | '/qr'
     | '/rsvp'
     | '/weekend'
     | '/admin'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/alumni'
     | '/auth'
+    | '/qr'
     | '/rsvp'
     | '/weekend'
     | '/_authenticated/admin'
@@ -231,6 +243,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AlumniRoute: typeof AlumniRoute
   AuthRoute: typeof AuthRoute
+  QrRoute: typeof QrRoute
   RsvpRoute: typeof RsvpRoute
   WeekendRoute: typeof WeekendRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qr': {
+      id: '/qr'
+      path: '/qr'
+      fullPath: '/qr'
+      preLoaderRoute: typeof QrRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rsvp': {
@@ -386,6 +406,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AlumniRoute: AlumniRoute,
   AuthRoute: AuthRoute,
+  QrRoute: QrRoute,
   RsvpRoute: RsvpRoute,
   WeekendRoute: WeekendRoute,
   AuthCallbackRoute: AuthCallbackRoute,
@@ -401,13 +422,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -322,3 +322,106 @@
   outline: 2px solid var(--pitt-royal);
   outline-offset: 3px;
 }
+
+/* ── /qr poster: unlisted, chrome free, print first ─────────────────── */
+.qr-poster {
+  min-height: 100dvh;
+  background: #ffffff;
+  color: #0b0b0c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(0.75rem, 3vw, 2.5rem);
+}
+.qr-poster-inner {
+  width: 100%;
+  max-width: min(92vw, 46rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: clamp(0.5rem, 1.5vw, 1rem);
+}
+.qr-eyebrow {
+  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: clamp(0.65rem, 1.8vw, 0.85rem);
+  color: #003594;
+  margin: 0;
+}
+.qr-heading {
+  font-family: Archivo, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  text-transform: uppercase;
+  font-size: clamp(1.5rem, 5.5vw, 3rem);
+  color: #0b0b0c;
+  margin: 0;
+}
+.qr-frame {
+  width: min(92vw, 62vh, 34rem);
+  background: #ffffff;
+  padding: clamp(0.5rem, 2vw, 1.25rem);
+}
+.qr-svg {
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+.qr-url {
+  font-family: "Space Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: clamp(1rem, 3.6vw, 1.6rem);
+  letter-spacing: -0.01em;
+  color: #0b0b0c;
+  margin: 0;
+  word-break: break-all;
+}
+.qr-body {
+  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(0.9rem, 2.4vw, 1.05rem);
+  color: #1c2536;
+  margin: 0;
+}
+
+@media print {
+  @page {
+    margin: 0.5in;
+  }
+  html,
+  body {
+    background: #ffffff !important;
+  }
+  .qr-poster {
+    min-height: auto;
+    padding: 0;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .qr-poster-inner {
+    max-width: 100%;
+    gap: 0.4in;
+  }
+  .qr-frame {
+    width: 6in;
+    padding: 0;
+  }
+  .qr-eyebrow,
+  .qr-heading,
+  .qr-url,
+  .qr-body {
+    color: #0b0b0c !important;
+  }
+  .qr-heading {
+    font-size: 28pt;
+  }
+  .qr-url {
+    font-size: 20pt;
+  }
+  .qr-body {
+    font-size: 12pt;
+  }
+}
