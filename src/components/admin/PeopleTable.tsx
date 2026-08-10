@@ -233,7 +233,7 @@ function EditRow({ person, onSaved }: { person: AdminPerson; onSaved: () => void
 
   return (
     <tr>
-      <td colSpan={14} style={{ ...cellStyle, background: "var(--field-white)" }}>
+      <td colSpan={10} style={{ ...cellStyle, background: "var(--concrete)" }}>
         <div className="grid gap-3 sm:grid-cols-3">
           {field("first_name", "First name")}
           {field("last_name", "Last name")}
@@ -484,7 +484,13 @@ export function PeopleTable() {
 
     const filtered = data.filter((p) => {
       if (q) {
-        const hay = [p.first_name, p.last_name ?? "", p.played_as ?? "", String(p.member_no)]
+        const hay = [
+          p.first_name,
+          p.last_name ?? "",
+          p.played_as ?? "",
+          String(p.member_no),
+          ...p.emails.map((e) => e.email),
+        ]
           .join(" ")
           .toLowerCase();
         if (!hay.includes(q)) return false;
@@ -547,7 +553,7 @@ export function PeopleTable() {
         <input
           value={f.query}
           onChange={(e) => set("query", e.target.value)}
-          placeholder="Search name, played-as or member no"
+          placeholder="Search name, email, played-as or member no"
           style={{ ...inputStyle, width: 280 }}
         />
         <select value={f.division} onChange={(e) => set("division", e.target.value)} style={{ ...inputStyle, width: 150 }}>
