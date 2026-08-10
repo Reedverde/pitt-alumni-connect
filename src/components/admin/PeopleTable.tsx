@@ -143,10 +143,34 @@ function StintEditor({ personId }: { personId: string }) {
   );
 }
 
-function Flag({ on, children }: { on: boolean; children: string }) {
+/** Only flags that are actually set get ink. Four half-empty columns became one. */
+function FlagChips({ person }: { person: AdminPerson }) {
+  const chips = [
+    person.is_anchor ? "anchor" : null,
+    person.needs_review ? "review" : null,
+    person.show_on_board ? null : "hidden",
+    person.deceased ? "memorial" : null,
+  ].filter(Boolean) as string[];
+  if (chips.length === 0)
+    return <span style={{ color: "var(--chalk)" }}>—</span>;
   return (
-    <span className="label-caps" style={{ color: on ? "var(--steel-ink)" : "var(--chalk)" }}>
-      {children}
+    <span className="flex flex-wrap gap-1">
+      {chips.map((c) => (
+        <span
+          key={c}
+          className="label-caps"
+          style={{
+            fontSize: 10,
+            border: hairline,
+            borderRadius: 3,
+            padding: "1px 5px",
+            color: "var(--steel-ink)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {c}
+        </span>
+      ))}
     </span>
   );
 }
@@ -209,7 +233,7 @@ function EditRow({ person, onSaved }: { person: AdminPerson; onSaved: () => void
 
   return (
     <tr>
-      <td colSpan={14} style={{ ...cellStyle, background: "var(--field-white)" }}>
+      <td colSpan={10} style={{ ...cellStyle, background: "var(--concrete)" }}>
         <div className="grid gap-3 sm:grid-cols-3">
           {field("first_name", "First name")}
           {field("last_name", "Last name")}
@@ -286,26 +310,30 @@ function EditRow({ person, onSaved }: { person: AdminPerson; onSaved: () => void
 /** Admin only. @pitt.edu is flagged because it dies at graduation;
  *  @alumni.pitt.edu is permanent and is deliberately not flagged. */
 function EmailCell({ emails }: { emails: AdminPerson["emails"] }) {
+  const [expanded, setExpanded] = useState(false);
   if (emails.length === 0)
     return (
       <span className="label-caps" style={{ color: "var(--sterling)" }}>
         No address
       </span>
     );
+  const ordered = [...emails].sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
+  const shown = expanded ? ordered : ordered.slice(0, 1);
   return (
-    <div className="flex flex-col gap-1">
-      {emails.map((e) => {
+    <div className="flex flex-col gap-1" style={{ minWidth: 240 }}>
+      {shown.map((e) => {
         const expiring = /@pitt\.edu$/i.test(e.email);
         return (
-          <span key={e.email} className="flex flex-wrap items-center gap-1.5">
+          <span key={e.email} className="flex flex-wrap items-baseline gap-1.5">
             <span
+              title={e.email}
               style={{
                 fontFamily: '"Space Mono", ui-monospace, monospace',
                 fontSize: 12,
                 color: "var(--steel-ink)",
                 userSelect: "all",
                 cursor: "text",
-                wordBreak: "break-all",
+                overflowWrap: "anywhere",
               }}
             >
               {e.email}
@@ -315,12 +343,11 @@ function EmailCell({ emails }: { emails: AdminPerson["emails"] }) {
                 primary
               </span>
             ) : null}
-            <span
-              className="label-caps"
-              style={{ fontSize: 10, color: e.verified ? "var(--sterling)" : "var(--steel-ink)" }}
-            >
-              {e.verified ? "verified" : "unverified"}
-            </span>
+            {e.verified ? null : (
+              <span className="label-caps" style={{ fontSize: 10, color: "var(--steel-ink)" }}>
+                unverified
+              </span>
+            )}
             {expiring ? (
               <span
                 className="label-caps"
@@ -339,6 +366,16 @@ function EmailCell({ emails }: { emails: AdminPerson["emails"] }) {
           </span>
         );
       })}
+      {ordered.length > 1 ? (
+        <button
+          type="button"
+          className="label-caps"
+          onClick={() => setExpanded((v) => !v)}
+          style={{ fontSize: 10, color: "var(--pitt-royal)", textAlign: "left" }}
+        >
+          {expanded ? "Show fewer" : `+${ordered.length - 1} more`}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -349,18 +386,15 @@ type SortKey =
 
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "name", label: "Name" },
-  { key: "played_as", label: "Played as" },
   { key: "email", label: "Email" },
+  { key: "played_as", label: "Played as" },
   { key: "grad_year", label: "Grad" },
   { key: "board_year", label: "Board yr" },
   { key: "board_division", label: "Division" },
   { key: "team_label", label: "Team" },
   { key: "stint_count", label: "Stints" },
   { key: "state", label: "State" },
-  { key: "is_anchor", label: "Anchor" },
-  { key: "needs_review", label: "Review" },
-  { key: "show_on_board", label: "Visible" },
-  { key: "deceased", label: "Memorial" },
+  { key: "needs_review", label: "Flags" },
   { key: "member_no", label: "Member no" },
 ];
 
@@ -450,7 +484,13 @@ export function PeopleTable() {
 
     const filtered = data.filter((p) => {
       if (q) {
-        const hay = [p.first_name, p.last_name ?? "", p.played_as ?? "", String(p.member_no)]
+        const hay = [
+          p.first_name,
+          p.last_name ?? "",
+          p.played_as ?? "",
+          String(p.member_no),
+          ...p.emails.map((e) => e.email),
+        ]
           .join(" ")
           .toLowerCase();
         if (!hay.includes(q)) return false;
@@ -513,7 +553,7 @@ export function PeopleTable() {
         <input
           value={f.query}
           onChange={(e) => set("query", e.target.value)}
-          placeholder="Search name, played-as or member no"
+          placeholder="Search name, email, played-as or member no"
           style={{ ...inputStyle, width: 280 }}
         />
         <select value={f.division} onChange={(e) => set("division", e.target.value)} style={{ ...inputStyle, width: 150 }}>
@@ -550,12 +590,25 @@ export function PeopleTable() {
       {rows.length === 0 ? (
         <Empty>No records match.</Empty>
       ) : (
-        <div className="overflow-x-auto" style={{ borderBottom: hairline, maxHeight: 640 }}>
-          <table className="w-full" style={{ borderCollapse: "collapse", minWidth: 1180 }}>
-            <thead style={{ position: "sticky", top: 0, zIndex: 1, background: "var(--pure-white)" }}>
+        <div
+          className="overflow-auto"
+          style={{ border: hairline, borderRadius: 6, maxHeight: "70vh", overscrollBehavior: "contain" }}
+        >
+          <table className="w-full" style={{ borderCollapse: "separate", borderSpacing: 0, minWidth: 1080 }}>
+            <thead style={{ position: "sticky", top: 0, zIndex: 2, background: "var(--pure-white)" }}>
               <tr>
                 {COLUMNS.map((c) => (
-                  <th key={c.key} style={{ ...headStyle, borderBottom: hairline }}>
+                  <th
+                    key={c.key}
+                    style={{
+                      ...headStyle,
+                      borderBottom: hairline,
+                      background: "var(--pure-white)",
+                      ...(c.key === "name"
+                        ? { position: "sticky", left: 0, zIndex: 3, minWidth: 170 }
+                        : null),
+                    }}
+                  >
                     <button type="button" onClick={() => toggleSort(c.key)} style={headButton(sort.key === c.key)}>
                       {c.label}
                       {sort.key === c.key ? (sort.dir === "asc" ? " ↑" : " ↓") : ""}
@@ -565,10 +618,13 @@ export function PeopleTable() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((person) => (
+              {rows.map((person, i) => {
+                const zebra = i % 2 === 1 ? "var(--field-white)" : "var(--pure-white)";
+                const cell = { ...cellStyle, background: zebra };
+                return (
                 <Fragment key={person.id}>
                   <tr>
-                    <td style={cellStyle}>
+                    <td style={{ ...cell, position: "sticky", left: 0, zIndex: 1, borderRight: hairline }}>
                       <button
                         type="button"
                         onClick={() => setOpenId(openId === person.id ? null : person.id)}
@@ -577,27 +633,25 @@ export function PeopleTable() {
                         {fullName(person)}
                       </button>
                     </td>
-                    <td style={{ ...cellStyle, color: "var(--sterling)" }}>{person.played_as ?? "—"}</td>
-                    <td style={cellStyle}><EmailCell emails={person.emails} /></td>
-                    <td style={cellStyle}><Num>{person.grad_year ?? "—"}</Num></td>
-                    <td style={cellStyle}><Num>{person.board_year ?? "—"}</Num></td>
-                    <td style={cellStyle}>{person.board_division ?? "—"}</td>
-                    <td style={cellStyle}>{person.team_label ?? "—"}</td>
-                    <td style={cellStyle}><Num>{person.stint_count}</Num></td>
-                    <td style={cellStyle}>
+                    <td style={cell}><EmailCell emails={person.emails} /></td>
+                    <td style={{ ...cell, color: "var(--sterling)" }}>{person.played_as ?? "—"}</td>
+                    <td style={cell}><Num>{person.grad_year ?? "—"}</Num></td>
+                    <td style={cell}><Num>{person.board_year ?? "—"}</Num></td>
+                    <td style={cell}>{person.board_division ?? "—"}</td>
+                    <td style={cell}>{person.team_label ?? "—"}</td>
+                    <td style={cell}><Num>{person.stint_count}</Num></td>
+                    <td style={cell}>
                       <span className="label-caps">{person.state.replace(/_/g, " ")}</span>
                     </td>
-                    <td style={cellStyle}><Flag on={person.is_anchor}>anchor</Flag></td>
-                    <td style={cellStyle}><Flag on={person.needs_review}>review</Flag></td>
-                    <td style={cellStyle}><Flag on={person.show_on_board}>visible</Flag></td>
-                    <td style={cellStyle}><Flag on={person.deceased}>memorial</Flag></td>
-                    <td style={cellStyle}><Num>{person.member_no}</Num></td>
+                    <td style={cell}><FlagChips person={person} /></td>
+                    <td style={cell}><Num>{person.member_no}</Num></td>
                   </tr>
                   {openId === person.id ? (
                     <EditRow key={`edit-${person.id}`} person={person} onSaved={refresh} />
                   ) : null}
                 </Fragment>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
