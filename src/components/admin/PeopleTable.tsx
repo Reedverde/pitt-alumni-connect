@@ -551,7 +551,7 @@ export function PeopleTable() {
         <Empty>No records match.</Empty>
       ) : (
         <div className="overflow-x-auto" style={{ borderBottom: hairline, maxHeight: 640 }}>
-          <table className="w-full" style={{ borderCollapse: "collapse", minWidth: 1000 }}>
+          <table className="w-full" style={{ borderCollapse: "collapse", minWidth: 1180 }}>
             <thead style={{ position: "sticky", top: 0, zIndex: 1, background: "var(--pure-white)" }}>
               <tr>
                 {COLUMNS.map((c) => (
