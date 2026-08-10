@@ -310,26 +310,30 @@ function EditRow({ person, onSaved }: { person: AdminPerson; onSaved: () => void
 /** Admin only. @pitt.edu is flagged because it dies at graduation;
  *  @alumni.pitt.edu is permanent and is deliberately not flagged. */
 function EmailCell({ emails }: { emails: AdminPerson["emails"] }) {
+  const [expanded, setExpanded] = useState(false);
   if (emails.length === 0)
     return (
       <span className="label-caps" style={{ color: "var(--sterling)" }}>
         No address
       </span>
     );
+  const ordered = [...emails].sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
+  const shown = expanded ? ordered : ordered.slice(0, 1);
   return (
-    <div className="flex flex-col gap-1">
-      {emails.map((e) => {
+    <div className="flex flex-col gap-1" style={{ minWidth: 240 }}>
+      {shown.map((e) => {
         const expiring = /@pitt\.edu$/i.test(e.email);
         return (
-          <span key={e.email} className="flex flex-wrap items-center gap-1.5">
+          <span key={e.email} className="flex flex-wrap items-baseline gap-1.5">
             <span
+              title={e.email}
               style={{
                 fontFamily: '"Space Mono", ui-monospace, monospace',
                 fontSize: 12,
                 color: "var(--steel-ink)",
                 userSelect: "all",
                 cursor: "text",
-                wordBreak: "break-all",
+                overflowWrap: "anywhere",
               }}
             >
               {e.email}
@@ -339,12 +343,11 @@ function EmailCell({ emails }: { emails: AdminPerson["emails"] }) {
                 primary
               </span>
             ) : null}
-            <span
-              className="label-caps"
-              style={{ fontSize: 10, color: e.verified ? "var(--sterling)" : "var(--steel-ink)" }}
-            >
-              {e.verified ? "verified" : "unverified"}
-            </span>
+            {e.verified ? null : (
+              <span className="label-caps" style={{ fontSize: 10, color: "var(--steel-ink)" }}>
+                unverified
+              </span>
+            )}
             {expiring ? (
               <span
                 className="label-caps"
@@ -363,6 +366,16 @@ function EmailCell({ emails }: { emails: AdminPerson["emails"] }) {
           </span>
         );
       })}
+      {ordered.length > 1 ? (
+        <button
+          type="button"
+          className="label-caps"
+          onClick={() => setExpanded((v) => !v)}
+          style={{ fontSize: 10, color: "var(--pitt-royal)", textAlign: "left" }}
+        >
+          {expanded ? "Show fewer" : `+${ordered.length - 1} more`}
+        </button>
+      ) : null}
     </div>
   );
 }
