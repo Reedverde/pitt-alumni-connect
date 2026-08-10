@@ -81,7 +81,14 @@ export type PersonRow = {
 const PERSON_COLUMNS =
   "id, member_no, seed_id, first_name, last_name, played_as, current_city, grad_year, seed_division, deceased, deceased_note, deceased_confirmed_by, deceased_confirmed_at, show_on_board, share_email, open_to_network, needs_review, is_anchor";
 
+export type AdminEmail = {
+  email: string;
+  is_primary: boolean;
+  verified: boolean;
+};
+
 export type AdminPerson = PersonRow & {
+  emails: AdminEmail[];
   board_year: number | null;
   board_division: string | null;
   team_label: string | null;
@@ -96,6 +103,8 @@ type Context = {
   verified: Set<string>;
   /** Any identity row at all, verified or not. A claim in progress still counts. */
   hasIdentity: Set<string>;
+  /** Admin only. Never joined into a public view or a member facing payload. */
+  emails: Map<string, AdminEmail[]>;
 };
 
 async function loadContext(): Promise<Context> {
@@ -104,7 +113,10 @@ async function loadContext(): Promise<Context> {
     supabaseAdmin.from("person_board_placement").select("person_id, board_year, board_division"),
     supabaseAdmin.from("stints").select("person_id"),
     supabaseAdmin.from("rsvps").select("person_id, status").eq("event_year", currentYear),
-    supabaseAdmin.from("identities").select("person_id, verified_at"),
+    supabaseAdmin
+      .from("identities")
+      .select("person_id, email, is_primary, verified_at")
+      .order("is_primary", { ascending: false }),
   ]);
   const placement = new Map<string, { board_year: number | null; board_division: string | null }>();
   for (const row of placeRes.data ?? [])
@@ -119,11 +131,20 @@ async function loadContext(): Promise<Context> {
   for (const row of rsvpRes.data ?? []) rsvp.set(row.person_id as string, row.status as string);
   const verified = new Set<string>();
   const hasIdentity = new Set<string>();
+  const emails = new Map<string, AdminEmail[]>();
   for (const row of identRes.data ?? []) {
-    hasIdentity.add(row.person_id as string);
-    if (row.verified_at) verified.add(row.person_id as string);
+    const pid = row.person_id as string;
+    hasIdentity.add(pid);
+    if (row.verified_at) verified.add(pid);
+    const list = emails.get(pid) ?? [];
+    list.push({
+      email: (row as { email: string }).email,
+      is_primary: Boolean((row as { is_primary: boolean }).is_primary),
+      verified: Boolean(row.verified_at),
+    });
+    emails.set(pid, list);
   }
-  return { placement, stints, rsvp, verified, hasIdentity };
+  return { placement, stints, rsvp, verified, hasIdentity, emails };
 }
 
 function decorate(person: PersonRow, ctx: Context, label: string | null): AdminPerson {
@@ -142,6 +163,7 @@ function decorate(person: PersonRow, ctx: Context, label: string | null): AdminP
             : "unclaimed";
   return {
     ...person,
+    emails: ctx.emails.get(person.id) ?? [],
     board_year: place?.board_year ?? person.grad_year,
     board_division: place?.board_division ?? person.seed_division,
     team_label: label,
@@ -1597,7 +1619,10 @@ export async function rsvpBreakdown(): Promise<RsvpBreakdown> {
       .select("person_id, status, party_size, responded_at")
       .eq("event_year", eventYear),
     supabaseAdmin.from("people").select("id, first_name, last_name, grad_year, deceased").limit(2000),
-    supabaseAdmin.from("identities").select("person_id, verified_at"),
+    supabaseAdmin
+      .from("identities")
+      .select("person_id, email, is_primary, verified_at")
+      .order("is_primary", { ascending: false }),
     supabaseAdmin.from("person_board_placement").select("person_id, board_year"),
   ]);
 
