@@ -209,7 +209,7 @@ function EditRow({ person, onSaved }: { person: AdminPerson; onSaved: () => void
 
   return (
     <tr>
-      <td colSpan={13} style={{ ...cellStyle, background: "var(--field-white)" }}>
+      <td colSpan={14} style={{ ...cellStyle, background: "var(--field-white)" }}>
         <div className="grid gap-3 sm:grid-cols-3">
           {field("first_name", "First name")}
           {field("last_name", "Last name")}
@@ -283,13 +283,74 @@ function EditRow({ person, onSaved }: { person: AdminPerson; onSaved: () => void
 }
 
 
+/** Admin only. @pitt.edu is flagged because it dies at graduation;
+ *  @alumni.pitt.edu is permanent and is deliberately not flagged. */
+function EmailCell({ emails }: { emails: AdminPerson["emails"] }) {
+  if (emails.length === 0)
+    return (
+      <span className="label-caps" style={{ color: "var(--sterling)" }}>
+        No address
+      </span>
+    );
+  return (
+    <div className="flex flex-col gap-1">
+      {emails.map((e) => {
+        const expiring = /@pitt\.edu$/i.test(e.email);
+        return (
+          <span key={e.email} className="flex flex-wrap items-center gap-1.5">
+            <span
+              style={{
+                fontFamily: '"Space Mono", ui-monospace, monospace',
+                fontSize: 12,
+                color: "var(--steel-ink)",
+                userSelect: "all",
+                cursor: "text",
+                wordBreak: "break-all",
+              }}
+            >
+              {e.email}
+            </span>
+            {e.is_primary ? (
+              <span className="label-caps" style={{ fontSize: 10, color: "var(--pitt-royal)" }}>
+                primary
+              </span>
+            ) : null}
+            <span
+              className="label-caps"
+              style={{ fontSize: 10, color: e.verified ? "var(--sterling)" : "var(--steel-ink)" }}
+            >
+              {e.verified ? "verified" : "unverified"}
+            </span>
+            {expiring ? (
+              <span
+                className="label-caps"
+                title="A @pitt.edu address stops working after graduation. @alumni.pitt.edu is permanent."
+                style={{
+                  fontSize: 10,
+                  border: "1px solid var(--steel-ink)",
+                  borderRadius: 3,
+                  padding: "0 4px",
+                  color: "var(--steel-ink)",
+                }}
+              >
+                expires
+              </span>
+            ) : null}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 type SortKey =
   | "name" | "played_as" | "grad_year" | "board_year" | "board_division" | "team_label"
-  | "stint_count" | "state" | "is_anchor" | "needs_review" | "show_on_board" | "deceased" | "member_no";
+  | "email" | "stint_count" | "state" | "is_anchor" | "needs_review" | "show_on_board" | "deceased" | "member_no";
 
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "name", label: "Name" },
   { key: "played_as", label: "Played as" },
+  { key: "email", label: "Email" },
   { key: "grad_year", label: "Grad" },
   { key: "board_year", label: "Board yr" },
   { key: "board_division", label: "Division" },
@@ -317,6 +378,7 @@ function sortValue(p: AdminPerson, key: SortKey): string | number {
   switch (key) {
     case "name": return fullName(p).toLowerCase();
     case "played_as": return (p.played_as ?? "").toLowerCase();
+    case "email": return (p.emails[0]?.email ?? "").toLowerCase();
     case "grad_year": return p.grad_year ?? -1;
     case "board_year": return p.board_year ?? -1;
     case "board_division": return p.board_division ?? "";
@@ -516,6 +578,7 @@ export function PeopleTable() {
                       </button>
                     </td>
                     <td style={{ ...cellStyle, color: "var(--sterling)" }}>{person.played_as ?? "—"}</td>
+                    <td style={cellStyle}><EmailCell emails={person.emails} /></td>
                     <td style={cellStyle}><Num>{person.grad_year ?? "—"}</Num></td>
                     <td style={cellStyle}><Num>{person.board_year ?? "—"}</Num></td>
                     <td style={cellStyle}>{person.board_division ?? "—"}</td>
