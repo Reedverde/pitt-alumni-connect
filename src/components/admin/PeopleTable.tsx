@@ -386,18 +386,15 @@ type SortKey =
 
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "name", label: "Name" },
-  { key: "played_as", label: "Played as" },
   { key: "email", label: "Email" },
+  { key: "played_as", label: "Played as" },
   { key: "grad_year", label: "Grad" },
   { key: "board_year", label: "Board yr" },
   { key: "board_division", label: "Division" },
   { key: "team_label", label: "Team" },
   { key: "stint_count", label: "Stints" },
   { key: "state", label: "State" },
-  { key: "is_anchor", label: "Anchor" },
-  { key: "needs_review", label: "Review" },
-  { key: "show_on_board", label: "Visible" },
-  { key: "deceased", label: "Memorial" },
+  { key: "needs_review", label: "Flags" },
   { key: "member_no", label: "Member no" },
 ];
 
