@@ -584,12 +584,25 @@ export function PeopleTable() {
       {rows.length === 0 ? (
         <Empty>No records match.</Empty>
       ) : (
-        <div className="overflow-x-auto" style={{ borderBottom: hairline, maxHeight: 640 }}>
-          <table className="w-full" style={{ borderCollapse: "collapse", minWidth: 1180 }}>
-            <thead style={{ position: "sticky", top: 0, zIndex: 1, background: "var(--pure-white)" }}>
+        <div
+          className="overflow-auto"
+          style={{ border: hairline, borderRadius: 6, maxHeight: "70vh", overscrollBehavior: "contain" }}
+        >
+          <table className="w-full" style={{ borderCollapse: "separate", borderSpacing: 0, minWidth: 1080 }}>
+            <thead style={{ position: "sticky", top: 0, zIndex: 2, background: "var(--pure-white)" }}>
               <tr>
                 {COLUMNS.map((c) => (
-                  <th key={c.key} style={{ ...headStyle, borderBottom: hairline }}>
+                  <th
+                    key={c.key}
+                    style={{
+                      ...headStyle,
+                      borderBottom: hairline,
+                      background: "var(--pure-white)",
+                      ...(c.key === "name"
+                        ? { position: "sticky", left: 0, zIndex: 3, minWidth: 170 }
+                        : null),
+                    }}
+                  >
                     <button type="button" onClick={() => toggleSort(c.key)} style={headButton(sort.key === c.key)}>
                       {c.label}
                       {sort.key === c.key ? (sort.dir === "asc" ? " ↑" : " ↓") : ""}
@@ -599,10 +612,13 @@ export function PeopleTable() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((person) => (
+              {rows.map((person, i) => {
+                const zebra = i % 2 === 1 ? "var(--field-white)" : "var(--pure-white)";
+                const cell = { ...cellStyle, background: zebra };
+                return (
                 <Fragment key={person.id}>
                   <tr>
-                    <td style={cellStyle}>
+                    <td style={{ ...cell, position: "sticky", left: 0, zIndex: 1, borderRight: hairline }}>
                       <button
                         type="button"
                         onClick={() => setOpenId(openId === person.id ? null : person.id)}
@@ -611,27 +627,25 @@ export function PeopleTable() {
                         {fullName(person)}
                       </button>
                     </td>
-                    <td style={{ ...cellStyle, color: "var(--sterling)" }}>{person.played_as ?? "—"}</td>
-                    <td style={cellStyle}><EmailCell emails={person.emails} /></td>
-                    <td style={cellStyle}><Num>{person.grad_year ?? "—"}</Num></td>
-                    <td style={cellStyle}><Num>{person.board_year ?? "—"}</Num></td>
-                    <td style={cellStyle}>{person.board_division ?? "—"}</td>
-                    <td style={cellStyle}>{person.team_label ?? "—"}</td>
-                    <td style={cellStyle}><Num>{person.stint_count}</Num></td>
-                    <td style={cellStyle}>
+                    <td style={cell}><EmailCell emails={person.emails} /></td>
+                    <td style={{ ...cell, color: "var(--sterling)" }}>{person.played_as ?? "—"}</td>
+                    <td style={cell}><Num>{person.grad_year ?? "—"}</Num></td>
+                    <td style={cell}><Num>{person.board_year ?? "—"}</Num></td>
+                    <td style={cell}>{person.board_division ?? "—"}</td>
+                    <td style={cell}>{person.team_label ?? "—"}</td>
+                    <td style={cell}><Num>{person.stint_count}</Num></td>
+                    <td style={cell}>
                       <span className="label-caps">{person.state.replace(/_/g, " ")}</span>
                     </td>
-                    <td style={cellStyle}><Flag on={person.is_anchor}>anchor</Flag></td>
-                    <td style={cellStyle}><Flag on={person.needs_review}>review</Flag></td>
-                    <td style={cellStyle}><Flag on={person.show_on_board}>visible</Flag></td>
-                    <td style={cellStyle}><Flag on={person.deceased}>memorial</Flag></td>
-                    <td style={cellStyle}><Num>{person.member_no}</Num></td>
+                    <td style={cell}><FlagChips person={person} /></td>
+                    <td style={cell}><Num>{person.member_no}</Num></td>
                   </tr>
                   {openId === person.id ? (
                     <EditRow key={`edit-${person.id}`} person={person} onSaved={refresh} />
                   ) : null}
                 </Fragment>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
