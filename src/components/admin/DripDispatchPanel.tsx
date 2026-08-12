@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
 import { adminRunDrip } from "@/lib/admin.functions";
-import type { DripRunReport } from "@/lib/dispatcher.server";
+import type { DripRunReport } from "@/lib/drip-types";
 import { Empty, Num, Section, cellStyle, hairline, headStyle, mono, primaryButton, secondaryButton } from "./ui";
 
 const REASONS: { key: keyof DripRunReport["sequences"][number]["excluded"]; label: string }[] = [

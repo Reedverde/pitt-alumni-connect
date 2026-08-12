@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AdminDashboard, AdminPerson, MailStatus, PersonStint, RosterLine } from "./admin.server";
-import type { DripRunReport } from "./dispatcher.server";
+import type { DripRunReport } from "./drip-types";
 
 /** Dry run unless the caller explicitly says otherwise. Non-admins get null. */
 export const adminRunDrip = createServerFn({ method: "POST" })

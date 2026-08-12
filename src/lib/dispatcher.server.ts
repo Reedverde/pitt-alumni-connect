@@ -67,47 +67,13 @@ const RECENT_SEND_DAYS = 10;
 const SEND_INTERVAL_MS = 500; // 2 per second
 const MAX_CONSECUTIVE_FAILURES = 5;
 
-export type ExclusionCounts = {
-  deceased_archived: number;
-  no_email: number;
-  suppressed: number;
-  already_sent: number;
-  recent_send: number;
-  null_body: number;
-};
-
-export type DripRecipient = { personId: string; name: string; email: string };
-
-export type DripSequenceReport = {
-  id: string;
-  key: string;
-  offsetDays: number;
-  dueDate: string;
-  due: boolean;
-  hasCopy: boolean;
-  note: string;
-  audienceStates: string[];
-  anchorsOnly: boolean;
-  eligible: number;
-  excluded: ExclusionCounts;
-  /** First ten only, admin eyes only. */
-  sample: DripRecipient[];
-  sent: number;
-  failed: number;
-};
-
-export type DripRunReport = {
-  dryRun: boolean;
-  today: string;
-  anchorDate: string;
-  outboundMode: string;
-  outboundSentence: string;
-  outboundPaused: boolean;
-  totalEligible: number;
-  totalSent: number;
-  stoppedReason: string | null;
-  sequences: DripSequenceReport[];
-};
+export type {
+  DripRecipient,
+  DripRunReport,
+  DripSequenceReport,
+  ExclusionCounts,
+} from "./drip-types";
+import type { DripRecipient, DripRunReport, DripSequenceReport, ExclusionCounts } from "./drip-types";
 
 type SequenceRow = {
   id: string;
