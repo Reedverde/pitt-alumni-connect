@@ -20,6 +20,7 @@ import { EditionsPanel } from "@/components/admin/EditionsPanel";
 import { PhotosPanel } from "@/components/admin/PhotosPanel";
 import { RsvpBreakdownPanel, SendsPanel, SourcesPanel } from "@/components/admin/SendsPanel";
 import { MailPanel } from "@/components/admin/MailPanel";
+import { DripDispatchPanel } from "@/components/admin/DripDispatchPanel";
 import { AuthAttemptsPanel } from "@/components/admin/AuthAttemptsPanel";
 import { Section } from "@/components/admin/ui";
 
@@ -178,7 +179,12 @@ function AdminPage() {
         </>
       ) : null}
       {active === "photos" ? <PhotosPanel /> : null}
-      {active === "mail" ? <MailPanel /> : null}
+      {active === "mail" ? (
+        <>
+          <MailPanel />
+          <DripDispatchPanel />
+        </>
+      ) : null}
       {active === "sends" ? (
         <>
           <RsvpBreakdownPanel data={data.rsvpBreakdown} />

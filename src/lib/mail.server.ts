@@ -384,6 +384,8 @@ type LogInput = {
   providerMessageId: string | null;
   status: string;
   error: string | null;
+  /** Set only by the drip dispatcher. Ordinary transactional sends have none. */
+  sequenceId?: string | null;
 };
 
 /** status is the fine grained provider story; outcome is the four way split
@@ -401,7 +403,7 @@ export async function logSend(input: LogInput) {
   const outcome = outcomeFor(input.status);
   await supabaseAdmin.from("sends").insert({
     person_id: input.personId,
-    sequence_id: null,
+    sequence_id: input.sequenceId ?? null,
     kind: input.kind,
     to_email: input.toEmail,
     provider: input.provider,
@@ -1345,6 +1347,8 @@ export async function sendPlainEmail(opts: {
   subject: string;
   text: string;
   html: string;
+  /** Only the drip dispatcher sets this; it lands on the sends row. */
+  sequenceId?: string | null;
 }): Promise<MagicLinkResult> {
   const to = opts.to.trim().toLowerCase();
   const { apiKey, fromAddress } = mailConfig();
@@ -1354,6 +1358,7 @@ export async function sendPlainEmail(opts: {
       await logSend({
         personId: opts.personId,
         kind: opts.kind,
+        sequenceId: opts.sequenceId ?? null,
         toEmail: to,
         provider: "none",
         providerMessageId: null,
@@ -1367,6 +1372,7 @@ export async function sendPlainEmail(opts: {
       await logSend({
         personId: opts.personId,
         kind: opts.kind,
+        sequenceId: opts.sequenceId ?? null,
         toEmail: to,
         provider: "none",
         providerMessageId: null,
@@ -1382,6 +1388,7 @@ export async function sendPlainEmail(opts: {
       await logSend({
         personId: opts.personId,
         kind: opts.kind,
+        sequenceId: opts.sequenceId ?? null,
         toEmail: to,
         provider: "none",
         providerMessageId: null,
@@ -1406,6 +1413,7 @@ export async function sendPlainEmail(opts: {
         await logSend({
           personId: opts.personId,
           kind: opts.kind,
+        sequenceId: opts.sequenceId ?? null,
           toEmail: to,
           provider: "resend",
           providerMessageId: null,
@@ -1424,6 +1432,7 @@ export async function sendPlainEmail(opts: {
     await logSend({
       personId: opts.personId,
       kind: opts.kind,
+      sequenceId: opts.sequenceId ?? null,
       toEmail: to,
       provider: "resend",
       providerMessageId: delivery.messageId,

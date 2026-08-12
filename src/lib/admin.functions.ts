@@ -2,6 +2,18 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AdminDashboard, AdminPerson, MailStatus, PersonStint, RosterLine } from "./admin.server";
+import type { DripRunReport } from "./drip-types";
+
+/** Dry run unless the caller explicitly says otherwise. Non-admins get null. */
+export const adminRunDrip = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { dryRun?: boolean }) => input)
+  .handler(async ({ data, context }): Promise<DripRunReport | null> => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return null;
+    return mod.runDripDispatch(actor, data?.dryRun !== false);
+  });
 
 /** Every read below asks is_admin() before it touches a table, and returns an
  *  empty payload — not an error — when the caller is not an admin, so the
