@@ -1573,6 +1573,27 @@ export type Headcount = {
   capacity: number;
 };
 
+/** The drip dispatcher, admin triggered. Dry run by default and audited either
+ *  way, so a preview and a real run both leave a trace with a name on it. */
+export async function runDripDispatch(actor: string | null, dryRun: boolean) {
+  const { runDrip } = await import("./dispatcher.server");
+  const report = await runDrip({ dryRun });
+  await audit(actor, dryRun ? "drip_preview" : "drip_send", "sequences", null, null, {
+    dryRun,
+    totalEligible: report.totalEligible,
+    totalSent: report.totalSent,
+    stoppedReason: report.stoppedReason,
+    sequences: report.sequences.map((s) => ({
+      key: s.key,
+      due: s.due,
+      eligible: s.eligible,
+      sent: s.sent,
+      failed: s.failed,
+    })),
+  });
+  return report;
+}
+
 /** Heads, not people. The going count stays one chip one person; this is the
  *  number the shelter has to hold. */
 export async function headcount(): Promise<Headcount> {
