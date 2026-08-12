@@ -1347,6 +1347,8 @@ export async function sendPlainEmail(opts: {
   subject: string;
   text: string;
   html: string;
+  /** Only the drip dispatcher sets this; it lands on the sends row. */
+  sequenceId?: string | null;
 }): Promise<MagicLinkResult> {
   const to = opts.to.trim().toLowerCase();
   const { apiKey, fromAddress } = mailConfig();
@@ -1356,6 +1358,7 @@ export async function sendPlainEmail(opts: {
       await logSend({
         personId: opts.personId,
         kind: opts.kind,
+        sequenceId: opts.sequenceId ?? null,
         toEmail: to,
         provider: "none",
         providerMessageId: null,
@@ -1369,6 +1372,7 @@ export async function sendPlainEmail(opts: {
       await logSend({
         personId: opts.personId,
         kind: opts.kind,
+        sequenceId: opts.sequenceId ?? null,
         toEmail: to,
         provider: "none",
         providerMessageId: null,
@@ -1384,6 +1388,7 @@ export async function sendPlainEmail(opts: {
       await logSend({
         personId: opts.personId,
         kind: opts.kind,
+        sequenceId: opts.sequenceId ?? null,
         toEmail: to,
         provider: "none",
         providerMessageId: null,
@@ -1408,6 +1413,7 @@ export async function sendPlainEmail(opts: {
         await logSend({
           personId: opts.personId,
           kind: opts.kind,
+        sequenceId: opts.sequenceId ?? null,
           toEmail: to,
           provider: "resend",
           providerMessageId: null,
@@ -1426,6 +1432,7 @@ export async function sendPlainEmail(opts: {
     await logSend({
       personId: opts.personId,
       kind: opts.kind,
+      sequenceId: opts.sequenceId ?? null,
       toEmail: to,
       provider: "resend",
       providerMessageId: delivery.messageId,
