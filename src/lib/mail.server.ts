@@ -781,6 +781,8 @@ export function buildTMinus28Body(opts: {
     count === 1 ? "has" : "have"
   } said they are coming to Alumni Weekend, October 2 to 4.`;
 
+  const discordBlock = `There is now an Alumni Weekend channel in the Pitt Alumni Discord for anyone who wants to sort out plans, rides, or rooms with their own crew.`;
+
   const text = [
     `${opts.name},`,
     "",
@@ -791,6 +793,10 @@ export function buildTMinus28Body(opts: {
     "See the rest and add your answer:",
     "",
     T_MINUS_28_BOARD_URL,
+    "",
+    discordBlock,
+    "",
+    DISCORD_INVITE_URL,
     "",
     "Pitt Club Ultimate Alumni",
   ].join("\n");
@@ -805,6 +811,8 @@ export function buildTMinus28Body(opts: {
       emailParagraph("See the rest and add your answer:"),
       emailButton(T_MINUS_28_BOARD_URL, "See who is coming"),
       emailPlainUrl(T_MINUS_28_BOARD_URL),
+      emailParagraph(discordBlock),
+      emailPlainUrl(DISCORD_INVITE_URL),
       emailFooter([
         "Pitt Club Ultimate Alumni",
         "You are receiving this because you have a record on the alumni board.",
