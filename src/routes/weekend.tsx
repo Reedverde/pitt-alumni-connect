@@ -377,6 +377,32 @@ function HotelBlock() {
   );
 }
 
+/** Discord block below the schedule. Royal link, never gold. */
+function DiscordBlock() {
+  return (
+    <section id="discord" className="mt-10">
+      <SlashEyebrow>Talk about the weekend</SlashEyebrow>
+      <h2 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
+        SORT OUT PLANS
+      </h2>
+      <p className="mt-4 max-w-[640px]" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
+        There is a Pitt Alumni Discord with an Alumni Weekend channel for sorting out plans, rides, and
+        rooms with your own crew.
+      </p>
+      <p className="mt-4">
+        <a
+          href={DISCORD_INVITE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={directionsLink}
+        >
+          Join the Discord
+        </a>
+      </p>
+    </section>
+  );
+}
+
 /** Two plain-text notes the organizers keep current. Hidden when empty, so an
  *  edition with nothing decided shows nothing rather than an empty promise. */
 function WhereToStay({ edition }: { edition: EditionSummary }) {
