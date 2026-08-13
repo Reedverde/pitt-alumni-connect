@@ -3,7 +3,7 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useState, type CSSProperties } from "react";
 
 import { getWeekendPage, type ScheduleEvent } from "@/lib/schedule.functions";
-import { SITE_ORIGIN } from "@/lib/site-url";
+import { DISCORD_INVITE_URL, SITE_ORIGIN } from "@/lib/site-url";
 import {
   dayLabel,
   dayName,
@@ -313,6 +313,7 @@ function WeekendPage() {
             </section>
           );
         })}
+        <DiscordBlock />
 
         <WhereToStay edition={edition} />
 
@@ -373,6 +374,32 @@ function HotelBlock() {
         </div>
       </NotchedBox>
     </div>
+  );
+}
+
+/** Discord block below the schedule. Royal link, never gold. */
+function DiscordBlock() {
+  return (
+    <section id="discord" className="mt-10">
+      <SlashEyebrow>Talk about the weekend</SlashEyebrow>
+      <h2 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
+        SORT OUT PLANS
+      </h2>
+      <p className="mt-4 max-w-[640px]" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
+        There is a Pitt Alumni Discord with an Alumni Weekend channel for sorting out plans, rides, and
+        rooms with your own crew.
+      </p>
+      <p className="mt-4">
+        <a
+          href={DISCORD_INVITE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={directionsLink}
+        >
+          Join the Discord
+        </a>
+      </p>
+    </section>
   );
 }
 
