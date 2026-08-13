@@ -313,6 +313,7 @@ function WeekendPage() {
             </section>
           );
         })}
+        <DiscordBlock />
 
         <WhereToStay edition={edition} />
 
