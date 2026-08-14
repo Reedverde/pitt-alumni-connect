@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
 import { nameScore, normalize, surnameGate } from "./fuzzy";
 import { normalizeRsvpSource, rsvpSourceLabel } from "./rsvp-src";
+import { SITE_ORIGIN } from "./site-url";
 import { teamLabel } from "./rsvp.server";
 import {
   currentEditionYear,
