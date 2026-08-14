@@ -2098,6 +2098,40 @@ export async function updateEditionDates(
     before.find((e) => e.event_year === input.event_year) ?? null,
     input,
   );
+
+  // Conservative bulletin intake: only the two public notes and the dates
+  // themselves are worth telling people about. Typo fixes on a title are not.
+  const prev = before.find((e) => e.event_year === input.event_year) ?? null;
+  const { addPendingUpdate } = await import("./news.server");
+  const norm = (v: string | null | undefined) => (v ?? "").trim();
+  const stamp = new Date().toISOString().slice(0, 16);
+  if (prev && norm(prev.lodging_note) !== norm(input.lodging_note))
+    await addPendingUpdate({
+      kind: "lodging_note",
+      title: "The lodging note changed",
+      summary: norm(input.lodging_note).slice(0, 240) || "The lodging note was cleared.",
+      category: "Lodging",
+      relatedUrl: `${SITE_ORIGIN}/weekend`,
+      dedupeKey: `lodging:${input.event_year}:${stamp}`,
+    });
+  if (prev && norm(prev.travel_note) !== norm(input.travel_note))
+    await addPendingUpdate({
+      kind: "travel_note",
+      title: "The travel note changed",
+      summary: norm(input.travel_note).slice(0, 240) || "The travel note was cleared.",
+      category: "Travel",
+      relatedUrl: `${SITE_ORIGIN}/weekend`,
+      dedupeKey: `travel:${input.event_year}:${stamp}`,
+    });
+  if (prev && (prev.starts_on !== input.starts_on || prev.ends_on !== input.ends_on))
+    await addPendingUpdate({
+      kind: "edition_dates",
+      title: `Alumni Weekend ${input.event_year} dates are set`,
+      summary: `${input.starts_on} through ${input.ends_on}.`,
+      category: "Weekend",
+      relatedUrl: `${SITE_ORIGIN}/weekend`,
+      dedupeKey: `dates:${input.event_year}:${input.starts_on}:${input.ends_on}`,
+    });
   return { ok: true };
 }
 
@@ -2158,6 +2192,19 @@ export async function createEditionEvent(
   const { data, error } = await supabaseAdmin.from("events").insert(row).select("id").single();
   if (error) throw new Error(error.message);
   await audit(actor, "edition.add_event", "events", (data?.id as string) ?? null, null, row);
+
+  // Only a confirmed time is news. A TBD placeholder waits until it is real.
+  if (!row.time_tbd && row.starts_at) {
+    const { addPendingUpdate } = await import("./news.server");
+    await addPendingUpdate({
+      kind: "schedule_confirmed",
+      title: `${row.title} is on the schedule`,
+      summary: row.location ? `At ${row.location}.` : "",
+      category: "Schedule",
+      relatedUrl: `${SITE_ORIGIN}/weekend`,
+      dedupeKey: `event:${(data?.id as string) ?? row.title}`,
+    });
+  }
   return { ok: true };
 }
 
