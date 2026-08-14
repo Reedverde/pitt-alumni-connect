@@ -343,6 +343,19 @@ export async function runDrip(opts: { dryRun: boolean }): Promise<DripRunReport>
       await new Promise((r) => setTimeout(r, SEND_INTERVAL_MS));
     }
 
+    // One campaign level bulletin item, not one per recipient, and only when
+    // mail actually went out.
+    if (!dryRun && sent > 0) {
+      const { addPendingUpdate } = await import("./news.server");
+      await addPendingUpdate({
+        kind: "campaign_sent",
+        title: "An Alumni Weekend email went out",
+        summary: `${sent} alumni were emailed. Check your inbox if you are on the list.`,
+        category: "Weekend",
+        dedupeKey: `campaign:${seq.id}:${edition.event_year}`,
+      });
+    }
+
     reports.push({
       id: seq.id,
       key: seq.key,
