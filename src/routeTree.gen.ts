@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AlumniRouteImport } from './routes/alumni'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as NewsRouteImport } from './routes/news'
 import { Route as NewsDotxmlRouteImport } from './routes/news[.]xml'
 import { Route as QrRouteImport } from './routes/qr'
 import { Route as RsvpRouteImport } from './routes/rsvp'
@@ -47,6 +48,11 @@ const AlumniRoute = AlumniRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewsRoute = NewsRouteImport.update({
+  id: '/news',
+  path: '/news',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewsDotxmlRoute = NewsDotxmlRouteImport.update({
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
+  '/news': typeof NewsRoute
   '/news.xml': typeof NewsDotxmlRoute
   '/qr': typeof QrRoute
   '/rsvp': typeof RsvpRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
+  '/news': typeof NewsRoute
   '/news.xml': typeof NewsDotxmlRoute
   '/qr': typeof QrRoute
   '/rsvp': typeof RsvpRoute
@@ -178,6 +186,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
+  '/news': typeof NewsRoute
   '/news.xml': typeof NewsDotxmlRoute
   '/qr': typeof QrRoute
   '/rsvp': typeof RsvpRoute
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
     | '/'
     | '/alumni'
     | '/auth'
+    | '/news'
     | '/news.xml'
     | '/qr'
     | '/rsvp'
@@ -222,6 +232,7 @@ export interface FileRouteTypes {
     | '/'
     | '/alumni'
     | '/auth'
+    | '/news'
     | '/news.xml'
     | '/qr'
     | '/rsvp'
@@ -244,6 +255,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/alumni'
     | '/auth'
+    | '/news'
     | '/news.xml'
     | '/qr'
     | '/rsvp'
@@ -267,6 +279,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AlumniRoute: typeof AlumniRoute
   AuthRoute: typeof AuthRoute
+  NewsRoute: typeof NewsRoute
   NewsDotxmlRoute: typeof NewsDotxmlRoute
   QrRoute: typeof QrRoute
   RsvpRoute: typeof RsvpRoute
@@ -311,6 +324,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news': {
+      id: '/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof NewsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/news.xml': {
@@ -446,6 +466,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AlumniRoute: AlumniRoute,
   AuthRoute: AuthRoute,
+  NewsRoute: NewsRoute,
   NewsDotxmlRoute: NewsDotxmlRoute,
   QrRoute: QrRoute,
   RsvpRoute: RsvpRoute,
