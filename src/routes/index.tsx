@@ -564,6 +564,10 @@ function BoardPage() {
         </div>
         )}
 
+        <div className="mt-14">
+          <DiscordCta compact />
+        </div>
+
         <WhyTeaser />
       </main>
       <SiteFooter />
