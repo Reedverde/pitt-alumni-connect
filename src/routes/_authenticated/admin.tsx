@@ -22,6 +22,7 @@ import { RsvpBreakdownPanel, SendsPanel, SourcesPanel } from "@/components/admin
 import { MailPanel } from "@/components/admin/MailPanel";
 import { DripDispatchPanel } from "@/components/admin/DripDispatchPanel";
 import { AuthAttemptsPanel } from "@/components/admin/AuthAttemptsPanel";
+import { NewsPanel } from "@/components/admin/NewsPanel";
 import { Section } from "@/components/admin/ui";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -51,6 +52,7 @@ const TABS = [
   { key: "schedule", label: "Schedule" },
   { key: "photos", label: "Photos" },
   { key: "mail", label: "Mail" },
+  { key: "news", label: "News" },
   { key: "sends", label: "Sends" },
   { key: "auth", label: "Auth attempts" },
 ] as const;
@@ -193,6 +195,7 @@ function AdminPage() {
         </>
       ) : null}
       {active === "auth" ? <AuthAttemptsPanel /> : null}
+      {active === "news" ? <NewsPanel /> : null}
     </main>
   );
 }
