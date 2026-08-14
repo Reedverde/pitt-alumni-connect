@@ -3,7 +3,7 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useState, type CSSProperties } from "react";
 
 import { getWeekendPage, type ScheduleEvent } from "@/lib/schedule.functions";
-import { DISCORD_INVITE_URL, SITE_ORIGIN } from "@/lib/site-url";
+import { SITE_ORIGIN } from "@/lib/site-url";
 import {
   dayLabel,
   dayName,
