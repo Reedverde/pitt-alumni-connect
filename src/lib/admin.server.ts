@@ -2214,3 +2214,125 @@ export async function recentAuthAttempts(): Promise<AuthAttemptRow[]> {
     name: names.get(r.person_id as string) ?? null,
   }));
 }
+
+// ---------------------------------------------------------------- news
+
+/** Every organizer action on the bulletin lands in audit_log like the rest. */
+export async function auditNews(
+  actor: string | null,
+  action: string,
+  recordId: string | null,
+  after: unknown,
+) {
+  await audit(actor, action, "news_items", recordId, null, after as Json);
+}
+
+export async function saveNewsPending(
+  actor: string | null,
+  input: {
+    id: string;
+    title?: string;
+    summary?: string;
+    category?: string;
+    status?: "pending" | "suppressed";
+  },
+) {
+  const patch: Record<string, unknown> = {};
+  if (typeof input.title === "string") patch.title = input.title.trim().slice(0, 160);
+  if (typeof input.summary === "string") patch.summary = input.summary.trim().slice(0, 400);
+  if (typeof input.category === "string") patch.category = input.category;
+  if (input.status) patch.status = input.status;
+  if (Object.keys(patch).length === 0) return { ok: true };
+  const { error } = await supabaseAdmin
+    .from("news_pending_updates")
+    .update(patch as never)
+    .eq("id", input.id);
+  if (error) throw new Error(error.message);
+  await audit(actor, "news.pending_update", "news_pending_updates", input.id, null, patch as Json);
+  return { ok: true };
+}
+
+export async function saveNewsItem(
+  actor: string | null,
+  input: {
+    id?: string | null;
+    title: string;
+    summary: string;
+    body: string;
+    category: string;
+    post_type?: string;
+    related_url?: string | null;
+    author?: string | null;
+    publish?: boolean;
+  },
+): Promise<{ ok: boolean; id: string | null }> {
+  const title = input.title.trim().slice(0, 160);
+  if (!title) throw new Error("Give the update a title.");
+  const row: Record<string, unknown> = {
+    title,
+    summary: input.summary.trim().slice(0, 400),
+    body: input.body.trim().slice(0, 8000),
+    category: input.category,
+    post_type: input.post_type === "urgent" ? "urgent" : "manual",
+    related_url: input.related_url?.trim() ? input.related_url.trim().slice(0, 500) : null,
+    author: input.author?.trim() ? input.author.trim().slice(0, 80) : null,
+  };
+  if (input.publish) {
+    row.status = "published";
+    row.published_at = new Date().toISOString();
+  } else if (!input.id) {
+    row.status = "draft";
+  }
+
+  if (input.id) {
+    const { error } = await supabaseAdmin.from("news_items").update(row as never).eq("id", input.id);
+    if (error) throw new Error(error.message);
+    await audit(actor, "news.edit", "news_items", input.id, null, row as Json);
+    return { ok: true, id: input.id };
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("news_items")
+    .insert(row as never)
+    .select("id")
+    .single();
+  if (error || !data) throw new Error(error?.message ?? "Could not save that.");
+  const id = (data as { id: string }).id;
+  await audit(actor, input.publish ? "news.publish" : "news.draft", "news_items", id, null, row as Json);
+  return { ok: true, id };
+}
+
+export async function setNewsStatus(
+  actor: string | null,
+  id: string,
+  status: "draft" | "published" | "archived",
+) {
+  const patch: Record<string, unknown> = { status };
+  if (status === "published") patch.published_at = new Date().toISOString();
+  const { error } = await supabaseAdmin.from("news_items").update(patch as never).eq("id", id);
+  if (error) throw new Error(error.message);
+  await audit(actor, `news.${status}`, "news_items", id, null, patch as Json);
+  return { ok: true };
+}
+
+export async function saveNewsSettings(
+  actor: string | null,
+  input: { enabled: boolean; daily_digest_time: string; weekly_day: number; weekly_time: string },
+) {
+  const hhmm = (v: string, fallback: string) => (/^\d{2}:\d{2}$/.test(v) ? v : fallback);
+  const patch = {
+    enabled: !!input.enabled,
+    timezone: "America/New_York",
+    daily_digest_time: hhmm(input.daily_digest_time, "19:00"),
+    weekly_day: Math.min(6, Math.max(0, Math.trunc(input.weekly_day))),
+    weekly_time: hhmm(input.weekly_time, "09:00"),
+  };
+  const { error } = await supabaseAdmin
+    .from("news_settings")
+    .update(patch as never)
+    .eq("id", true);
+  if (error) throw new Error(error.message);
+  await audit(actor, "news.settings", "news_settings", "singleton", null, patch as Json);
+  const { loadSettings } = await import("./news.server");
+  return loadSettings();
+}
