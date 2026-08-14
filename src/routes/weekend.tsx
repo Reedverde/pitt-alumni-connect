@@ -3,7 +3,7 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useState, type CSSProperties } from "react";
 
 import { getWeekendPage, type ScheduleEvent } from "@/lib/schedule.functions";
-import { DISCORD_INVITE_URL, SITE_ORIGIN } from "@/lib/site-url";
+import { SITE_ORIGIN } from "@/lib/site-url";
 import {
   dayLabel,
   dayName,
@@ -26,6 +26,8 @@ import { NOTCH_ALL, NOTCH_LG, NOTCH_SM, type NotchCorner } from "@/components/me
 import { DivisionMark } from "@/components/schedule/DivisionMark";
 import { ClosingCta } from "@/components/claim/ClosingCta";
 import { ClaimDialog } from "@/components/claim/ClaimDialog";
+import { DiscordCta } from "@/components/DiscordCta";
+import { LatestNews } from "@/components/news/LatestNews";
 
 const weekendQuery = queryOptions({
   queryKey: ["weekend-page"],
@@ -317,6 +319,8 @@ function WeekendPage() {
 
         <WhereToStay edition={edition} />
 
+        <LatestNews />
+
         <PastEditions editions={data.archive} />
 
         <ClosingCta
@@ -377,28 +381,11 @@ function HotelBlock() {
   );
 }
 
-/** Discord block below the schedule. Royal link, never gold. */
+/** One of the main weekend actions. Royal, never gold. */
 function DiscordBlock() {
   return (
-    <section id="discord" className="mt-10">
-      <SlashEyebrow>Talk about the weekend</SlashEyebrow>
-      <h2 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
-        SORT OUT PLANS
-      </h2>
-      <p className="mt-4 max-w-[640px]" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
-        There is a Pitt Alumni Discord with an Alumni Weekend channel for sorting out plans, rides, and
-        rooms with your own crew.
-      </p>
-      <p className="mt-4">
-        <a
-          href={DISCORD_INVITE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={directionsLink}
-        >
-          Join the Discord
-        </a>
-      </p>
+    <section id="discord" className="mt-12">
+      <DiscordCta />
     </section>
   );
 }

@@ -114,6 +114,9 @@ function MobileMenu() {
           <Link to="/alumni" className="label-caps px-1 py-2" style={itemStyle} activeProps={{ style: activeStyle }}>
             Alumni
           </Link>
+          <Link to="/news" className="label-caps px-1 py-2" style={itemStyle} activeProps={{ style: activeStyle }}>
+            News
+          </Link>
           <span className="my-1 block" style={{ borderTop: "1px solid var(--chalk)" }} />
           <IdentitySlot className="px-1 py-2" />
         </div>
@@ -162,6 +165,9 @@ export function SiteNav(_props: { onClaim?: () => void }) {
         </Link>
         <Link to="/alumni" className="label-caps" style={linkStyle} activeProps={{ style: activeStyle }}>
           Alumni
+        </Link>
+        <Link to="/news" className="label-caps" style={linkStyle} activeProps={{ style: activeStyle }}>
+          News
         </Link>
       </span>
 

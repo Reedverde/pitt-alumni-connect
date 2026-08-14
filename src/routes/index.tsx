@@ -16,6 +16,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { PersonPanel } from "@/components/board/PersonPanel";
 import { useSessionPerson } from "@/lib/useSessionPerson";
 import { SiteFooter } from "@/components/SiteFooter";
+import { DiscordCta } from "@/components/DiscordCta";
 import heroPeak from "@/assets/hero-peak.png.asset.json";
 import { NotchedBox } from "@/components/media/NotchedBox";
 import { NOTCH_ALL } from "@/components/media/notch";
@@ -563,6 +564,10 @@ function BoardPage() {
           {data.coaches.length > 0 && <CoachesRow people={data.coaches} onClaim={openChip} />}
         </div>
         )}
+
+        <div className="mt-14">
+          <DiscordCta compact />
+        </div>
 
         <WhyTeaser />
       </main>

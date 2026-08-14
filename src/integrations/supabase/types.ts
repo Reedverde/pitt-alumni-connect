@@ -550,6 +550,241 @@ export type Database = {
           },
         ]
       }
+      news_items: {
+        Row: {
+          author: string | null
+          body: string
+          category: string
+          created_at: string
+          created_by: string | null
+          dedupe_key: string | null
+          event_year: number | null
+          id: string
+          post_type: string
+          published_at: string | null
+          related_url: string | null
+          status: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author?: string | null
+          body?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          dedupe_key?: string | null
+          event_year?: number | null
+          id?: string
+          post_type?: string
+          published_at?: string | null
+          related_url?: string | null
+          status?: string
+          summary?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string | null
+          body?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          dedupe_key?: string | null
+          event_year?: number | null
+          id?: string
+          post_type?: string
+          published_at?: string | null
+          related_url?: string | null
+          status?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
+      news_pending_updates: {
+        Row: {
+          category: string
+          consumed_at: string | null
+          consumed_news_id: string | null
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          kind: string
+          related_url: string | null
+          status: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          consumed_at?: string | null
+          consumed_news_id?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          kind: string
+          related_url?: string | null
+          status?: string
+          summary?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          consumed_at?: string | null
+          consumed_news_id?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          kind?: string
+          related_url?: string | null
+          status?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_pending_updates_consumed_news_id_fkey"
+            columns: ["consumed_news_id"]
+            isOneToOne: false
+            referencedRelation: "news_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_roundup_members: {
+        Row: {
+          created_at: string
+          event_year: number
+          id: string
+          news_id: string | null
+          person_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_year: number
+          id?: string
+          news_id?: string | null
+          person_id: string
+        }
+        Update: {
+          created_at?: string
+          event_year?: number
+          id?: string
+          news_id?: string | null
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_roundup_members_news_id_fkey"
+            columns: ["news_id"]
+            isOneToOne: false
+            referencedRelation: "news_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_roundup_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_roundup_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_roundup_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_roundup_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
+      news_settings: {
+        Row: {
+          created_at: string
+          daily_digest_time: string
+          enabled: boolean
+          id: boolean
+          last_digest_date: string | null
+          last_weekly_date: string | null
+          timezone: string
+          updated_at: string
+          weekly_day: number
+          weekly_time: string
+        }
+        Insert: {
+          created_at?: string
+          daily_digest_time?: string
+          enabled?: boolean
+          id?: boolean
+          last_digest_date?: string | null
+          last_weekly_date?: string | null
+          timezone?: string
+          updated_at?: string
+          weekly_day?: number
+          weekly_time?: string
+        }
+        Update: {
+          created_at?: string
+          daily_digest_time?: string
+          enabled?: boolean
+          id?: boolean
+          last_digest_date?: string | null
+          last_weekly_date?: string | null
+          timezone?: string
+          updated_at?: string
+          weekly_day?: number
+          weekly_time?: string
+        }
+        Relationships: []
+      }
       people: {
         Row: {
           archived: boolean

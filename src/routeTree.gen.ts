@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AlumniRouteImport } from './routes/alumni'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as NewsRouteImport } from './routes/news'
+import { Route as NewsDotxmlRouteImport } from './routes/news[.]xml'
 import { Route as QrRouteImport } from './routes/qr'
 import { Route as RsvpRouteImport } from './routes/rsvp'
 import { Route as WeekendRouteImport } from './routes/weekend'
@@ -26,6 +28,7 @@ import { Route as ApiPublicEventDoticsRouteImport } from './routes/api/public/ev
 import { Route as ApiPublicHeadcountRouteImport } from './routes/api/public/headcount'
 import { Route as ApiPublicResendWebhookRouteImport } from './routes/api/public/resend-webhook'
 import { Route as ApiPublicUnsubscribeRouteImport } from './routes/api/public/unsubscribe'
+import { Route as ApiPublicHooksNewsCronRouteImport } from './routes/api/public/hooks/news-cron'
 import { Route as ApiPublicPhotoSplatRouteImport } from './routes/api/public/photo/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -45,6 +48,16 @@ const AlumniRoute = AlumniRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewsRoute = NewsRouteImport.update({
+  id: '/news',
+  path: '/news',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewsDotxmlRoute = NewsDotxmlRouteImport.update({
+  id: '/news.xml',
+  path: '/news.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QrRoute = QrRouteImport.update({
@@ -112,6 +125,11 @@ const ApiPublicUnsubscribeRoute = ApiPublicUnsubscribeRouteImport.update({
   path: '/api/public/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksNewsCronRoute = ApiPublicHooksNewsCronRouteImport.update({
+  id: '/api/public/hooks/news-cron',
+  path: '/api/public/hooks/news-cron',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPhotoSplatRoute = ApiPublicPhotoSplatRouteImport.update({
   id: '/api/public/photo/$',
   path: '/api/public/photo/$',
@@ -122,6 +140,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
+  '/news': typeof NewsRoute
+  '/news.xml': typeof NewsDotxmlRoute
   '/qr': typeof QrRoute
   '/rsvp': typeof RsvpRoute
   '/weekend': typeof WeekendRoute
@@ -135,12 +155,15 @@ export interface FileRoutesByFullPath {
   '/api/public/headcount': typeof ApiPublicHeadcountRoute
   '/api/public/resend-webhook': typeof ApiPublicResendWebhookRoute
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
+  '/api/public/hooks/news-cron': typeof ApiPublicHooksNewsCronRoute
   '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
+  '/news': typeof NewsRoute
+  '/news.xml': typeof NewsDotxmlRoute
   '/qr': typeof QrRoute
   '/rsvp': typeof RsvpRoute
   '/weekend': typeof WeekendRoute
@@ -154,6 +177,7 @@ export interface FileRoutesByTo {
   '/api/public/headcount': typeof ApiPublicHeadcountRoute
   '/api/public/resend-webhook': typeof ApiPublicResendWebhookRoute
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
+  '/api/public/hooks/news-cron': typeof ApiPublicHooksNewsCronRoute
   '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
 export interface FileRoutesById {
@@ -162,6 +186,8 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
+  '/news': typeof NewsRoute
+  '/news.xml': typeof NewsDotxmlRoute
   '/qr': typeof QrRoute
   '/rsvp': typeof RsvpRoute
   '/weekend': typeof WeekendRoute
@@ -175,6 +201,7 @@ export interface FileRoutesById {
   '/api/public/headcount': typeof ApiPublicHeadcountRoute
   '/api/public/resend-webhook': typeof ApiPublicResendWebhookRoute
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
+  '/api/public/hooks/news-cron': typeof ApiPublicHooksNewsCronRoute
   '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
 export interface FileRouteTypes {
@@ -183,6 +210,8 @@ export interface FileRouteTypes {
     | '/'
     | '/alumni'
     | '/auth'
+    | '/news'
+    | '/news.xml'
     | '/qr'
     | '/rsvp'
     | '/weekend'
@@ -196,12 +225,15 @@ export interface FileRouteTypes {
     | '/api/public/headcount'
     | '/api/public/resend-webhook'
     | '/api/public/unsubscribe'
+    | '/api/public/hooks/news-cron'
     | '/api/public/photo/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/alumni'
     | '/auth'
+    | '/news'
+    | '/news.xml'
     | '/qr'
     | '/rsvp'
     | '/weekend'
@@ -215,6 +247,7 @@ export interface FileRouteTypes {
     | '/api/public/headcount'
     | '/api/public/resend-webhook'
     | '/api/public/unsubscribe'
+    | '/api/public/hooks/news-cron'
     | '/api/public/photo/$'
   id:
     | '__root__'
@@ -222,6 +255,8 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/alumni'
     | '/auth'
+    | '/news'
+    | '/news.xml'
     | '/qr'
     | '/rsvp'
     | '/weekend'
@@ -235,6 +270,7 @@ export interface FileRouteTypes {
     | '/api/public/headcount'
     | '/api/public/resend-webhook'
     | '/api/public/unsubscribe'
+    | '/api/public/hooks/news-cron'
     | '/api/public/photo/$'
   fileRoutesById: FileRoutesById
 }
@@ -243,6 +279,8 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AlumniRoute: typeof AlumniRoute
   AuthRoute: typeof AuthRoute
+  NewsRoute: typeof NewsRoute
+  NewsDotxmlRoute: typeof NewsDotxmlRoute
   QrRoute: typeof QrRoute
   RsvpRoute: typeof RsvpRoute
   WeekendRoute: typeof WeekendRoute
@@ -254,6 +292,7 @@ export interface RootRouteChildren {
   ApiPublicHeadcountRoute: typeof ApiPublicHeadcountRoute
   ApiPublicResendWebhookRoute: typeof ApiPublicResendWebhookRoute
   ApiPublicUnsubscribeRoute: typeof ApiPublicUnsubscribeRoute
+  ApiPublicHooksNewsCronRoute: typeof ApiPublicHooksNewsCronRoute
   ApiPublicPhotoSplatRoute: typeof ApiPublicPhotoSplatRoute
 }
 
@@ -285,6 +324,20 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news': {
+      id: '/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof NewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news.xml': {
+      id: '/news.xml'
+      path: '/news.xml'
+      fullPath: '/news.xml'
+      preLoaderRoute: typeof NewsDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/qr': {
@@ -378,6 +431,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/news-cron': {
+      id: '/api/public/hooks/news-cron'
+      path: '/api/public/hooks/news-cron'
+      fullPath: '/api/public/hooks/news-cron'
+      preLoaderRoute: typeof ApiPublicHooksNewsCronRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/photo/$': {
       id: '/api/public/photo/$'
       path: '/api/public/photo/$'
@@ -406,6 +466,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AlumniRoute: AlumniRoute,
   AuthRoute: AuthRoute,
+  NewsRoute: NewsRoute,
+  NewsDotxmlRoute: NewsDotxmlRoute,
   QrRoute: QrRoute,
   RsvpRoute: RsvpRoute,
   WeekendRoute: WeekendRoute,
@@ -417,6 +479,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHeadcountRoute: ApiPublicHeadcountRoute,
   ApiPublicResendWebhookRoute: ApiPublicResendWebhookRoute,
   ApiPublicUnsubscribeRoute: ApiPublicUnsubscribeRoute,
+  ApiPublicHooksNewsCronRoute: ApiPublicHooksNewsCronRoute,
   ApiPublicPhotoSplatRoute: ApiPublicPhotoSplatRoute,
 }
 export const routeTree = rootRouteImport

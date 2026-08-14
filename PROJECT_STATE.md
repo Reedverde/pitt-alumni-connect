@@ -374,3 +374,72 @@ STILL OPEN
 
 ## One-click RSVP from email (mechanism only, drip still dormant)
 `src/lib/rsvp-token.server.ts` signs a per-person, per-edition, 90-day answer token (own secret namespace, never a raw person id, never issued for a memorial record) and exposes `rsvpAnswerLinks(personId)` for the dormant drip. Links are `/rsvp?t=TOKEN&a=going|maybe|not_this_year`. The `/rsvp` loader (`src/routes/rsvp.tsx`) verifies and renders only, writing no RSVP state, so email security scanners cannot record answers. Every load logs `rsvp_link_opened` and every tap logs `rsvp_link_confirmed` to `audit_log`; both counts surface in the admin sends panel and the gap between them is the scanner signature. The tap writes the rsvp (`src = email`), verifies the identity and hands back an unspent one-time sign-in link, so the person lands on `/me` already signed in with no account step. Invalid or expired tokens redirect to `/?link=expired`, where the board shows a friendly line and offers the claim dialog. Nothing in this path sends email.
+
+## 2026-08-14 News, RSS and automated bulletins
+
+Built the public news bulletin, the RSS feed for MonitorRSS, the admin News tab, the
+scheduled automation, and the larger Discord feature.
+
+### Migrations
+- `news_items`: title, summary, body, category, post_type, status, published_at,
+  related_url, author, dedupe_key. Anyone reads rows that are published with a
+  published_at in the past. Admins read and write everything.
+- `news_pending_updates`: kind, title, summary, category, related_url, status
+  (pending, suppressed, consumed), dedupe_key. Admin only.
+- `news_roundup_members`: event_year plus person_id, unique together. Stops the weekly
+  roundup ever naming the same person twice for one edition. Admin read only.
+- `news_settings`: singleton. enabled, timezone America/New_York, daily_digest_time
+  19:00, weekly_day 1 (Monday), weekly_time 09:00, last_digest_date, last_weekly_date.
+- Follow-up migration revoked anon privileges on the three internal news tables and
+  revoked anon writes on news_items. Public keeps SELECT on news_items only.
+
+### Code
+- `src/lib/news-types.ts` client safe shapes, categories and post types.
+- `src/lib/news.server.ts` listPublished, listPending, listAllNews, loadSettings,
+  addPendingUpdate, previewDigest, publishDigest, publishWeeklyRoundup,
+  runNewsAutomation, buildRss.
+- `src/lib/news.functions.ts` public read. `src/lib/news-admin.functions.ts` admin
+  gated writes, all through adminActor which calls is_admin().
+- `src/routes/news.tsx` public archive. `src/routes/news.xml.ts` RSS 2.0.
+- `src/routes/api/public/hooks/news-cron.ts` scheduled entry point, apikey gated.
+- `src/components/admin/NewsPanel.tsx` and a News tab in /admin.
+- `src/components/DiscordCta.tsx`, used on /weekend, / and /news.
+- `src/components/news/LatestNews.tsx` on /weekend.
+- News link added to SiteNav on desktop and in the mobile menu.
+
+### Scheduling
+pg_cron job `news-automation-15min` runs every fifteen minutes and POSTs to
+`/api/public/hooks/news-cron` with the publishable key in an apikey header. The
+endpoint runs nothing unless the New York local clock has passed the configured slot
+and the slot has not already been used. Daily digest is capped at one per local
+calendar day, the weekly roundup at one per configured week, so DST shifts and retries
+are both safe. No browser needs to be open. Nothing else was scheduled.
+
+### Digest rules
+Only meaningful public changes create pending updates: schedule time, date or location
+confirmed or materially changed, lodging_note or travel_note materially changed, and a
+campaign email actually being sent. One pending item per campaign, never per recipient.
+Magic links, sign in mail, RSVP confirmations, admin alerts and internal edits create
+nothing. If nothing is pending at digest time, nothing publishes. Included items are
+marked consumed so they never appear twice.
+
+### Weekly roundup
+Names people who newly moved to going since the last roundup and are still going at
+generation time, using public display names only. Members are recorded in
+news_roundup_members so retries are idempotent and nobody repeats. Publishes nothing
+when nobody new qualifies.
+
+### Dispatcher
+Unchanged safeguards. Still admin button driven, still dry run by default, still
+respects active flags, audience states, the two day due window, suppressions, memorial
+and archived exclusions, the ten day recent send rule, per sequence already sent
+tracking, and outbound_email_mode. It now writes one campaign level pending news item
+after a successful send batch. discord_invite has copy and will send correctly when it
+is deliberately activated. Nine of ten sequences remain dormant. t_minus_45 was already
+active before this pass and is not due until 2026-08-18, so nothing goes out on its own.
+
+### RSS URL for MonitorRSS
+https://alumni.pittultimate.org/news.xml
+
+### Remaining manual setup
+None for scheduling. Sequence activation stays a deliberate admin decision.
