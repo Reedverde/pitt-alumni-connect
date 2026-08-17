@@ -443,3 +443,58 @@ https://alumni.pittultimate.org/news.xml
 
 ### Remaining manual setup
 None for scheduling. Sequence activation stays a deliberate admin decision.
+
+## 2026-08-17 News automation audit and hardening
+
+No news item was published, no roundup member was inserted, last_weekly_date and
+last_digest_date remain null, no email went out, and no sequence was activated during
+this pass. Verified after the changes: 0 news_items, 0 news_roundup_members for 2026,
+0 pending updates, 0 sends in the last hour, cron job active.
+
+### Weekly roundup window, corrected
+The roundup used to qualify anyone currently going who had never appeared in
+news_roundup_members, so the first run would have listed all 58 historical going
+records. It now qualifies on rsvps.responded_at for the current edition:
+after a previous run, responded_at later than last_weekly_date at local midnight;
+on the very first run of an edition, a seven day lookback from generation time.
+The person must still read as going on board_people at generation time, which also
+keeps archived and memorial records out and keeps the public display name convention.
+news_roundup_members stays the permanent per edition no repeat guard. Dry run, admin
+preview, and live publication all take the identical qualifying path. Verified today:
+preview returns 30 names, not 58. One of the 31 recent going responses is not on the
+public board, which is why the number is 30 and not 31.
+
+### Cron authentication, corrected
+The endpoint used to accept the publishable key, which is public. It now requires a
+random 64 character token in an x-cron-token header. Only a SHA-256 hash of that token
+is stored, in public.internal_secrets, a table with RLS on and deliberately no policies
+and no anon or authenticated grant, so no signed in user, admin included, can read it
+and no public or admin API returns it. The raw token exists only inside the pg_cron job
+definition. The endpoint hashes the presented token and compares in constant time.
+news-automation-15min was recreated with the token, same 15 minute cadence, still
+active. Verified: no header, old publishable key, and a wrong token all return 401;
+the real token verifies true.
+
+### addPendingUpdate error handling, corrected
+Only a 23505 unique violation is treated as an idempotent duplicate. Any other database
+error is logged with kind and dedupe key and returns ok false, so update loss is visible
+instead of silent.
+
+### Material event changes now queue news
+There was no event edit path at all: create and delete only. Added
+updateEditionEvent in admin.server.ts, the adminUpdateEditionEvent server function, and
+an inline Edit form on each event row in the Editions panel. A pending update is queued
+only when day_number, starts_at, location, or time_tbd materially changes. Title and
+notes edits, no op saves, and changes that leave the event still TBD with the same day
+and place queue nothing. Dedupe key is event_change:<id>:<day>|<starts_at or tbd>|<place>,
+so retries collapse and a later distinct material change queues its own item.
+
+### Genuine remaining gaps
+- Pending updates support edit and suppress only. Delete and combine or collapse of
+  several pending items into one were never implemented. Suppress is the way to drop
+  one; the digest already collapses everything pending into a single item.
+- No photo gallery publication trigger. The photo model has upload plus slot
+  assignment and no published gallery state, so there is nothing meaningful to
+  announce. Left unimplemented on purpose until a gallery state exists.
+- News copy for automated items is generated in TypeScript, so wording changes still
+  need a deploy.

@@ -324,6 +324,27 @@ export const adminDeleteEditionEvent = createServerFn({ method: "POST" })
     return mod.deleteEditionEvent(actor, data.id);
   });
 
+export const adminUpdateEditionEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: {
+      id: string;
+      title?: string;
+      day_number?: number;
+      division?: string | null;
+      location?: string | null;
+      notes?: string | null;
+      time_tbd?: boolean;
+      starts_at?: string | null;
+    }) => input,
+  )
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return { ok: false, queuedNews: false };
+    return mod.updateEditionEvent(actor, data);
+  });
+
 // ---------------------------------------------------------------- mail
 
 export const adminMailStatus = createServerFn({ method: "GET" })
