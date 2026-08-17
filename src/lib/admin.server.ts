@@ -2025,6 +2025,8 @@ export async function listEditions(): Promise<EditionRow[]> {
       time_tbd: Boolean(row.time_tbd),
       is_placeholder: Boolean((row as { is_placeholder?: boolean }).is_placeholder),
       location: (row.location as string | null) ?? null,
+      starts_at: (row.starts_at as string | null) ?? null,
+      notes: (row.notes as string | null) ?? null,
     });
     byYear.set(y, list);
   }
