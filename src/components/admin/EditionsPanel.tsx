@@ -10,6 +10,7 @@ import {
   adminSetEditionCurrent,
   adminSetEditionPublished,
   adminUpdateEdition,
+  adminUpdateEditionEvent,
 } from "@/lib/admin.functions";
 import type { EditionRow } from "@/lib/admin.server";
 import { Num, Section, cellStyle, hairline, headStyle, inputStyle, primaryButton, secondaryButton } from "./ui";
@@ -23,6 +24,7 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
   const setCurrent = useServerFn(adminSetEditionCurrent);
   const addEvent = useServerFn(adminAddEditionEvent);
   const deleteEvent = useServerFn(adminDeleteEditionEvent);
+  const updateEvent = useServerFn(adminUpdateEditionEvent);
   const defaults = useServerFn(adminDefaultEditionDates);
 
   const [busy, setBusy] = useState(false);
@@ -37,6 +39,9 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
   >({});
   const [eventYear, setEventYear] = useState<number | null>(null);
   const [placeholdersOnly, setPlaceholdersOnly] = useState(false);
+  const [editEvent, setEditEvent] = useState<
+    Record<string, { title: string; day_number: string; location: string; time_tbd: boolean; starts_at: string }>
+  >({});
   const [eventDraft, setEventDraft] = useState({
     title: "",
     day_number: "1",
