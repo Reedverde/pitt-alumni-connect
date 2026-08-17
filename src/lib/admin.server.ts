@@ -1991,6 +1991,8 @@ export type EditionEventRow = {
   time_tbd: boolean;
   is_placeholder: boolean;
   location: string | null;
+  starts_at: string | null;
+  notes: string | null;
 };
 
 export type EditionRow = Edition & {
@@ -2005,7 +2007,9 @@ export async function listEditions(): Promise<EditionRow[]> {
     goingCounts(),
     supabaseAdmin
       .from("events")
-      .select("id, event_year, title, day_number, division, time_tbd, is_placeholder, location")
+      .select(
+        "id, event_year, title, day_number, division, time_tbd, is_placeholder, location, starts_at, notes",
+      )
       .order("day_number")
       .order("sort_order"),
   ]);
