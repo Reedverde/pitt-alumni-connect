@@ -375,6 +375,25 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
                   type="button"
                   style={secondaryButton}
                   disabled={busy}
+                  onClick={() =>
+                    setEditEvent((s) => ({
+                      ...s,
+                      [ev.id]: {
+                        title: ev.title,
+                        day_number: String(ev.day_number ?? 1),
+                        location: ev.location ?? "",
+                        time_tbd: ev.time_tbd,
+                        starts_at: ev.starts_at ? ev.starts_at.slice(0, 16) : "",
+                      },
+                    }))
+                  }
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  style={secondaryButton}
+                  disabled={busy}
                   onClick={() => {
                     if (!window.confirm(`Delete "${ev.title}"?`)) return;
                     void run(() => deleteEvent({ data: { id: ev.id } }), "Event deleted.");
