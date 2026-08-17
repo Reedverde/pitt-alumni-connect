@@ -2219,6 +2219,94 @@ export async function listEditionEvents(eventYear: number) {
   return data ?? [];
 }
 
+/**
+ * Editing an existing event. Only what the public can see on /weekend counts as
+ * news: the day, the start time, the location, or a TBD becoming a real time.
+ * Title tidy ups, notes, sort order, and no op saves stay quiet.
+ */
+export async function updateEditionEvent(
+  actor: string | null,
+  input: {
+    id: string;
+    title?: string;
+    day_number?: number;
+    division?: string | null;
+    location?: string | null;
+    notes?: string | null;
+    time_tbd?: boolean;
+    starts_at?: string | null;
+  },
+) {
+  const { data: beforeRow } = await supabaseAdmin
+    .from("events")
+    .select("id, event_year, title, day_number, division, location, notes, time_tbd, starts_at")
+    .eq("id", input.id)
+    .maybeSingle();
+  if (!beforeRow) throw new Error("That event no longer exists.");
+  const before = beforeRow as Record<string, unknown>;
+
+  const patch: Record<string, unknown> = {};
+  if (typeof input.title === "string") {
+    const title = input.title.trim().slice(0, 160);
+    if (!title) throw new Error("Give the event a name.");
+    patch.title = title;
+  }
+  if (typeof input.day_number === "number")
+    patch.day_number = Math.min(7, Math.max(1, Math.trunc(input.day_number)));
+  if (input.division !== undefined) patch.division = input.division || null;
+  if (input.location !== undefined) patch.location = input.location?.trim().slice(0, 160) || null;
+  if (input.notes !== undefined) patch.notes = input.notes?.trim().slice(0, 400) || null;
+  if (input.time_tbd !== undefined || input.starts_at !== undefined) {
+    const tbd = input.time_tbd ?? (before.time_tbd as boolean);
+    const starts = input.starts_at !== undefined ? input.starts_at : (before.starts_at as string | null);
+    patch.time_tbd = tbd || !starts;
+    patch.starts_at = tbd ? null : starts || null;
+  }
+  if (Object.keys(patch).length === 0) return { ok: true, queuedNews: false };
+
+  const { error } = await supabaseAdmin.from("events").update(patch as never).eq("id", input.id);
+  if (error) throw new Error(error.message);
+  await audit(actor, "edition.update_event", "events", input.id, before as Json, patch as Json);
+
+  const after = { ...before, ...patch };
+  const changedDay = after.day_number !== before.day_number;
+  const changedTime = String(after.starts_at ?? "") !== String(before.starts_at ?? "");
+  const changedPlace =
+    String(after.location ?? "").trim().toLowerCase() !==
+    String(before.location ?? "").trim().toLowerCase();
+  const changedTbd = after.time_tbd !== before.time_tbd;
+  if (!changedDay && !changedTime && !changedPlace && !changedTbd) {
+    return { ok: true, queuedNews: false };
+  }
+
+  // A schedule that is still TBD in every way it just changed is not yet news.
+  if (after.time_tbd && !changedPlace && !changedDay) return { ok: true, queuedNews: false };
+
+  const title = String(after.title ?? "The schedule");
+  const bits: string[] = [];
+  if (changedTbd && !after.time_tbd) bits.push("has a confirmed time");
+  else if (changedTime) bits.push("moved to a new time");
+  if (changedDay) bits.push("moved to a different day");
+  if (changedPlace) bits.push(after.location ? `is now at ${after.location}` : "changed location");
+  const summary = bits.length ? `${title} ${bits.join(" and ")}.` : "";
+
+  // Stable per distinct material state, so retries collapse and a later real
+  // change still gets its own entry.
+  const stamp = [after.day_number, after.starts_at ?? "tbd", String(after.location ?? "").trim()]
+    .join("|")
+    .toLowerCase();
+  const { addPendingUpdate } = await import("./news.server");
+  await addPendingUpdate({
+    kind: "schedule_changed",
+    title: `${title} has a schedule change`,
+    summary,
+    category: "Schedule",
+    relatedUrl: `${SITE_ORIGIN}/weekend`,
+    dedupeKey: `event_change:${input.id}:${stamp}`,
+  });
+  return { ok: true, queuedNews: true };
+}
+
 // ------------------------------------------------- sign-in attempts
 
 export type AuthAttemptRow = {
