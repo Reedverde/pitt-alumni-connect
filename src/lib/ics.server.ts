@@ -17,6 +17,7 @@ export type CalendarEvent = {
   division: string | null;
   sort_order: number;
   map_url: string | null;
+  ticket_url: string | null;
 };
 
 function publicClient() {
@@ -30,7 +31,9 @@ function publicClient() {
 export async function loadEvents(year: number, id?: string): Promise<CalendarEvent[]> {
   let query = publicClient()
     .from("events")
-    .select("id, title, day_number, starts_at, ends_at, time_tbd, location, notes, division, sort_order, map_url")
+    .select(
+      "id, title, day_number, starts_at, ends_at, time_tbd, location, notes, division, sort_order, map_url, ticket_url",
+    )
     .eq("event_year", year)
     .order("day_number", { ascending: true })
     .order("sort_order", { ascending: true });

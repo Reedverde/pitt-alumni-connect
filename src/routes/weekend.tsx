@@ -156,6 +156,20 @@ function Directions({ href, label }: { href: string; label?: string }) {
   );
 }
 
+function Tickets({ href }: { href: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={directionsLink}
+      aria-label="Get tickets"
+    >
+      Get tickets
+    </a>
+  );
+}
+
 function timeLabel(event: ScheduleEvent) {
   if (event.time_tbd || !event.starts_at) return "TBD";
   return new Intl.DateTimeFormat("en-US", {
@@ -544,6 +558,11 @@ function EventTile({
       {event.location && (
         <p className="mt-2" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
           {event.location}
+        </p>
+      )}
+      {event.ticket_url && (
+        <p className="mt-2">
+          <Tickets href={event.ticket_url} />
         </p>
       )}
       {event.map_url && (
