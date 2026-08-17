@@ -498,3 +498,46 @@ so retries collapse and a later distinct material change queues its own item.
   announce. Left unimplemented on purpose until a gallery state exists.
 - News copy for automated items is generated in TypeScript, so wording changes still
   need a deploy.
+
+## 2026-08-17 Direct Discord delivery for News
+
+Discord no longer depends on MonitorRSS. `/news.xml` stays exactly as it is and
+remains the public secondary feed.
+
+### Secret, required manual step
+The webhook that was pasted into a chat window is compromised. Delete that
+webhook in Discord, regenerate a new one, and never reuse the old value
+anywhere. Then add the new URL as a secure Lovable project secret named
+`DISCORD_NEWS_WEBHOOK_URL` (Project Settings, Secrets). It is read only via
+`process.env` inside a server handler. It is never sent to the browser, never
+logged, never written to a row, never included in an audit payload, and never
+shown in the admin UI. With the secret absent the site behaves normally and
+every publish records a Discord delivery failure instead of blocking.
+
+### Code
+- `src/lib/discord-news.server.ts`: builds one compact embed (title, summary
+  plus body, category in the footer, link back to the item) and posts it with
+  `?wait=true` so the message id can be stored. Long bodies, such as the first
+  weekly roundup with every current Going alumnus, split across embed fields so
+  the whole item stays one logical message. Errors are scrubbed of anything
+  webhook shaped before they are stored.
+- `deliverPublishedItem()` in `src/lib/news.server.ts` is the single fire point,
+  wired into the daily digest, the weekly roundup, manual publish, urgent
+  publish, publish digest now, and publishing an existing draft.
+
+### Idempotency
+`news_items` now carries `discord_posted_at`, `discord_message_id`,
+`discord_delivery_status` (`not_sent` / `sent` / `failed`) and
+`discord_delivery_error`. Delivery returns early when `discord_posted_at` is set
+or the status is already `sent`, so edits, retries, and unpublish then
+republish can never post a second message. Drafts are never posted.
+
+### Admin
+The Published News list shows Discord: Not sent / Sent / Failed with the last
+error, a Retry Discord button on any published item not yet sent, and a Send
+test to Discord button that posts a short fixed message and creates no news
+item. Both actions are admin gated and audited.
+
+### Verified at build time
+Typecheck clean, `/news` and `/news.xml` both 200 with the secret absent, no
+news item published, no Discord request attempted, no email sequence touched.

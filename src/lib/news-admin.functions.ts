@@ -136,3 +136,32 @@ export const adminRunNewsAutomation = createServerFn({ method: "POST" })
   });
 
 export type { NewsItem };
+
+export const adminRetryDiscord = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data, context }): Promise<{ ok: boolean; reason: string }> => {
+    const admin = await import("./admin.server");
+    const actor = await admin.adminActor(context.supabase);
+    if (!actor) return { ok: false, reason: "Not permitted." };
+    const { deliverNewsToDiscord } = await import("./discord-news.server");
+    const result = await deliverNewsToDiscord(data.id);
+    await admin.auditNews(actor, "news.discord_retry", data.id, {
+      ok: result.ok,
+      status: result.status,
+      reason: result.reason,
+    });
+    return { ok: result.ok, reason: result.reason };
+  });
+
+export const adminTestDiscord = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ ok: boolean; reason: string }> => {
+    const admin = await import("./admin.server");
+    const actor = await admin.adminActor(context.supabase);
+    if (!actor) return { ok: false, reason: "Not permitted." };
+    const { sendDiscordTest } = await import("./discord-news.server");
+    const result = await sendDiscordTest();
+    await admin.auditNews(actor, "news.discord_test", null, { ok: result.ok, reason: result.reason });
+    return result;
+  });

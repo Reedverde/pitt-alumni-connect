@@ -12,6 +12,8 @@ import type {
 const NEWS_COLUMNS =
   "id, title, summary, body, category, post_type, status, published_at, related_url, author, created_at";
 
+const ADMIN_NEWS_COLUMNS = `${NEWS_COLUMNS}, discord_posted_at, discord_message_id, discord_delivery_status, discord_delivery_error`;
+
 const PENDING_COLUMNS = "id, kind, title, summary, category, related_url, status, created_at";
 
 // ------------------------------------------------------------------ reads
@@ -56,7 +58,7 @@ export async function listPending(includeAll = true): Promise<PendingUpdate[]> {
 export async function listAllNews(limit = 100): Promise<NewsItem[]> {
   const { data } = await supabaseAdmin
     .from("news_items")
-    .select(NEWS_COLUMNS)
+    .select(ADMIN_NEWS_COLUMNS)
     .order("created_at", { ascending: false })
     .limit(limit);
   return (data ?? []) as NewsItem[];
@@ -101,6 +103,21 @@ export async function addPendingUpdate(input: {
     return { ok: false, created: false };
   }
   return { ok: true, created: true };
+}
+
+// -------------------------------------------------------- discord delivery
+
+/**
+ * Fires the one time Discord post for a freshly published item. Never throws
+ * and never blocks publication: the news item is already saved.
+ */
+export async function deliverPublishedItem(newsId: string) {
+  try {
+    const { deliverNewsToDiscord } = await import("./discord-news.server");
+    await deliverNewsToDiscord(newsId);
+  } catch {
+    // Delivery state is recorded on the row; publication is unaffected.
+  }
 }
 
 // ------------------------------------------------------------ cron token
@@ -198,6 +215,8 @@ export async function publishDigest(opts: {
     .from("news_pending_updates")
     .update({ status: "consumed", consumed_at: new Date().toISOString(), consumed_news_id: newsId } as never)
     .in("id", preview.items.map((i) => i.id));
+
+  await deliverPublishedItem(newsId);
 
   return { created: true, newsId, reason: `Published ${preview.count} updates.` };
 }
@@ -321,6 +340,8 @@ export async function publishWeeklyRoundup(opts: {
       news_id: newsId,
     })) as never,
   );
+
+  await deliverPublishedItem(newsId);
 
   return { created: true, newsId, names, reason: `Listed ${names.length} people.` };
 }

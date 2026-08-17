@@ -29,6 +29,11 @@ export type NewsItem = {
   related_url: string | null;
   author: string | null;
   created_at: string;
+  /** Discord delivery state. Never carries webhook details. */
+  discord_posted_at?: string | null;
+  discord_message_id?: string | null;
+  discord_delivery_status?: "not_sent" | "sent" | "failed" | null;
+  discord_delivery_error?: string | null;
 };
 
 export type PendingUpdate = {

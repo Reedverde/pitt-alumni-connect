@@ -582,6 +582,10 @@ export type Database = {
           created_at: string
           created_by: string | null
           dedupe_key: string | null
+          discord_delivery_error: string | null
+          discord_delivery_status: string
+          discord_message_id: string | null
+          discord_posted_at: string | null
           event_year: number | null
           id: string
           post_type: string
@@ -599,6 +603,10 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           dedupe_key?: string | null
+          discord_delivery_error?: string | null
+          discord_delivery_status?: string
+          discord_message_id?: string | null
+          discord_posted_at?: string | null
           event_year?: number | null
           id?: string
           post_type?: string
@@ -616,6 +624,10 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           dedupe_key?: string | null
+          discord_delivery_error?: string | null
+          discord_delivery_status?: string
+          discord_message_id?: string | null
+          discord_posted_at?: string | null
           event_year?: number | null
           id?: string
           post_type?: string
