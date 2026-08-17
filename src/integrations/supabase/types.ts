@@ -503,6 +503,27 @@ export type Database = {
           },
         ]
       }
+      internal_secrets: {
+        Row: {
+          created_at: string
+          key: string
+          updated_at: string
+          value_hash: string
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          updated_at?: string
+          value_hash: string
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          updated_at?: string
+          value_hash?: string
+        }
+        Relationships: []
+      }
       magic_link_issues: {
         Row: {
           email: string
