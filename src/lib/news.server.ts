@@ -89,10 +89,47 @@ export async function addPendingUpdate(input: {
     .from("news_pending_updates")
     .insert(row as never);
   if (error) {
-    // A unique violation means it is already queued or already consumed.
-    return { ok: true, created: false };
+    // Only a unique violation means it is already queued or already consumed.
+    if (error.code === "23505") return { ok: true, created: false };
+    // Anything else is a real failure. Losing it quietly is how news goes missing.
+    console.error("[news] addPendingUpdate failed", {
+      kind: row.kind,
+      dedupeKey: row.dedupe_key,
+      code: error.code,
+      message: error.message,
+    });
+    return { ok: false, created: false };
   }
   return { ok: true, created: true };
+}
+
+// ------------------------------------------------------------ cron token
+
+async function sha256Hex(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * The scheduled job presents a random token in a header. Only its hash lives in
+ * the database, in a table no signed in user can read, so neither the admin UI
+ * nor any public API can ever hand it out.
+ */
+export async function verifyCronToken(presented: string | null): Promise<boolean> {
+  if (!presented || presented.length < 16) return false;
+  const { data } = await supabaseAdmin
+    .from("internal_secrets")
+    .select("value_hash")
+    .eq("key", "news_cron_token")
+    .maybeSingle();
+  const expected = (data as { value_hash: string } | null)?.value_hash;
+  if (!expected) return false;
+  const actual = await sha256Hex(presented);
+  if (actual.length !== expected.length) return false;
+  let diff = 0;
+  for (let i = 0; i < actual.length; i += 1) diff |= actual.charCodeAt(i) ^ expected.charCodeAt(i);
+  return diff === 0;
 }
 
 // ------------------------------------------------------------ digest build
