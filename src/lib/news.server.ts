@@ -268,7 +268,7 @@ export async function publishWeeklyRoundup(opts: {
     : { data: [] as Record<string, unknown>[] };
 
   const fresh = (boardRes.data ?? []) as Record<string, unknown>[];
-  const window = firstRun ? "last seven days" : `since ${cutoff.slice(0, 10)}`;
+  const windowLabel = firstRun ? "last seven days" : `since ${cutoff.slice(0, 10)}`;
 
   if (fresh.length === 0)
     return { created: false, newsId: null, names: [], reason: "Nobody new is going." };
@@ -283,7 +283,7 @@ export async function publishWeeklyRoundup(opts: {
   );
 
   if (opts.dryRun)
-    return { created: false, newsId: null, names, reason: `Dry run, window: ${window}.` };
+    return { created: false, newsId: null, names, reason: `Dry run, window: ${windowLabel}.` };
 
   const title =
     names.length === 1 ? "One more alumnus is coming" : `${names.length} more alumni are coming`;
