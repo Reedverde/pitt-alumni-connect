@@ -6,15 +6,30 @@ import {
   adminPreviewDigest,
   adminPublishDigest,
   adminRunNewsAutomation,
+  adminRetryDiscord,
   adminRunWeeklyRoundup,
   adminSaveNewsItem,
   adminSaveNewsSettings,
   adminSavePending,
   adminSetNewsStatus,
+  adminTestDiscord,
   getNewsAdmin,
 } from "@/lib/news-admin.functions";
-import { NEWS_CATEGORIES, type PendingUpdate } from "@/lib/news-types";
+import { NEWS_CATEGORIES, type NewsItem as NewsItemRow, type PendingUpdate } from "@/lib/news-types";
 import { Empty, Section, inputStyle, mono, primaryButton, secondaryButton } from "./ui";
+
+function DiscordState({ item }: { item: NewsItemRow }) {
+  const state = item.discord_delivery_status ?? "not_sent";
+  const label = state === "sent" ? "Discord: Sent" : state === "failed" ? "Discord: Failed" : "Discord: Not sent";
+  const color =
+    state === "sent" ? "var(--pitt-royal)" : state === "failed" ? "#B3261E" : "var(--sterling)";
+  return (
+    <p style={{ ...mono, color }}>
+      {label}
+      {state === "failed" && item.discord_delivery_error ? ` · ${item.discord_delivery_error}` : ""}
+    </p>
+  );
+}
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -29,6 +44,8 @@ export function NewsPanel() {
   const setStatus = useServerFn(adminSetNewsStatus);
   const saveSettings = useServerFn(adminSaveNewsSettings);
   const runAutomation = useServerFn(adminRunNewsAutomation);
+  const retryDiscord = useServerFn(adminRetryDiscord);
+  const testDiscord = useServerFn(adminTestDiscord);
 
   const { data, isLoading } = useQuery({ queryKey: ["news-admin"], queryFn: () => load({}) });
   const [note, setNote] = useState<string | null>(null);
@@ -157,6 +174,18 @@ export function NewsPanel() {
       />
 
       <Section eyebrow="Published news" title="Everything posted">
+        <div className="mb-4">
+          <button
+            type="button"
+            style={secondaryButton}
+            onClick={async () => {
+              const result = await testDiscord({});
+              setNote(result.reason);
+            }}
+          >
+            Send test to Discord
+          </button>
+        </div>
         {data.published.length === 0 ? (
           <Empty>Nothing posted yet.</Empty>
         ) : (
@@ -173,6 +202,7 @@ export function NewsPanel() {
                   </p>
                   <p style={{ fontWeight: 700, color: "var(--sabah-black)" }}>{item.title}</p>
                   <p style={{ fontSize: 13, color: "var(--sterling)" }}>{item.summary}</p>
+                  <DiscordState item={item} />
                 </div>
                 <div className="flex gap-2">
                   {item.status === "published" ? (
@@ -223,6 +253,19 @@ export function NewsPanel() {
                   >
                     Edit
                   </button>
+                  {item.status === "published" && item.discord_delivery_status !== "sent" ? (
+                    <button
+                      type="button"
+                      style={secondaryButton}
+                      onClick={async () => {
+                        const result = await retryDiscord({ data: { id: item.id } });
+                        setNote(result.reason);
+                        refresh();
+                      }}
+                    >
+                      Retry Discord
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ))}
