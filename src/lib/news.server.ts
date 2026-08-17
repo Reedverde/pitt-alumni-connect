@@ -209,20 +209,20 @@ function displayName(row: { first_name: string; last_name: string | null; played
   return row.played_as?.trim() ? `${base} (${row.played_as.trim()})` : base;
 }
 
-/** Seven days back is the window for the very first run of an edition. */
-const FIRST_RUN_LOOKBACK_MS = 7 * 86400000;
-
 /**
  * The window this run covers. After a previous weekly run it starts at that
- * run's local date; on the first run of an edition it is a seven day lookback,
- * never the whole history of the board.
+ * run's local date. The very first run of an edition has no cutoff at all: it
+ * introduces everyone who is going right now, and news_roundup_members keeps
+ * every later run from repeating a name.
  */
-export async function weeklyRoundupCutoff(now = new Date()): Promise<{ iso: string; firstRun: boolean }> {
+export async function weeklyRoundupCutoff(
+  _now = new Date(),
+): Promise<{ iso: string | null; firstRun: boolean }> {
   const settings = await loadSettings();
   if (settings.last_weekly_date) {
     return { iso: new Date(`${settings.last_weekly_date}T00:00:00Z`).toISOString(), firstRun: false };
   }
-  return { iso: new Date(now.getTime() - FIRST_RUN_LOOKBACK_MS).toISOString(), firstRun: true };
+  return { iso: null, firstRun: true };
 }
 
 /**
@@ -239,13 +239,14 @@ export async function publishWeeklyRoundup(opts: {
   const edition = await loadCurrentEdition();
   const { iso: cutoff, firstRun } = await weeklyRoundupCutoff(now);
 
+  const goingQuery = supabaseAdmin
+    .from("rsvps")
+    .select("person_id, responded_at, status")
+    .eq("event_year", edition.event_year)
+    .eq("status", "going");
+
   const [recentRes, seenRes] = await Promise.all([
-    supabaseAdmin
-      .from("rsvps")
-      .select("person_id, responded_at, status")
-      .eq("event_year", edition.event_year)
-      .eq("status", "going")
-      .gte("responded_at", cutoff),
+    cutoff ? goingQuery.gte("responded_at", cutoff) : goingQuery,
     supabaseAdmin
       .from("news_roundup_members")
       .select("person_id")
@@ -268,7 +269,7 @@ export async function publishWeeklyRoundup(opts: {
     : { data: [] as Record<string, unknown>[] };
 
   const fresh = (boardRes.data ?? []) as Record<string, unknown>[];
-  const windowLabel = firstRun ? "last seven days" : `since ${cutoff.slice(0, 10)}`;
+  const windowLabel = firstRun ? "everyone going so far" : `since ${cutoff!.slice(0, 10)}`;
 
   if (fresh.length === 0)
     return { created: false, newsId: null, names: [], reason: "Nobody new is going." };
