@@ -2430,6 +2430,11 @@ export async function saveNewsItem(
     const { error } = await supabaseAdmin.from("news_items").update(row as never).eq("id", input.id);
     if (error) throw new Error(error.message);
     await audit(actor, "news.edit", "news_items", input.id, null, row as Json);
+    // Only a first publication posts. deliverNewsToDiscord is a no op once sent.
+    if (input.publish) {
+      const { deliverPublishedItem } = await import("./news.server");
+      await deliverPublishedItem(input.id);
+    }
     return { ok: true, id: input.id };
   }
 
@@ -2441,6 +2446,10 @@ export async function saveNewsItem(
   if (error || !data) throw new Error(error?.message ?? "Could not save that.");
   const id = (data as { id: string }).id;
   await audit(actor, input.publish ? "news.publish" : "news.draft", "news_items", id, null, row as Json);
+  if (input.publish) {
+    const { deliverPublishedItem } = await import("./news.server");
+    await deliverPublishedItem(id);
+  }
   return { ok: true, id };
 }
 
@@ -2454,6 +2463,10 @@ export async function setNewsStatus(
   const { error } = await supabaseAdmin.from("news_items").update(patch as never).eq("id", id);
   if (error) throw new Error(error.message);
   await audit(actor, `news.${status}`, "news_items", id, null, patch as Json);
+  if (status === "published") {
+    const { deliverPublishedItem } = await import("./news.server");
+    await deliverPublishedItem(id);
+  }
   return { ok: true };
 }
 
