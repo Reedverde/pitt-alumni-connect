@@ -383,6 +383,100 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
                   Delete
                 </button>
                 </div>
+                {editEvent[ev.id] ? (
+                  <div className="mt-2 grid gap-2 md:grid-cols-4" style={{ fontSize: 13 }}>
+                    <input
+                      style={inputStyle}
+                      placeholder="Title"
+                      value={editEvent[ev.id].title}
+                      onChange={(e) =>
+                        setEditEvent((s) => ({ ...s, [ev.id]: { ...s[ev.id], title: e.target.value } }))
+                      }
+                    />
+                    <input
+                      style={inputStyle}
+                      placeholder="Day number"
+                      value={editEvent[ev.id].day_number}
+                      onChange={(e) =>
+                        setEditEvent((s) => ({ ...s, [ev.id]: { ...s[ev.id], day_number: e.target.value } }))
+                      }
+                    />
+                    <input
+                      style={inputStyle}
+                      placeholder="Location"
+                      value={editEvent[ev.id].location}
+                      onChange={(e) =>
+                        setEditEvent((s) => ({ ...s, [ev.id]: { ...s[ev.id], location: e.target.value } }))
+                      }
+                    />
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={editEvent[ev.id].time_tbd}
+                        onChange={(e) =>
+                          setEditEvent((s) => ({ ...s, [ev.id]: { ...s[ev.id], time_tbd: e.target.checked } }))
+                        }
+                      />
+                      Time TBD
+                    </label>
+                    {!editEvent[ev.id].time_tbd && (
+                      <input
+                        type="datetime-local"
+                        style={inputStyle}
+                        value={editEvent[ev.id].starts_at}
+                        onChange={(e) =>
+                          setEditEvent((s) => ({ ...s, [ev.id]: { ...s[ev.id], starts_at: e.target.value } }))
+                        }
+                      />
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        style={primaryButton}
+                        disabled={busy}
+                        onClick={() => {
+                          const d = editEvent[ev.id];
+                          void run(
+                            () =>
+                              updateEvent({
+                                data: {
+                                  id: ev.id,
+                                  title: d.title,
+                                  day_number: Number(d.day_number) || 1,
+                                  location: d.location || null,
+                                  time_tbd: d.time_tbd,
+                                  starts_at:
+                                    d.time_tbd || !d.starts_at ? null : new Date(d.starts_at).toISOString(),
+                                },
+                              }),
+                            "Event saved.",
+                          ).then(() =>
+                            setEditEvent((s) => {
+                              const next = { ...s };
+                              delete next[ev.id];
+                              return next;
+                            }),
+                          );
+                        }}
+                      >
+                        Save event
+                      </button>
+                      <button
+                        type="button"
+                        style={secondaryButton}
+                        onClick={() =>
+                          setEditEvent((s) => {
+                            const next = { ...s };
+                            delete next[ev.id];
+                            return next;
+                          })
+                        }
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
               );
             })}
