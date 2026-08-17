@@ -209,20 +209,43 @@ function displayName(row: { first_name: string; last_name: string | null; played
   return row.played_as?.trim() ? `${base} (${row.played_as.trim()})` : base;
 }
 
+/** Seven days back is the window for the very first run of an edition. */
+const FIRST_RUN_LOOKBACK_MS = 7 * 86400000;
+
 /**
- * One item a week listing people who newly read as going. Anyone already
- * listed for this edition is skipped forever, so retries add nobody twice.
+ * The window this run covers. After a previous weekly run it starts at that
+ * run's local date; on the first run of an edition it is a seven day lookback,
+ * never the whole history of the board.
+ */
+export async function weeklyRoundupCutoff(now = new Date()): Promise<{ iso: string; firstRun: boolean }> {
+  const settings = await loadSettings();
+  if (settings.last_weekly_date) {
+    return { iso: new Date(`${settings.last_weekly_date}T00:00:00Z`).toISOString(), firstRun: false };
+  }
+  return { iso: new Date(now.getTime() - FIRST_RUN_LOOKBACK_MS).toISOString(), firstRun: true };
+}
+
+/**
+ * One item a week listing people who said going during this week's window and
+ * still read as going right now. Anyone already listed for this edition is
+ * skipped forever, so retries add nobody twice. Dry runs take this same path.
  */
 export async function publishWeeklyRoundup(opts: {
   actorPersonId?: string | null;
   dryRun?: boolean;
+  now?: Date;
 }): Promise<{ created: boolean; newsId: string | null; names: string[]; reason: string }> {
+  const now = opts.now ?? new Date();
   const edition = await loadCurrentEdition();
-  const [boardRes, seenRes] = await Promise.all([
+  const { iso: cutoff, firstRun } = await weeklyRoundupCutoff(now);
+
+  const [recentRes, seenRes] = await Promise.all([
     supabaseAdmin
-      .from("board_people")
-      .select("id, first_name, last_name, played_as, board_year, state")
-      .eq("state", "going"),
+      .from("rsvps")
+      .select("person_id, responded_at, status")
+      .eq("event_year", edition.event_year)
+      .eq("status", "going")
+      .gte("responded_at", cutoff),
     supabaseAdmin
       .from("news_roundup_members")
       .select("person_id")
@@ -230,7 +253,22 @@ export async function publishWeeklyRoundup(opts: {
   ]);
 
   const seen = new Set((seenRes.data ?? []).map((r) => r.person_id as string));
-  const fresh = (boardRes.data ?? []).filter((r) => !seen.has(r.id as string));
+  const candidates = [...new Set((recentRes.data ?? []).map((r) => r.person_id as string))].filter(
+    (id) => !seen.has(id),
+  );
+
+  // The board view is the public display convention and the only source of the
+  // shown name. It also drops archived and memorial records for us.
+  const boardRes = candidates.length
+    ? await supabaseAdmin
+        .from("board_people")
+        .select("id, first_name, last_name, played_as, board_year, state")
+        .eq("state", "going")
+        .in("id", candidates)
+    : { data: [] as Record<string, unknown>[] };
+
+  const fresh = (boardRes.data ?? []) as Record<string, unknown>[];
+  const window = firstRun ? "last seven days" : `since ${cutoff.slice(0, 10)}`;
 
   if (fresh.length === 0)
     return { created: false, newsId: null, names: [], reason: "Nobody new is going." };
@@ -244,7 +282,8 @@ export async function publishWeeklyRoundup(opts: {
     displayName(r as { first_name: string; last_name: string | null; played_as: string | null }),
   );
 
-  if (opts.dryRun) return { created: false, newsId: null, names, reason: "Dry run." };
+  if (opts.dryRun)
+    return { created: false, newsId: null, names, reason: `Dry run, window: ${window}.` };
 
   const title =
     names.length === 1 ? "One more alumnus is coming" : `${names.length} more alumni are coming`;
