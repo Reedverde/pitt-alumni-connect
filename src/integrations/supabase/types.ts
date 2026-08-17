@@ -385,6 +385,7 @@ export type Database = {
           notes: string | null
           sort_order: number
           starts_at: string | null
+          ticket_url: string | null
           time_tbd: boolean
           title: string
         }
@@ -400,6 +401,7 @@ export type Database = {
           notes?: string | null
           sort_order?: number
           starts_at?: string | null
+          ticket_url?: string | null
           time_tbd?: boolean
           title: string
         }
@@ -415,6 +417,7 @@ export type Database = {
           notes?: string | null
           sort_order?: number
           starts_at?: string | null
+          ticket_url?: string | null
           time_tbd?: boolean
           title?: string
         }
