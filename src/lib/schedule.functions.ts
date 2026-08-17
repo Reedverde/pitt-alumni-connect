@@ -15,6 +15,8 @@ export type ScheduleEvent = {
   sort_order: number;
   /** Optional directions link for the event's physical location. */
   map_url: string | null;
+  /** Optional ticket link for the event. */
+  ticket_url: string | null;
 };
 
 export type ScheduleData = {
