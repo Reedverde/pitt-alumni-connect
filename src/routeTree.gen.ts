@@ -22,6 +22,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated/me'
 import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as EditionsYearRouteImport } from './routes/editions.$year'
+import { Route as ApiAdminDripDryRunRouteImport } from './routes/api/admin/drip-dry-run'
 import { Route as ApiPhotosUploadRouteImport } from './routes/api/photos/upload'
 import { Route as ApiPublicCalendarDoticsRouteImport } from './routes/api/public/calendar[.]ics'
 import { Route as ApiPublicEventDoticsRouteImport } from './routes/api/public/event[.]ics'
@@ -95,6 +96,11 @@ const EditionsYearRoute = EditionsYearRouteImport.update({
   path: '/editions/$year',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminDripDryRunRoute = ApiAdminDripDryRunRouteImport.update({
+  id: '/api/admin/drip-dry-run',
+  path: '/api/admin/drip-dry-run',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPhotosUploadRoute = ApiPhotosUploadRouteImport.update({
   id: '/api/photos/upload',
   path: '/api/photos/upload',
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/me': typeof AuthenticatedMeRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/editions/$year': typeof EditionsYearRoute
+  '/api/admin/drip-dry-run': typeof ApiAdminDripDryRunRoute
   '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
   '/api/public/event.ics': typeof ApiPublicEventDoticsRoute
@@ -171,6 +178,7 @@ export interface FileRoutesByTo {
   '/me': typeof AuthenticatedMeRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/editions/$year': typeof EditionsYearRoute
+  '/api/admin/drip-dry-run': typeof ApiAdminDripDryRunRoute
   '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
   '/api/public/event.ics': typeof ApiPublicEventDoticsRoute
@@ -195,6 +203,7 @@ export interface FileRoutesById {
   '/_authenticated/me': typeof AuthenticatedMeRoute
   '/auth_/callback': typeof AuthCallbackRoute
   '/editions/$year': typeof EditionsYearRoute
+  '/api/admin/drip-dry-run': typeof ApiAdminDripDryRunRoute
   '/api/photos/upload': typeof ApiPhotosUploadRoute
   '/api/public/calendar.ics': typeof ApiPublicCalendarDoticsRoute
   '/api/public/event.ics': typeof ApiPublicEventDoticsRoute
@@ -219,6 +228,7 @@ export interface FileRouteTypes {
     | '/me'
     | '/auth/callback'
     | '/editions/$year'
+    | '/api/admin/drip-dry-run'
     | '/api/photos/upload'
     | '/api/public/calendar.ics'
     | '/api/public/event.ics'
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/me'
     | '/auth/callback'
     | '/editions/$year'
+    | '/api/admin/drip-dry-run'
     | '/api/photos/upload'
     | '/api/public/calendar.ics'
     | '/api/public/event.ics'
@@ -264,6 +275,7 @@ export interface FileRouteTypes {
     | '/_authenticated/me'
     | '/auth_/callback'
     | '/editions/$year'
+    | '/api/admin/drip-dry-run'
     | '/api/photos/upload'
     | '/api/public/calendar.ics'
     | '/api/public/event.ics'
@@ -286,6 +298,7 @@ export interface RootRouteChildren {
   WeekendRoute: typeof WeekendRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   EditionsYearRoute: typeof EditionsYearRoute
+  ApiAdminDripDryRunRoute: typeof ApiAdminDripDryRunRoute
   ApiPhotosUploadRoute: typeof ApiPhotosUploadRoute
   ApiPublicCalendarDoticsRoute: typeof ApiPublicCalendarDoticsRoute
   ApiPublicEventDoticsRoute: typeof ApiPublicEventDoticsRoute
@@ -389,6 +402,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EditionsYearRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/drip-dry-run': {
+      id: '/api/admin/drip-dry-run'
+      path: '/api/admin/drip-dry-run'
+      fullPath: '/api/admin/drip-dry-run'
+      preLoaderRoute: typeof ApiAdminDripDryRunRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/photos/upload': {
       id: '/api/photos/upload'
       path: '/api/photos/upload'
@@ -473,6 +493,7 @@ const rootRouteChildren: RootRouteChildren = {
   WeekendRoute: WeekendRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   EditionsYearRoute: EditionsYearRoute,
+  ApiAdminDripDryRunRoute: ApiAdminDripDryRunRoute,
   ApiPhotosUploadRoute: ApiPhotosUploadRoute,
   ApiPublicCalendarDoticsRoute: ApiPublicCalendarDoticsRoute,
   ApiPublicEventDoticsRoute: ApiPublicEventDoticsRoute,
