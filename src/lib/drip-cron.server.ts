@@ -48,7 +48,7 @@ async function setOutboundMode(mode: "all" | "transactional_only") {
     .upsert({ key: "outbound_email_mode", value: mode } as never, { onConflict: "key" });
 }
 
-async function recordAttempt(o: SequenceOutcome) {
+async function recordAttempt(o: SequenceOutcome & { runDate: string }) {
   await supabaseAdmin.from("audit_log").insert({
     actor_person_id: null,
     action: "drip_cron_tick",
@@ -63,7 +63,7 @@ async function recordAttempt(o: SequenceOutcome) {
       refusalReason: o.refusalReason,
       error: o.error,
       targetDate: o.targetDate,
-      runDate: o.runDate ?? null,
+      runDate: o.runDate,
     } as never,
   });
 }
@@ -122,7 +122,7 @@ export async function runDripCronTick(): Promise<CronTickResult> {
 
       outcomes.push(outcome);
       try {
-        await recordAttempt({ ...outcome, runDate } as SequenceOutcome & { runDate: string });
+        await recordAttempt({ ...outcome, runDate });
       } catch (err) {
         console.error("[drip-cron] audit write failed", err);
       }
