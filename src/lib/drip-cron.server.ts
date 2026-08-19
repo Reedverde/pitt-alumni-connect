@@ -1,0 +1,142 @@
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+import { dispatchSequence, type DispatchSkips } from "./drip.server";
+import { loadCurrentEdition } from "./editions.server";
+
+const RUN_LIMIT = 1000;
+
+export type SequenceOutcome = {
+  sequenceKey: string;
+  sequenceId: string;
+  offsetDays: number;
+  targetDate: string;
+  sent: number;
+  failed: number;
+  skips: DispatchSkips | null;
+  refusalReason: string | null;
+  error: string | null;
+};
+
+export type CronTickResult = {
+  ok: boolean;
+  runDate: string;
+  eventDate: string;
+  considered: number;
+  eligible: number;
+  outcomes: SequenceOutcome[];
+};
+
+function addDays(isoDate: string, days: number): string {
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Today in America/New_York, as a plain date. The schedule is a local one. */
+export function easternToday(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
+async function setOutboundMode(mode: "all" | "transactional_only") {
+  await supabaseAdmin
+    .from("app_settings")
+    .upsert({ key: "outbound_email_mode", value: mode } as never, { onConflict: "key" });
+}
+
+async function recordAttempt(o: SequenceOutcome) {
+  await supabaseAdmin.from("audit_log").insert({
+    actor_person_id: null,
+    action: "drip_cron_tick",
+    table_name: "sequences",
+    record_id: o.sequenceId,
+    before: null as never,
+    after: {
+      sequenceKey: o.sequenceKey,
+      sent: o.sent,
+      failed: o.failed,
+      skips: o.skips,
+      refusalReason: o.refusalReason,
+      error: o.error,
+      targetDate: o.targetDate,
+      runDate: o.runDate ?? null,
+    } as never,
+  });
+}
+
+/** One daily tick. Every active sequence whose target date has arrived runs,
+ *  one at a time, with the outbound switch open only for the length of that
+ *  single dispatch. The switch is forced closed again no matter what. */
+export async function runDripCronTick(): Promise<CronTickResult> {
+  const runDate = easternToday();
+  const edition = await loadCurrentEdition();
+  const eventDate = edition.starts_on;
+
+  const { data: rows } = await supabaseAdmin
+    .from("sequences")
+    .select("id, key, offset_days, active")
+    .eq("active", true)
+    .order("offset_days", { ascending: true });
+
+  const sequences = (rows ?? []) as { id: string; key: string; offset_days: number }[];
+  const outcomes: SequenceOutcome[] = [];
+
+  try {
+    for (const seq of sequences) {
+      const targetDate = addDays(eventDate, seq.offset_days);
+      if (runDate < targetDate) continue;
+
+      const outcome: SequenceOutcome = {
+        sequenceKey: seq.key,
+        sequenceId: seq.id,
+        offsetDays: seq.offset_days,
+        targetDate,
+        sent: 0,
+        failed: 0,
+        skips: null,
+        refusalReason: null,
+        error: null,
+      };
+
+      try {
+        await setOutboundMode("all");
+        const result = await dispatchSequence({
+          sequenceKey: seq.key,
+          limit: RUN_LIMIT,
+          anchorsFirst: false,
+          dryRun: false,
+        });
+        outcome.sent = result.sent;
+        outcome.failed = result.failed;
+        outcome.skips = result.skips;
+        outcome.refusalReason = result.ok ? null : result.reason;
+      } catch (err) {
+        outcome.error = err instanceof Error ? err.message : String(err);
+      } finally {
+        await setOutboundMode("transactional_only");
+      }
+
+      outcomes.push(outcome);
+      try {
+        await recordAttempt({ ...outcome, runDate } as SequenceOutcome & { runDate: string });
+      } catch (err) {
+        console.error("[drip-cron] audit write failed", err);
+      }
+    }
+  } finally {
+    await setOutboundMode("transactional_only");
+  }
+
+  return {
+    ok: true,
+    runDate,
+    eventDate,
+    considered: sequences.length,
+    eligible: outcomes.length,
+    outcomes,
+  };
+}
