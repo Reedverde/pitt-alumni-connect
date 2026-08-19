@@ -5,17 +5,21 @@ import { editionDateRange } from "./edition-format";
 import { partySizeLink } from "./party-token.server";
 import {
   DISCORD_INVITE_SUBJECT,
+  HOTEL_REMINDER_SUBJECT,
   T_MINUS_10_SUBJECT,
   T_MINUS_14_SUBJECT,
   T_MINUS_2_SUBJECT,
   T_MINUS_45_SUBJECT,
+  T_MINUS_7_SUBJECT,
   T_PLUS_3_SUBJECT,
   buildDiscordInviteBody,
+  buildHotelReminderBody,
   buildTMinus10Body,
   buildTMinus14Body,
   buildTMinus28Body,
   buildTMinus2Body,
   buildTMinus45Body,
+  buildTMinus7Body,
   buildTPlus3Body,
   loadCohortGoing,
   loadScheduleLines,
@@ -54,7 +58,7 @@ type SequenceRow = {
   active: boolean;
 };
 
-const RECENT_SEND_DAYS = 10;
+const RECENT_SEND_DAYS = 7;
 const SEND_INTERVAL_MS = 500;
 
 async function loadSequence(key: string): Promise<SequenceRow | null> {
@@ -133,8 +137,10 @@ type Built = { subject: string; text: string; html: string } | null;
 const BUILDER_KEYS = new Set([
   "t_minus_45",
   "t_minus_28",
+  "t_minus_21",
   "t_minus_14",
   "t_minus_10_headcount",
+  "t_minus_7",
   "t_minus_2",
   "t_plus_3",
   "discord_invite",
@@ -151,12 +157,16 @@ async function buildFor(
       return { subject: T_MINUS_45_SUBJECT, ...buildTMinus45Body({ name }) };
     case "discord_invite":
       return { subject: DISCORD_INVITE_SUBJECT, ...buildDiscordInviteBody({ name, dates: shared.dates }) };
-    case "t_minus_28": {
+    case "t_minus_28":
+      return { subject: HOTEL_REMINDER_SUBJECT, ...buildHotelReminderBody({ name }) };
+    case "t_minus_21": {
       const cohort = await loadCohortGoing(person.id);
       const body = buildTMinus28Body({ name, cohort });
       if (!body) return null;
       return { subject: tMinus28Subject(cohort.year ?? shared.editionYear), ...body };
     }
+    case "t_minus_7":
+      return { subject: T_MINUS_7_SUBJECT, ...buildTMinus7Body({ name }) };
     case "t_minus_14":
       return { subject: T_MINUS_14_SUBJECT, ...buildTMinus14Body({ name, schedule: shared.schedule }) };
     case "t_minus_2":
