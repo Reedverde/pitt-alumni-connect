@@ -854,6 +854,90 @@ export async function loadScheduleLines(): Promise<string[]> {
   });
 }
 
+export const HOTEL_REMINDER_SUBJECT = "Book your hotel — Alumni Weekend is four weeks out";
+
+/** The t_minus_28 body: hotel booking reminder. */
+export function buildHotelReminderBody(opts: { name: string }): { text: string; html: string } {
+  const lines = [
+    "Alumni Weekend is October 2 to 4 in Pittsburgh. If you are coming from out of town and have not booked yet, now is the time.",
+    "Hilton Garden Inn Pittsburgh University Place is closest to Oakland and where most alumni are staying. There is no group block, so book directly at the hotel rate.",
+    "The full schedule and the board are on the site.",
+  ];
+
+  const text = [
+    `${opts.name},`,
+    "",
+    lines[0],
+    "",
+    lines[1],
+    "",
+    lines[2],
+    "",
+    "https://alumni.pittultimate.org/?src=email",
+    "",
+    "Pitt Club Ultimate Alumni",
+  ].join("\n");
+
+  const html = emailShell(
+    [
+      emailParagraph(`${opts.name},`),
+      ...lines.map((l) => emailParagraph(l)),
+      emailButton("https://alumni.pittultimate.org/?src=email", "See the board"),
+      emailPlainUrl("https://alumni.pittultimate.org/?src=email"),
+      emailFooter([
+        "Pitt Club Ultimate Alumni",
+        "You are receiving this because you have a record on the alumni board.",
+      ]),
+    ].join("\n"),
+    "Book your hotel for Alumni Weekend.",
+  );
+
+  return { text, html };
+}
+
+export const T_MINUS_7_SUBJECT = "One week out";
+
+/** The t_minus_7 body: the direct ask. */
+export function buildTMinus7Body(opts: { name: string }): { text: string; html: string } {
+  const lines = [
+    "One week out. The Saturday BBQ shelter holds 24 people and we are planning food and seating off final numbers this week.",
+    "Are you in?",
+    "Not this year is a good answer too. Either way, tell us before Thursday.",
+  ];
+
+  const text = [
+    `${opts.name},`,
+    "",
+    lines[0],
+    "",
+    lines[1],
+    "",
+    "https://alumni.pittultimate.org/?src=email",
+    "",
+    lines[2],
+    "",
+    "Pitt Club Ultimate Alumni",
+  ].join("\n");
+
+  const html = emailShell(
+    [
+      emailParagraph(`${opts.name},`),
+      emailParagraph(lines[0]),
+      emailParagraph(`<strong>${lines[1]}</strong>`),
+      emailButton("https://alumni.pittultimate.org/?src=email", "Update your answer"),
+      emailPlainUrl("https://alumni.pittultimate.org/?src=email"),
+      emailParagraph(lines[2]),
+      emailFooter([
+        "Pitt Club Ultimate Alumni",
+        "You are receiving this because you have a record on the alumni board.",
+      ]),
+    ].join("\n"),
+    "Are you coming to Alumni Weekend?",
+  );
+
+  return { text, html };
+}
+
 /** The t_minus_14 body. Copy is fixed and reproduced verbatim. */
 export function buildTMinus14Body(opts: { name: string; schedule: string[] }) {
   const lead = "Alumni Weekend is two weeks out. The schedule is set.";
