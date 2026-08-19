@@ -541,3 +541,12 @@ item. Both actions are admin gated and audited.
 ### Verified at build time
 Typecheck clean, `/news` and `/news.xml` both 200 with the secret absent, no
 news item published, no Discord request attempted, no email sequence touched.
+
+## DRIP DAILY CRON (added 2026-08-19)
+
+- Route: `POST /api/public/hooks/drip-cron-tick`. Guarded by the `x-drip-cron-secret` header, compared against the `DRIP_CRON_SECRET` project secret. Missing or wrong secret returns 401.
+- Runner: `src/lib/drip-cron.server.ts`. Target date per sequence is `editions.starts_on` of the current edition plus `offset_days`. A sequence runs when the Eastern date is on or after its target date, so a missed day catches up instead of skipping.
+- The outbound switch opens to `all` for exactly one sequence dispatch and is reset to `transactional_only` in a finally block, plus a second forced reset around the whole run.
+- Every sequence attempt writes one `audit_log` row: action `drip_cron_tick`, `table_name` sequences, `record_id` the sequence id, after jsonb carrying sequenceKey, sent, failed, skips, refusalReason, error, targetDate, runDate.
+- Schedule: pg_cron job `drip-daily-2000-et`, expression `0 0 * * *` UTC, which is 20:00 America/New_York during Eastern Daylight Time. The job body carries a date guard so the first run is 2026-08-20 Eastern.
+- Inspect with `select * from cron.job` and `select * from cron.job_run_details order by start_time desc`. Disable with `select cron.unschedule('drip-daily-2000-et')`.

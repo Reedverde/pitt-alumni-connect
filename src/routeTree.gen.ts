@@ -29,6 +29,7 @@ import { Route as ApiPublicEventDoticsRouteImport } from './routes/api/public/ev
 import { Route as ApiPublicHeadcountRouteImport } from './routes/api/public/headcount'
 import { Route as ApiPublicResendWebhookRouteImport } from './routes/api/public/resend-webhook'
 import { Route as ApiPublicUnsubscribeRouteImport } from './routes/api/public/unsubscribe'
+import { Route as ApiPublicHooksDripCronTickRouteImport } from './routes/api/public/hooks/drip-cron-tick'
 import { Route as ApiPublicHooksNewsCronRouteImport } from './routes/api/public/hooks/news-cron'
 import { Route as ApiPublicPhotoSplatRouteImport } from './routes/api/public/photo/$'
 
@@ -131,6 +132,12 @@ const ApiPublicUnsubscribeRoute = ApiPublicUnsubscribeRouteImport.update({
   path: '/api/public/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksDripCronTickRoute =
+  ApiPublicHooksDripCronTickRouteImport.update({
+    id: '/api/public/hooks/drip-cron-tick',
+    path: '/api/public/hooks/drip-cron-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksNewsCronRoute = ApiPublicHooksNewsCronRouteImport.update({
   id: '/api/public/hooks/news-cron',
   path: '/api/public/hooks/news-cron',
@@ -162,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/api/public/headcount': typeof ApiPublicHeadcountRoute
   '/api/public/resend-webhook': typeof ApiPublicResendWebhookRoute
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
+  '/api/public/hooks/drip-cron-tick': typeof ApiPublicHooksDripCronTickRoute
   '/api/public/hooks/news-cron': typeof ApiPublicHooksNewsCronRoute
   '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
@@ -185,6 +193,7 @@ export interface FileRoutesByTo {
   '/api/public/headcount': typeof ApiPublicHeadcountRoute
   '/api/public/resend-webhook': typeof ApiPublicResendWebhookRoute
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
+  '/api/public/hooks/drip-cron-tick': typeof ApiPublicHooksDripCronTickRoute
   '/api/public/hooks/news-cron': typeof ApiPublicHooksNewsCronRoute
   '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
@@ -210,6 +219,7 @@ export interface FileRoutesById {
   '/api/public/headcount': typeof ApiPublicHeadcountRoute
   '/api/public/resend-webhook': typeof ApiPublicResendWebhookRoute
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
+  '/api/public/hooks/drip-cron-tick': typeof ApiPublicHooksDripCronTickRoute
   '/api/public/hooks/news-cron': typeof ApiPublicHooksNewsCronRoute
   '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
@@ -235,6 +245,7 @@ export interface FileRouteTypes {
     | '/api/public/headcount'
     | '/api/public/resend-webhook'
     | '/api/public/unsubscribe'
+    | '/api/public/hooks/drip-cron-tick'
     | '/api/public/hooks/news-cron'
     | '/api/public/photo/$'
   fileRoutesByTo: FileRoutesByTo
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/api/public/headcount'
     | '/api/public/resend-webhook'
     | '/api/public/unsubscribe'
+    | '/api/public/hooks/drip-cron-tick'
     | '/api/public/hooks/news-cron'
     | '/api/public/photo/$'
   id:
@@ -282,6 +294,7 @@ export interface FileRouteTypes {
     | '/api/public/headcount'
     | '/api/public/resend-webhook'
     | '/api/public/unsubscribe'
+    | '/api/public/hooks/drip-cron-tick'
     | '/api/public/hooks/news-cron'
     | '/api/public/photo/$'
   fileRoutesById: FileRoutesById
@@ -305,6 +318,7 @@ export interface RootRouteChildren {
   ApiPublicHeadcountRoute: typeof ApiPublicHeadcountRoute
   ApiPublicResendWebhookRoute: typeof ApiPublicResendWebhookRoute
   ApiPublicUnsubscribeRoute: typeof ApiPublicUnsubscribeRoute
+  ApiPublicHooksDripCronTickRoute: typeof ApiPublicHooksDripCronTickRoute
   ApiPublicHooksNewsCronRoute: typeof ApiPublicHooksNewsCronRoute
   ApiPublicPhotoSplatRoute: typeof ApiPublicPhotoSplatRoute
 }
@@ -451,6 +465,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/drip-cron-tick': {
+      id: '/api/public/hooks/drip-cron-tick'
+      path: '/api/public/hooks/drip-cron-tick'
+      fullPath: '/api/public/hooks/drip-cron-tick'
+      preLoaderRoute: typeof ApiPublicHooksDripCronTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/news-cron': {
       id: '/api/public/hooks/news-cron'
       path: '/api/public/hooks/news-cron'
@@ -500,6 +521,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHeadcountRoute: ApiPublicHeadcountRoute,
   ApiPublicResendWebhookRoute: ApiPublicResendWebhookRoute,
   ApiPublicUnsubscribeRoute: ApiPublicUnsubscribeRoute,
+  ApiPublicHooksDripCronTickRoute: ApiPublicHooksDripCronTickRoute,
   ApiPublicHooksNewsCronRoute: ApiPublicHooksNewsCronRoute,
   ApiPublicPhotoSplatRoute: ApiPublicPhotoSplatRoute,
 }
