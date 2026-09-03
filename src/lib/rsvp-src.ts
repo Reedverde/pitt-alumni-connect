@@ -29,7 +29,15 @@ export const RSVP_SOURCE_LABELS: Record<string, string> = {
   x: "X",
   esn: "esnultimate.org",
   qr: "QR code",
+  // Retired values. Not writable, label only, so historical rows still read as
+  // words in admin reporting instead of a raw slug.
+  groupme_a: "GroupMe (retired split, A side)",
+  groupme_b: "GroupMe (retired split, B side)",
+  groupme_alumni: "GroupMe (retired, alumni group)",
+  groupme_all: "GroupMe (retired, all group)",
+  website: "Website (retired)",
 };
+
 
 
 export function rsvpSourceLabel(src: string | null): string {
