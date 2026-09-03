@@ -149,7 +149,10 @@ async function loadContext(): Promise<Context> {
     });
     emails.set(pid, list);
   }
-  return { placement, stints, rsvp, verified, hasIdentity, emails };
+  const { loadEventAnswersByPerson } = await import("./event-rsvp.server");
+  const eventAnswers = await loadEventAnswersByPerson();
+  return { placement, stints, rsvp, verified, hasIdentity, emails, eventAnswers };
+
 }
 
 function decorate(person: PersonRow, ctx: Context, label: string | null): AdminPerson {
