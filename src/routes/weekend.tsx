@@ -582,6 +582,8 @@ function EventTile({
           </a>
         </div>
       )}
+      <EventCardAnswer eventId={event.id} eventTitle={event.title} />
     </NotchedBox>
   );
 }
+
