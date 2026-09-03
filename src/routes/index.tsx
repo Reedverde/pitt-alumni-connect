@@ -654,6 +654,14 @@ function Hero({
           </h1>
         )}
 
+        {/* The starburst seal rides the top right corner, clear of the headline. */}
+        <img
+          src={firstTwoWeeksSeal.url}
+          alt="First two weeks of October, every year"
+          className="pointer-events-none absolute right-4 top-4 z-10 select-none md:right-8 md:top-8"
+          style={{ width: "clamp(90px, 13vw, 180px)", height: "auto" }}
+        />
+
         {/* The photograph rises out of the bottom edge, spanning the full width of the hero. */}
         <img
           src={heroPeak.url}
