@@ -300,7 +300,31 @@ function EditRow({ person, onSaved }: { person: AdminPerson; onSaved: () => void
           </button>
         </div>
 
+        <div className="mt-5">
+          <p className="label-caps" style={{ color: "var(--sterling)" }}>
+            Event answers
+          </p>
+          {person.event_answers.length === 0 ? (
+            <p className="mt-1" style={{ fontSize: 13, color: "var(--sterling)" }}>
+              {person.state === "going"
+                ? "Going, but has not answered on the BBQ or the Alumni Game yet."
+                : "Not asked. Event answers are only requested from people who are going."}
+            </p>
+          ) : (
+            <ul className="mt-1 flex flex-wrap gap-4">
+              {person.event_answers.map((a) => (
+                <li key={a.event_id} style={{ fontSize: 13, color: "var(--steel-ink)" }}>
+                  {a.label}:{" "}
+                  <strong>{a.status === "yes" ? "Yes" : "No"}</strong>
+                  {a.status === "yes" && a.party_size > 1 ? ` (${a.party_size} heads)` : ""}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <StintEditor personId={person.id} />
+
       </td>
     </tr>
   );
