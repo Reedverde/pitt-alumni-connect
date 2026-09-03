@@ -172,6 +172,8 @@ function decorate(person: PersonRow, ctx: Context, label: string | null): AdminP
   return {
     ...person,
     emails: ctx.emails.get(person.id) ?? [],
+    event_answers: ctx.eventAnswers.get(person.id) ?? [],
+
     board_year: place?.board_year ?? person.grad_year,
     board_division: place?.board_division ?? person.seed_division,
     team_label: label,
