@@ -148,12 +148,41 @@ const BUILDER_KEYS = new Set([
   "t_minus_2",
   "t_plus_3",
   "discord_invite",
+  "event_rsvp_prompt",
 ]);
+
+type Shared = {
+  schedule: string[];
+  dates: string;
+  editionYear: number;
+  /** person id -> prompt event labels they have not answered yet. */
+  pendingEvents: Map<string, string[]>;
+};
+
+/** Which prompt events each person still owes an answer on. Answering yes or no
+ *  removes the event from their list for good, so a reminder never repeats for
+ *  an event that has an answer of any kind. */
+async function loadPendingEvents(): Promise<Map<string, string[]>> {
+  const events = await loadPromptEvents();
+  const answered = await loadEventAnswersByPerson();
+  const all = events.map((e) => e.label);
+  const pending = new Map<string, string[]>();
+  for (const [pid, list] of answered) {
+    const done = new Set(list.map((a) => a.event_id));
+    pending.set(
+      pid,
+      events.filter((e) => !done.has(e.id)).map((e) => e.label),
+    );
+  }
+  // Anyone with no rows at all owes every event; represented by the default.
+  pending.set("__all__", all);
+  return pending;
+}
 
 async function buildFor(
   key: string,
   person: { id: string; name: string },
-  shared: { schedule: string[]; dates: string; editionYear: number },
+  shared: Shared,
 ): Promise<Built> {
   const name = person.name;
   switch (key) {
@@ -168,6 +197,13 @@ async function buildFor(
       const body = buildTMinus28Body({ name, cohort });
       if (!body) return null;
       return { subject: tMinus28Subject(cohort.year ?? shared.editionYear), ...body };
+    }
+    case "event_rsvp_prompt": {
+      const pending =
+        shared.pendingEvents.get(person.id) ?? shared.pendingEvents.get("__all__") ?? [];
+      const body = buildEventRsvpPromptBody({ name, pending });
+      if (!body) return null;
+      return { subject: EVENT_RSVP_PROMPT_SUBJECT, ...body };
     }
     case "t_minus_7":
       return { subject: T_MINUS_7_SUBJECT, ...buildTMinus7Body({ name }) };
@@ -186,6 +222,7 @@ async function buildFor(
       return null;
   }
 }
+
 
 export type DispatchSkips = {
   already_sent: number;
