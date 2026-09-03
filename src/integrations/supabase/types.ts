@@ -372,6 +372,75 @@ export type Database = {
         }
         Relationships: []
       }
+      event_rsvps: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          party_size: number
+          person_id: string
+          responded_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          party_size?: number
+          person_id: string
+          responded_at?: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          party_size?: number
+          person_id?: string
+          responded_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_rsvps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_rsvps_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_rsvps_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_rsvps_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_rsvps_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
       events: {
         Row: {
           day_number: number | null
