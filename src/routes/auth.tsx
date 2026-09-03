@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { finalizeLogin } from "@/lib/account.functions";
+import { clearAuthReturnTo, readAuthReturnTo } from "@/lib/event-intent";
+
 import { requestSignInLink } from "@/lib/signin.functions";
 import { useEditionEyebrow } from "@/lib/useEdition";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
