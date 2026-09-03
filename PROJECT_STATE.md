@@ -86,7 +86,7 @@ An alumni portal for four Pitt Club Ultimate programs. Its first job is collecti
 
 **Hotel named.** Hilton Garden Inn Pittsburgh University Place, 3454 Forbes Ave, Oakland. No block, no group rate. Appears both as the `HotelBlock` on /weekend and in `editions.lodging_note`, which was updated tonight. Schenley Overlook Shelter street address: 10430 Overlook Dr. Directions links added for the shelter, Ambrose Urbanic Field, and the hotel.
 
-**Both GroupMe links received** after five asks. `groupme_b` Swagger Jacked, alumni only: https://groupme.com/join_group/25525883/XmguKcz4. `groupme_a` The Program, alumni and current: https://groupme.com/join_group/87254367/OrOti41l. Legacy bare `groupme` source value was retired and existing rows now read as null or were backfilled to the appropriate label where known.
+**Both GroupMe links received** after five asks. `groupme_b` Swagger Jacked, alumni only: https://groupme.com/join_group/25525883/XmguKcz4. `groupme_a` The Program, alumni and current: https://groupme.com/join_group/87254367/OrOti41l. Legacy bare `groupme` source value was retired and existing rows now read as null or were backfilled to the appropriate label where known. Addendum 2026-09-03: superseded, see 2026-08-07 section, now a single shared link per current instruction.
 
 **1978 question RESOLVED.** Brody's season page shows the 1977-1978 Pitt Fastbacks, organised by Randy Strausser via fliers on telephone poles. `team_names` now carries `Fastbacks` for 1978-1978 with confidence verified, and `Pitt Club Ultimate` for 1979-1997 as an explicit unknown placeholder to provoke corrections. Randy Strausser's 1978 `MENS_A` stint role is now `captain`.
 
@@ -351,7 +351,7 @@ OTHER SHIPPED TODAY
 - New unlisted route `/qr`, a printable QR poster encoding the board with `src=qr`. Black on white, generated in bundle, print stylesheet.
 - Map Directions links added for Schenley Overlook Shelter, Ambrose Urbanic Field, and the Hilton. Schenley address `10430 Overlook Dr` now shown.
 - Hotel named: Hilton Garden Inn Pittsburgh University Place, 3454 Forbes Ave. No room block, no group rate.
-- Both GroupMe links received. `groupme_a` is The Program, alumni and current. `groupme_b` is Swagger Jacked, alumni only. Legacy names kept deliberately.
+- **GroupMe consolidated to a single shared link.** The groupme_a/groupme_b split described here on 2026-08-07 is superseded by current instruction: GroupMe is treated as one platform with one shared link, not two. The rsvps.src constraint and any UI still referencing groupme_a/groupme_b need updating to a single `groupme` value. Not yet executed in code as of this note, tracked as a follow-up.
 - `team_names`: Fastbacks 1978 to 1978 verified. Pitt Club Ultimate 1979 to 1997 confidence unknown, a deliberate placeholder to provoke corrections, not history. Randy Strausser's 1978 stint set to `captain`.
 - 1978 question RESOLVED. Brody's season page shows the 1977-1978 Pitt Fastbacks, organised by Randy Strausser via fliers on telephone poles.
 - Duplicate detection: last name is now a hard gate at 0.85 evaluated first, exact match required for surnames under 5 characters.
@@ -550,3 +550,12 @@ news item published, no Discord request attempted, no email sequence touched.
 - Every sequence attempt writes one `audit_log` row: action `drip_cron_tick`, `table_name` sequences, `record_id` the sequence id, after jsonb carrying sequenceKey, sent, failed, skips, refusalReason, error, targetDate, runDate.
 - Schedule: pg_cron job `drip-daily-2000-et`, expression `0 0 * * *` UTC, which is 20:00 America/New_York during Eastern Daylight Time. The job body carries a date guard so the first run is 2026-08-20 Eastern.
 - Inspect with `select * from cron.job` and `select * from cron.job_run_details order by start_time desc`. Disable with `select cron.unschedule('drip-daily-2000-et')`.
+
+## 2026-09-03 Correction: hotel and GroupMe status re-confirmed
+
+No code changed in this pass. Two facts were re-verified against this file after being misstated in conversation:
+
+- The hotel (Hilton Garden Inn Pittsburgh University Place) has been named, shipped to HotelBlock and editions.lodging_note, and live since 2026-08-07. It should never again be treated as an open item.
+- GroupMe is a single shared platform link per current instruction, not two separate links. The groupme_a/groupme_b values in this file predate that decision and are marked superseded above; the actual rsvps.src constraint and UI labels still need a follow-up migration to collapse to one `groupme` value, this has not been done yet.
+
+Also noted: app_settings has no event_start_date key. The real mechanism for computing T-minus offsets is editions.starts_on on the current edition row, read by the drip cron (see DRIP DAILY CRON section above). A row was added to app_settings today with key event_start_date value 2026-10-02 and a sequences row event_rsvp_prompt at offset_days -25, outside of this repo's actual dispatch mechanism. These may be redundant or dead relative to editions.starts_on and should be reviewed against the real schema before being relied on, rather than assumed live.
