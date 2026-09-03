@@ -74,8 +74,17 @@ function CallbackPage() {
     } catch {
       /* linking is best effort; /me resolves the session either way */
     }
+    // Back to the page they started on, when there was one, so a tap made
+    // before signing in can be applied without a second tap.
+    const back = readAuthReturnTo();
+    clearAuthReturnTo();
+    if (back) {
+      window.location.assign(back);
+      return;
+    }
     await navigate({ to: "/me" });
   }, [navigate, runFinalize, tokenHash, type]);
+
 
   useEffect(() => {
     if (started.current) return;
