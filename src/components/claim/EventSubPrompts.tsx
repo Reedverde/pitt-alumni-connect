@@ -4,22 +4,23 @@ import { useServerFn } from "@tanstack/react-start";
 import { getPromptEvents, submitEventRsvps, type PromptEventDto } from "@/lib/event-rsvp.functions";
 import { primaryButton, secondaryButton } from "./ui";
 
-const choice = (active: boolean): React.CSSProperties => ({
-  fontFamily: '"Space Grotesk", sans-serif',
-  fontSize: 13,
-  fontWeight: 700,
-  textTransform: "uppercase",
-  letterSpacing: "0.08em",
-  borderRadius: 7,
-  padding: "9px 16px",
-  border: `1px solid ${active ? "var(--pitt-royal)" : "var(--chalk)"}`,
-  background: active ? "var(--pitt-royal)" : "transparent",
-  color: active ? "var(--pure-white)" : "var(--steel-ink)",
-});
+/** Genuine three states. Unanswered is its own value, never a silent default. */
+type TriState = "unanswered" | "yes" | "no";
+const SLIDER_VALUE: Record<TriState, number> = { no: 0, unanswered: 1, yes: 2 };
+const VALUE_STATE: TriState[] = ["no", "unanswered", "yes"];
+const STATE_WORDS: Record<TriState, string> = {
+  no: "No, not attending this event",
+  unanswered: "No answer yet",
+  yes: "Yes, attending this event",
+};
 
-/** Shown only to someone who just said they are going. Two small questions,
- *  both skippable: the weekend answer is already saved and must never be made
- *  to feel conditional on these. */
+/**
+ * Shown only to someone who just said they are going. Each event gets a real
+ * three position slider: No, unanswered (center, the default), Yes. Gold is
+ * reserved for the Yes position because gold means attending and nothing
+ * else. Both questions are skippable: the weekend answer is already saved and
+ * must never be made to feel conditional on these.
+ */
 export function EventSubPrompts({
   personId,
   onDone,
@@ -31,7 +32,8 @@ export function EventSubPrompts({
   const save = useServerFn(submitEventRsvps);
 
   const [events, setEvents] = useState<PromptEventDto[] | null>(null);
-  const [answers, setAnswers] = useState<Record<string, "yes" | "no">>({});
+  const [answers, setAnswers] = useState<Record<string, TriState>>({});
+  const [partySizes, setPartySizes] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -55,7 +57,12 @@ export function EventSubPrompts({
 
   if (!events || events.length === 0) return null;
 
-  const answeredCount = Object.keys(answers).length;
+  const answeredCount = Object.values(answers).filter((a) => a !== "unanswered").length;
+
+  const setState = (eventId: string, next: TriState) => {
+    setAnswers((prev) => ({ ...prev, [eventId]: next }));
+    if (next !== "yes") setPartySizes((prev) => ({ ...prev, [eventId]: 1 }));
+  };
 
   const submit = async () => {
     setBusy(true);
@@ -63,11 +70,13 @@ export function EventSubPrompts({
       await save({
         data: {
           personId,
-          answers: Object.entries(answers).map(([eventId, status]) => ({
-            eventId,
-            status,
-            partySize: 1,
-          })),
+          answers: Object.entries(answers)
+            .filter((entry): entry is [string, "yes" | "no"] => entry[1] !== "unanswered")
+            .map(([eventId, status]) => ({
+              eventId,
+              status,
+              partySize: status === "yes" ? (partySizes[eventId] ?? 1) : 1,
+            })),
         },
       });
     } catch {
@@ -83,33 +92,122 @@ export function EventSubPrompts({
         Two of the weekend's pieces need their own headcount. A no is just as useful as a yes.
       </p>
 
-      <div className="mt-5 flex flex-col gap-5">
-        {events.map((e) => (
-          <div key={e.id}>
-            <p style={{ fontSize: 15, color: "var(--sabah-black)", fontWeight: 600 }}>{e.title}</p>
-            {e.location ? (
-              <p className="mt-0.5" style={{ fontSize: 13, color: "var(--sterling)" }}>
-                {e.location}
-              </p>
-            ) : null}
-            <div className="mt-2 flex gap-2">
-              <button
-                type="button"
-                style={choice(answers[e.id] === "yes")}
-                onClick={() => setAnswers((prev) => ({ ...prev, [e.id]: "yes" }))}
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                style={choice(answers[e.id] === "no")}
-                onClick={() => setAnswers((prev) => ({ ...prev, [e.id]: "no" }))}
-              >
-                No
-              </button>
+      <div className="mt-5 flex flex-col gap-6">
+        {events.map((e) => {
+          const state = answers[e.id] ?? "unanswered";
+          const party = partySizes[e.id] ?? 1;
+          return (
+            <div key={e.id}>
+              <p style={{ fontSize: 15, color: "var(--sabah-black)", fontWeight: 600 }}>{e.title}</p>
+              {e.location ? (
+                <p className="mt-0.5" style={{ fontSize: 13, color: "var(--sterling)" }}>
+                  {e.location}
+                </p>
+              ) : null}
+
+              <div className="mt-3">
+                <input
+                  type="range"
+                  min={0}
+                  max={2}
+                  step={1}
+                  value={SLIDER_VALUE[state]}
+                  aria-label={`${e.title}: ${STATE_WORDS[state]}`}
+                  aria-valuetext={STATE_WORDS[state]}
+                  onChange={(ev) => setState(e.id, VALUE_STATE[Number(ev.target.value)] ?? "unanswered")}
+                  style={{
+                    width: "100%",
+                    height: 28,
+                    cursor: "pointer",
+                    accentColor:
+                      state === "yes"
+                        ? "var(--pitt-gold)"
+                        : state === "no"
+                          ? "var(--steel-ink)"
+                          : "var(--chalk)",
+                  }}
+                />
+                <div
+                  className="label-caps flex items-baseline justify-between"
+                  aria-hidden="true"
+                  style={{ marginTop: 2 }}
+                >
+                  <span style={{ color: state === "no" ? "var(--steel-ink)" : "var(--sterling)", fontWeight: state === "no" ? 700 : 400 }}>
+                    No
+                  </span>
+                  <span style={{ color: "var(--sterling)", fontWeight: state === "unanswered" ? 700 : 400 }}>
+                    {state === "unanswered" ? "No answer yet" : "Not answered"}
+                  </span>
+                  <span style={{ color: state === "yes" ? "var(--sabah-black)" : "var(--sterling)", fontWeight: state === "yes" ? 700 : 400 }}>
+                    Yes
+                  </span>
+                </div>
+              </div>
+
+              {state === "yes" && (
+                <div className="mt-3 flex items-center gap-3">
+                  <span className="label-caps" style={{ color: "var(--sterling)" }}>
+                    Including you, how many?
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      aria-label={`Fewer people for ${e.title}`}
+                      disabled={party <= 1}
+                      onClick={() => setPartySizes((prev) => ({ ...prev, [e.id]: Math.max(1, party - 1) }))}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 7,
+                        border: "1px solid var(--chalk)",
+                        background: "var(--pure-white)",
+                        color: "var(--steel-ink)",
+                        fontSize: 15,
+                        lineHeight: 1,
+                        cursor: party <= 1 ? "default" : "pointer",
+                        opacity: party <= 1 ? 0.4 : 1,
+                      }}
+                    >
+                      −
+                    </button>
+                    <span
+                      aria-live="polite"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 15,
+                        color: "var(--sabah-black)",
+                        minWidth: 20,
+                        textAlign: "center",
+                      }}
+                    >
+                      {party}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label={`More people for ${e.title}`}
+                      disabled={party >= 10}
+                      onClick={() => setPartySizes((prev) => ({ ...prev, [e.id]: Math.min(10, party + 1) }))}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 7,
+                        border: "1px solid var(--chalk)",
+                        background: "var(--pure-white)",
+                        color: "var(--steel-ink)",
+                        fontSize: 15,
+                        lineHeight: 1,
+                        cursor: party >= 10 ? "default" : "pointer",
+                        opacity: party >= 10 ? 0.4 : 1,
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="mt-6 flex items-center gap-3">
