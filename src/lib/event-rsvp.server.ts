@@ -83,7 +83,13 @@ export async function submitEventRsvpsServer(input: {
     .eq("person_id", input.personId)
     .eq("event_year", edition.event_year)
     .maybeSingle();
-  if (!rsvp || rsvp.status !== "going") return { ok: false, written: 0 };
+  const going = rsvp?.status === "going";
+  // A yes to a piece of the weekend is only meaningful from someone who is
+  // going. A no carries no contradiction, so it is accepted from anyone: the
+  // event cards let a maybe rule an event out without changing the weekend.
+  if (!going && (input.answers ?? []).some((a) => a.status !== "no"))
+    return { ok: false, written: 0 };
+
 
   const allowed = new Set((await loadPromptEvents()).map((e) => e.id));
   let written = 0;
