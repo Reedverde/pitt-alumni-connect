@@ -2,17 +2,9 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
 import { getPromptEvents, submitEventRsvps, type PromptEventDto } from "@/lib/event-rsvp.functions";
+import { EventAnswerToggle, type TriState } from "@/components/events/EventAnswerToggle";
 import { primaryButton, secondaryButton } from "./ui";
 
-/** Genuine three states. Unanswered is its own value, never a silent default. */
-type TriState = "unanswered" | "yes" | "no";
-const SLIDER_VALUE: Record<TriState, number> = { no: 0, unanswered: 1, yes: 2 };
-const VALUE_STATE: TriState[] = ["no", "unanswered", "yes"];
-const STATE_WORDS: Record<TriState, string> = {
-  no: "No, not attending this event",
-  unanswered: "No answer yet",
-  yes: "Yes, attending this event",
-};
 
 /**
  * Shown only to someone who just said they are going. Each event gets a real
