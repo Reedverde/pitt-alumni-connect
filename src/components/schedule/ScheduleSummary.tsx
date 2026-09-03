@@ -6,6 +6,8 @@ import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { NotchedBox } from "@/components/media/NotchedBox";
 import { NOTCH_LG, NOTCH_SM, type NotchCorner } from "@/components/media/notch";
 import { DivisionMark } from "@/components/schedule/DivisionMark";
+import { EventCardAnswer } from "@/components/events/EventCardAnswer";
+
 import { dayLabel, dayName, editionDay, type EditionSummary } from "@/lib/edition-format";
 import type { ScheduleEvent } from "@/lib/schedule.functions";
 
@@ -103,9 +105,11 @@ function EventTile({
           {event.notes}
         </p>
       )}
+      <EventCardAnswer eventId={event.id} eventTitle={event.title} />
     </NotchedBox>
   );
 }
+
 
 /** Condensed schedule for the homepage. Same rules as /weekend: whole-program
  *  events run full width with a gold left border, division events sit in

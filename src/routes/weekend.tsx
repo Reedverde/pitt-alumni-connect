@@ -24,6 +24,8 @@ import { PhotoSlot } from "@/components/media/PhotoSlot";
 import { NotchedBox } from "@/components/media/NotchedBox";
 import { NOTCH_ALL, NOTCH_LG, NOTCH_SM, type NotchCorner } from "@/components/media/notch";
 import { DivisionMark } from "@/components/schedule/DivisionMark";
+import { EventCardAnswer } from "@/components/events/EventCardAnswer";
+
 import { ClosingCta } from "@/components/claim/ClosingCta";
 import { ClaimDialog } from "@/components/claim/ClaimDialog";
 import { DiscordCta } from "@/components/DiscordCta";
@@ -582,6 +584,8 @@ function EventTile({
           </a>
         </div>
       )}
+      <EventCardAnswer eventId={event.id} eventTitle={event.title} />
     </NotchedBox>
   );
 }
+

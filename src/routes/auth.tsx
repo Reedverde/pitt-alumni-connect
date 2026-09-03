@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { finalizeLogin } from "@/lib/account.functions";
+import { clearAuthReturnTo, readAuthReturnTo } from "@/lib/event-intent";
+
 import { requestSignInLink } from "@/lib/signin.functions";
 import { useEditionEyebrow } from "@/lib/useEdition";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
@@ -61,6 +63,14 @@ function AuthPage() {
       } catch {
         /* linking is best effort; the profile page handles the rest */
       }
+      // Someone who started on a page (an event toggle, say) goes back there
+      // so the tap they already made can be applied without a second one.
+      const back = readAuthReturnTo();
+      clearAuthReturnTo();
+      if (back) {
+        window.location.assign(back);
+        return;
+      }
       navigate({ to: "/me" });
     };
     void finish();
@@ -69,6 +79,7 @@ function AuthPage() {
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate, runFinalize]);
+
 
   const sendLink = async (e: React.FormEvent) => {
     e.preventDefault();
