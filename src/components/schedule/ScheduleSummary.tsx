@@ -103,9 +103,11 @@ function EventTile({
           {event.notes}
         </p>
       )}
+      <EventCardAnswer eventId={event.id} eventTitle={event.title} />
     </NotchedBox>
   );
 }
+
 
 /** Condensed schedule for the homepage. Same rules as /weekend: whole-program
  *  events run full width with a gold left border, division events sit in
