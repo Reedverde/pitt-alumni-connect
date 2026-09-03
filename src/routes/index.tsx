@@ -18,6 +18,7 @@ import { useSessionPerson } from "@/lib/useSessionPerson";
 import { SiteFooter } from "@/components/SiteFooter";
 import { DiscordCta } from "@/components/DiscordCta";
 import heroPeak from "@/assets/hero-peak.png.asset.json";
+import firstTwoWeeksSeal from "@/assets/first-two-weeks-seal.png.asset.json";
 import { NotchedBox } from "@/components/media/NotchedBox";
 import { NOTCH_ALL } from "@/components/media/notch";
 import { YearPhoto, cornersForRow } from "@/components/board/YearPhoto";
