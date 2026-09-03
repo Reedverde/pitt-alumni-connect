@@ -5,6 +5,7 @@ import { editionDateRange } from "./edition-format";
 import { partySizeLink } from "./party-token.server";
 import {
   DISCORD_INVITE_SUBJECT,
+  EVENT_RSVP_PROMPT_SUBJECT,
   HOTEL_REMINDER_SUBJECT,
   T_MINUS_10_SUBJECT,
   T_MINUS_14_SUBJECT,
@@ -13,6 +14,7 @@ import {
   T_MINUS_7_SUBJECT,
   T_PLUS_3_SUBJECT,
   buildDiscordInviteBody,
+  buildEventRsvpPromptBody,
   buildHotelReminderBody,
   buildTMinus10Body,
   buildTMinus14Body,
@@ -26,6 +28,8 @@ import {
   sendPlainEmail,
   tMinus28Subject,
 } from "./mail.server";
+import { loadEventAnswersByPerson, loadPromptEvents } from "./event-rsvp.server";
+
 
 /** The one derivation of a person's state for the current edition. */
 export type PersonState = "unclaimed" | "claimed" | "going" | "maybe" | "not_this_year";
