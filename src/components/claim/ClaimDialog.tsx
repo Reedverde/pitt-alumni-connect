@@ -13,6 +13,7 @@ import { readRsvpSource } from "@/lib/rsvp-src";
 import { useEditionEyebrow } from "@/lib/useEdition";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimStamp } from "./ClaimStamp";
+import { EventSubPrompts } from "./EventSubPrompts";
 import { isStructurallyValidEmail } from "@/lib/email-typos";
 import { EmailSuggestion, FieldLabel, Notice, fieldStyle, primaryButton, secondaryButton } from "./ui";
 
@@ -25,7 +26,7 @@ export type ClaimTarget = {
   team_label: string | null;
 };
 
-type Step = "name" | "status" | "email" | "stamp" | "requested";
+type Step = "name" | "status" | "email" | "events" | "stamp" | "requested";
 
 /** Quiet text link. Never a button, never gold, never equal weight. */
 const quietLink: React.CSSProperties = {
@@ -198,7 +199,12 @@ export function ClaimDialog({
         year: result.person?.board_year ?? selected?.board_year ?? null,
         team: result.person?.team_label ?? selected?.team_label ?? null,
       });
-      setStep("stamp");
+      // Going unlocks the two per event questions. Maybe and no never see them.
+      const pid =
+        ((result.person as { id?: string } | null | undefined)?.id ?? selected?.id ?? null) as
+          | string
+          | null;
+      setStep(status === "going" && pid ? "events" : "stamp");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Try again.");
       setBusy(false);
@@ -238,6 +244,16 @@ export function ClaimDialog({
               <button type="button" style={primaryButton} onClick={onClose}>
                 Done
               </button>
+            </div>
+          </div>
+        ) : step === "events" && claimedPersonId ? (
+          <div>
+            <SlashEyebrow>{eyebrow}</SlashEyebrow>
+            <h2 className="display-30 mt-2" style={{ color: "var(--sabah-black)" }}>
+              You're in. Two quick things.
+            </h2>
+            <div className="mt-4">
+              <EventSubPrompts personId={claimedPersonId} onDone={() => setStep("stamp")} />
             </div>
           </div>
         ) : step === "stamp" && stamp ? (
