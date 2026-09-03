@@ -98,105 +98,15 @@ export function EventSubPrompts({
               ) : null}
 
               <div className="mt-3">
-                <input
-                  type="range"
-                  min={0}
-                  max={2}
-                  step={1}
-                  value={SLIDER_VALUE[state]}
-                  aria-label={`${e.title}: ${STATE_WORDS[state]}`}
-                  aria-valuetext={STATE_WORDS[state]}
-                  onChange={(ev) => setState(e.id, VALUE_STATE[Number(ev.target.value)] ?? "unanswered")}
-                  style={{
-                    width: "100%",
-                    height: 28,
-                    cursor: "pointer",
-                    accentColor:
-                      state === "yes"
-                        ? "var(--pitt-gold)"
-                        : state === "no"
-                          ? "var(--steel-ink)"
-                          : "var(--chalk)",
-                  }}
+                <EventAnswerToggle
+                  eventTitle={e.title}
+                  state={state}
+                  onStateChange={(next) => setState(e.id, next)}
+                  partySize={party}
+                  onPartySizeChange={(size) => setPartySizes((prev) => ({ ...prev, [e.id]: size }))}
                 />
-                <div
-                  className="label-caps flex items-baseline justify-between"
-                  aria-hidden="true"
-                  style={{ marginTop: 2 }}
-                >
-                  <span style={{ color: state === "no" ? "var(--steel-ink)" : "var(--sterling)", fontWeight: state === "no" ? 700 : 400 }}>
-                    No
-                  </span>
-                  <span style={{ color: "var(--sterling)", fontWeight: state === "unanswered" ? 700 : 400 }}>
-                    {state === "unanswered" ? "No answer yet" : "Not answered"}
-                  </span>
-                  <span style={{ color: state === "yes" ? "var(--sabah-black)" : "var(--sterling)", fontWeight: state === "yes" ? 700 : 400 }}>
-                    Yes
-                  </span>
-                </div>
               </div>
 
-              {state === "yes" && (
-                <div className="mt-3 flex items-center gap-3">
-                  <span className="label-caps" style={{ color: "var(--sterling)" }}>
-                    Including you, how many?
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      aria-label={`Fewer people for ${e.title}`}
-                      disabled={party <= 1}
-                      onClick={() => setPartySizes((prev) => ({ ...prev, [e.id]: Math.max(1, party - 1) }))}
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 7,
-                        border: "1px solid var(--chalk)",
-                        background: "var(--pure-white)",
-                        color: "var(--steel-ink)",
-                        fontSize: 15,
-                        lineHeight: 1,
-                        cursor: party <= 1 ? "default" : "pointer",
-                        opacity: party <= 1 ? 0.4 : 1,
-                      }}
-                    >
-                      −
-                    </button>
-                    <span
-                      aria-live="polite"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 15,
-                        color: "var(--sabah-black)",
-                        minWidth: 20,
-                        textAlign: "center",
-                      }}
-                    >
-                      {party}
-                    </span>
-                    <button
-                      type="button"
-                      aria-label={`More people for ${e.title}`}
-                      disabled={party >= 10}
-                      onClick={() => setPartySizes((prev) => ({ ...prev, [e.id]: Math.min(10, party + 1) }))}
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 7,
-                        border: "1px solid var(--chalk)",
-                        background: "var(--pure-white)",
-                        color: "var(--steel-ink)",
-                        fontSize: 15,
-                        lineHeight: 1,
-                        cursor: party >= 10 ? "default" : "pointer",
-                        opacity: party >= 10 ? 0.4 : 1,
-                      }}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           );
         })}
