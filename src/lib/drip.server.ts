@@ -313,11 +313,13 @@ export async function dispatchSequence(opts: {
   if (opts.anchorsFirst) queue.sort((a, b) => Number(b.isAnchor) - Number(a.isAnchor));
 
   const needsSchedule = key === "t_minus_14" || key === "t_minus_2";
-  const shared = {
+  const shared: Shared = {
     schedule: needsSchedule ? await loadScheduleLines() : [],
     dates: editionDateRange(edition),
     editionYear: edition.event_year,
+    pendingEvents: key === "event_rsvp_prompt" ? await loadPendingEvents() : new Map(),
   };
+
 
   const wouldSend: DispatchResult["wouldSend"] = [];
   let sample: DispatchResult["sample"] = null;
