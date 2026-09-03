@@ -1621,6 +1621,66 @@ export async function headcount(): Promise<Headcount> {
   };
 }
 
+export type EventHeadcountRow = {
+  eventId: string;
+  title: string;
+  yes: number;
+  no: number;
+  unanswered: number;
+  heads: number;
+};
+
+/** Per event answers for the two prompt events (BBQ, Alumni Game). The
+ *  unanswered figure is everyone going on the weekend RSVP minus the people
+ *  who answered this event either way. */
+export async function eventHeadcounts(): Promise<EventHeadcountRow[]> {
+  const { loadPromptEvents } = await import("./event-rsvp.server");
+  const events = await loadPromptEvents();
+  const eventYear = await currentEditionYear();
+
+  const [goingRes, answerRes] = await Promise.all([
+    supabaseAdmin
+      .from("rsvps")
+      .select("person_id")
+      .eq("event_year", eventYear)
+      .eq("status", "going"),
+    events.length
+      ? supabaseAdmin
+          .from("event_rsvps")
+          .select("event_id, person_id, status, party_size")
+          .in("event_id", events.map((e) => e.id))
+      : Promise.resolve({ data: [] as { event_id: string; person_id: string; status: string; party_size: number }[] }),
+  ]);
+
+  const going = new Set((goingRes.data ?? []).map((r) => r.person_id as string));
+  const byEvent = new Map<string, { yes: Set<string>; no: Set<string>; heads: number }>();
+
+  for (const row of answerRes.data ?? []) {
+    const bucket = byEvent.get(row.event_id) ?? { yes: new Set<string>(), no: new Set<string>(), heads: 0 };
+    if (row.status === "yes") {
+      bucket.yes.add(row.person_id);
+      bucket.heads += Number(row.party_size ?? 1);
+    } else if (row.status === "no") {
+      bucket.no.add(row.person_id);
+    }
+    byEvent.set(row.event_id, bucket);
+  }
+
+  return events.map((event) => {
+    const bucket = byEvent.get(event.id) ?? { yes: new Set<string>(), no: new Set<string>(), heads: 0 };
+    const answered = new Set([...bucket.yes, ...bucket.no]);
+    const unanswered = [...going].filter((id) => !answered.has(id)).length;
+    return {
+      eventId: event.id,
+      title: event.title,
+      yes: bucket.yes.size,
+      no: bucket.no.size,
+      unanswered,
+      heads: bucket.heads,
+    };
+  });
+}
+
 export type SourceCount = { src: string; label: string; count: number };
 
 export type RsvpBreakdownPerson = {
@@ -1752,6 +1812,7 @@ export type AdminDashboard = {
   divisions: DivisionRow[];
   gaps: DataGaps;
   headcount: Headcount;
+  eventHeadcounts: EventHeadcountRow[];
   digest: DigestCohort[];
   drip: DripData;
   duplicates: DuplicatePair[];
@@ -1765,7 +1826,7 @@ export type AdminDashboard = {
 };
 
 export async function dashboard(): Promise<AdminDashboard> {
-  const [queue, teamRes, divisionRes, gaps, heads, digest, drip, duplicates, archived, editions, sends, totals, sources, breakdown] = await Promise.all([
+  const [queue, teamRes, divisionRes, gaps, heads, eventHeads, digest, drip, duplicates, archived, editions, sends, totals, sources, breakdown] = await Promise.all([
     reviewQueue(),
     supabaseAdmin
       .from("team_names")
@@ -1775,6 +1836,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     supabaseAdmin.from("divisions").select("code, label, sort_order, visible").order("sort_order"),
     dataGaps(),
     headcount(),
+    eventHeadcounts(),
     organizerDigest(),
     dripData(),
     duplicateCandidates(),
@@ -1792,6 +1854,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     divisions: (divisionRes.data ?? []) as DivisionRow[],
     gaps,
     headcount: heads,
+    eventHeadcounts: eventHeads,
     digest,
     drip,
     duplicates,
