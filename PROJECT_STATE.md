@@ -5,7 +5,7 @@
 | # | Module | Intensity | Status |
 |---|--------|-----------|--------|
 | 1 | Stability | Standard | In place: root errorComponent and notFoundComponent, error-capture.ts, error-page.ts, lovable-error-reporting.ts, SSR fallback in server.ts |
-| 2 | Security | Standard | In place: RLS on every table, current_person_id() and is_admin() helpers, service role key server side only, 8 security fixes shipped 2026-07-30, anon email leak on identities closed and verified by impersonating anon and a real non-admin, admin privilege scoped to /admin only. Gap: no standing access-verification script, rsvps.party_size still readable by ordinary signed-in alumni |
+| 2 | Security | Standard | In place: RLS on every table, current_person_id() and is_admin() helpers, service role key server side only, 8 security fixes shipped 2026-07-30, anon email leak on identities closed and verified by impersonating anon and a real non-admin, admin privilege scoped to /admin only. rsvps.party_size is NOT a gap: the rsvps select policy is person_id = current_person_id() OR is_admin(), so row level RLS already limits every column to the owner and admins, verified 2026-09-03, no policy or code change needed. Gap: no standing access-verification script |
 | 3 | Accessibility | Standard | Partial: DESIGN.md sets aria-label on every chip, 2px Pitt Royal focus rings, real checkbox filters, prefers-reduced-motion. Not verified in code |
 | 4 | Data & Backend | Standard | In place: 16 migrations, typed Supabase client, TanStack Query v5, derived board views, real person import complete. 368 people (367 real plus one test account), zero sample- rows remaining, 125 identities, 890 stints. Gap: no women's division rows exist yet, that import is deferred |
 | 5 | Auth & Accounts | Standard | In place: magic link first with Google second, server side link generation via auth admin API, _authenticated route guard, six admins (original three seeded: Reed Verdesoto, Brody Brotman, Nick Kaczmarek) |
@@ -559,3 +559,20 @@ No code changed in this pass. Two facts were re-verified against this file after
 - GroupMe is a single shared platform link per current instruction, not two separate links. The groupme_a/groupme_b values in this file predate that decision and are marked superseded above; the actual rsvps.src constraint and UI labels still need a follow-up migration to collapse to one `groupme` value, this has not been done yet.
 
 Also noted: app_settings has no event_start_date key. The real mechanism for computing T-minus offsets is editions.starts_on on the current edition row, read by the drip cron (see DRIP DAILY CRON section above). A row was added to app_settings today with key event_start_date value 2026-10-02 and a sequences row event_rsvp_prompt at offset_days -25, outside of this repo's actual dispatch mechanism. These may be redundant or dead relative to editions.starts_on and should be reviewed against the real schema before being relied on, rather than assumed live.
+
+
+## 2026-09-03 Event RSVPs, source consolidation, admin count
+
+Three migrations ran, plus code.
+
+**Migration 1, schema and cleanup.** Created `event_rsvps` (person_id, event_id, status yes or no, party_size default 1, responded_at, unique person_id + event_id, owner and admin RLS, grants, updated_at trigger). Deleted the two stale division split alumni game placeholder rows, superseded by the single combined Alumni Game event, nothing referenced them. Deleted the stray `app_settings.event_start_date` row so there is exactly one date mechanism.
+
+**Migration 2, rsvp source consolidation.** One row tagged `groupme_a` was backfilled to `groupme`. No rows existed for `groupme_b`, `groupme_alumni`, `groupme_all` or `website`. `rsvps_src_check` now allows only text, email, discord, groupme, facebook, instagram, x, esn, qr, plus null. `src/lib/rsvp-src.ts` matches, and the split labels are gone from the UI. The GroupMe follow-up flagged on 2026-08-07 is now closed.
+
+**Migration 3, sequence offset.** `sequences.event_rsvp_prompt.offset_days` set to -24, chosen to clear the 7 day global throttle after t_minus_28. The sequence remains `active = false`. Timing is computed the only supported way, `editions.starts_on + offset_days` on the current edition, so it repeats every year with no hardcoded date.
+
+**Gating.** Per event questions are only ever asked of someone whose main rsvp status is `going` for the current edition. Maybe never triggers them. Inline: the claim dialog now shows a BBQ and Alumni Game step immediately after a going answer, skippable, and a failure there never affects the already saved weekend RSVP. Drip fallback: `event_rsvp_prompt` resolves prompt events by title match on the current edition and emails only the unanswered ones. A yes or a no both retire that event for that person for good.
+
+**Admin.** Event answers show inline in the People tab expanded row, joined per person from `event_rsvps`, no separate dashboard. The header copy now says six people share the page, not three.
+
+Nothing was sent. `outbound_email_mode` stayed `transactional_only` and every sequence `active` flag is unchanged.

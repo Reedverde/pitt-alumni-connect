@@ -95,6 +95,8 @@ export type AdminPerson = PersonRow & {
   team_label: string | null;
   stint_count: number;
   state: "unclaimed" | "claimed" | "going" | "maybe" | "not_this_year" | "memorial";
+  /** Per event answers for the current edition, joined from event_rsvps. */
+  event_answers: { event_id: string; label: string; status: "yes" | "no"; party_size: number }[];
 };
 
 type Context = {
@@ -106,7 +108,9 @@ type Context = {
   hasIdentity: Set<string>;
   /** Admin only. Never joined into a public view or a member facing payload. */
   emails: Map<string, AdminEmail[]>;
+  eventAnswers: Map<string, AdminPerson["event_answers"]>;
 };
+
 
 async function loadContext(): Promise<Context> {
   const currentYear = (await loadCurrentEdition()).event_year;
@@ -145,7 +149,10 @@ async function loadContext(): Promise<Context> {
     });
     emails.set(pid, list);
   }
-  return { placement, stints, rsvp, verified, hasIdentity, emails };
+  const { loadEventAnswersByPerson } = await import("./event-rsvp.server");
+  const eventAnswers = await loadEventAnswersByPerson();
+  return { placement, stints, rsvp, verified, hasIdentity, emails, eventAnswers };
+
 }
 
 function decorate(person: PersonRow, ctx: Context, label: string | null): AdminPerson {
@@ -165,6 +172,8 @@ function decorate(person: PersonRow, ctx: Context, label: string | null): AdminP
   return {
     ...person,
     emails: ctx.emails.get(person.id) ?? [],
+    event_answers: ctx.eventAnswers.get(person.id) ?? [],
+
     board_year: place?.board_year ?? person.grad_year,
     board_division: place?.board_division ?? person.seed_division,
     team_label: label,

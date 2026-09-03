@@ -895,7 +895,65 @@ export function buildHotelReminderBody(opts: { name: string }): { text: string; 
   return { text, html };
 }
 
+export const EVENT_RSVP_PROMPT_SUBJECT = "Two more questions about the weekend";
+
+/** The event_rsvp_prompt body: only ever sent to people already going, and only
+ *  for the events they have not answered yet. Returns null when there is
+ *  nothing left to ask, so the dispatcher skips the recipient. */
+export function buildEventRsvpPromptBody(opts: {
+  name: string;
+  pending: string[];
+}): { text: string; html: string } | null {
+  if (opts.pending.length === 0) return null;
+
+  const list =
+    opts.pending.length === 1
+      ? `the ${opts.pending[0]}`
+      : `the ${opts.pending.slice(0, -1).join(", the ")} and the ${opts.pending[opts.pending.length - 1]}`;
+
+  const lines = [
+    "You are down as coming to Alumni Weekend, which is the part that matters. Thank you.",
+    `Two things need headcounts of their own: ${list}. Food, seating and roster sizes are planned off those numbers, so a no is just as useful as a yes.`,
+    "It takes one tap on the board.",
+  ];
+
+  const url = "https://alumni.pittultimate.org/?src=email";
+
+  const text = [
+    `${opts.name},`,
+    "",
+    lines[0],
+    "",
+    lines[1],
+    "",
+    url,
+    "",
+    lines[2],
+    "",
+    "Pitt Club Ultimate Alumni",
+  ].join("\n");
+
+  const html = emailShell(
+    [
+      emailParagraph(`${opts.name},`),
+      emailParagraph(lines[0]),
+      emailParagraph(lines[1]),
+      emailButton(url, "Answer on the board"),
+      emailPlainUrl(url),
+      emailParagraph(lines[2]),
+      emailFooter([
+        "Pitt Club Ultimate Alumni",
+        "You are receiving this because you have a record on the alumni board.",
+      ]),
+    ].join("\n"),
+    "Two quick headcounts for Alumni Weekend.",
+  );
+
+  return { text, html };
+}
+
 export const T_MINUS_7_SUBJECT = "One week out";
+
 
 /** The t_minus_7 body: the direct ask. */
 export function buildTMinus7Body(opts: { name: string }): { text: string; html: string } {

@@ -6,8 +6,7 @@ export const RSVP_SOURCES = [
   "text",
   "email",
   "discord",
-  "groupme_a",
-  "groupme_b",
+  "groupme",
   "facebook",
   "instagram",
   "x",
@@ -17,25 +16,21 @@ export const RSVP_SOURCES = [
 
 export type RsvpSource = (typeof RSVP_SOURCES)[number];
 
-/** Readable labels for admin reporting. Retired keys are kept here so historical
- *  rows still render as words rather than raw values. */
+/** Readable labels for admin reporting. The GroupMe A side and B side split is
+ *  retired: GroupMe is one platform with one shared link, and the single row
+ *  that carried groupme_a was backfilled to groupme on 2026-09-03. */
 export const RSVP_SOURCE_LABELS: Record<string, string> = {
   text: "Text message",
   email: "Email",
   discord: "Discord",
-  groupme_a: "GroupMe (A side)",
-  groupme_b: "GroupMe (B side)",
+  groupme: "GroupMe",
   facebook: "Facebook",
   instagram: "Instagram",
   x: "X",
   esn: "esnultimate.org",
   qr: "QR code",
-  // retired, historical rows only
-  groupme: "GroupMe (retired)",
-  groupme_alumni: "GroupMe alumni (retired)",
-  groupme_all: "GroupMe all (retired)",
-  website: "Website (retired)",
 };
+
 
 export function rsvpSourceLabel(src: string | null): string {
   if (!src) return "unknown";
