@@ -8,6 +8,7 @@ import type {
   DigestCohort,
   DivisionRow,
   DripData,
+  EventHeadcountRow,
   Headcount,
   TeamNameRow,
 } from "@/lib/admin.server";
@@ -211,6 +212,56 @@ export function HeadcountPanel({ headcount }: { headcount: Headcount }) {
         <p className="mt-3" style={{ fontSize: 13, color: "var(--steel-ink)" }}>
           Above Schenley Overlook capacity. Thorne Barn holds more.
         </p>
+      )}
+    </Section>
+  );
+}
+
+/** Per event answers for the two events we ask about individually. Until
+ *  someone answers one of them there is nothing to tabulate, so the panel says
+ *  so rather than showing a table of zeros. */
+export function EventHeadcountPanel({ rows }: { rows: EventHeadcountRow[] }) {
+  const anyAnswers = rows.some((row) => row.yes + row.no > 0);
+
+  return (
+    <Section eyebrow="Per event" title="BBQ and Alumni Game">
+      {rows.length === 0 ? (
+        <Empty>No tracked events on the current edition yet.</Empty>
+      ) : !anyAnswers ? (
+        <Empty>No answers yet for either event.</Empty>
+      ) : (
+        <div className="overflow-x-auto" style={{ borderBottom: hairline }}>
+          <table className="w-full" style={{ borderCollapse: "collapse", minWidth: 520 }}>
+            <thead>
+              <tr>
+                {["Event", "Yes", "No", "Going, no answer", "Heads"].map((h) => (
+                  <th key={h} style={headStyle}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.eventId}>
+                  <td style={cellStyle}>{row.title}</td>
+                  <td style={cellStyle}>
+                    <Num>{row.yes}</Num>
+                  </td>
+                  <td style={cellStyle}>
+                    <Num>{row.no}</Num>
+                  </td>
+                  <td style={cellStyle}>
+                    <Num>{row.unanswered}</Num>
+                  </td>
+                  <td style={cellStyle}>
+                    <Num>{row.heads}</Num>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </Section>
   );

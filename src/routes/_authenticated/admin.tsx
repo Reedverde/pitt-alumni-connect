@@ -15,6 +15,7 @@ import {
   ExportPanel,
   GapsPanel,
   HeadcountPanel,
+  EventHeadcountPanel,
 } from "@/components/admin/Panels";
 import { EditionsPanel } from "@/components/admin/EditionsPanel";
 import { PhotosPanel } from "@/components/admin/PhotosPanel";
@@ -170,6 +171,7 @@ function AdminPage() {
       {active === "schedule" ? (
         <>
           <HeadcountPanel headcount={data.headcount} />
+          <EventHeadcountPanel rows={data.eventHeadcounts} />
           <Section eyebrow="Data confidence" title="What we actually know">
             <DivisionsPanel rows={data.divisions} onSaved={refresh} />
             <ConfidencePanel rows={data.teamNames} onSaved={refresh} />
