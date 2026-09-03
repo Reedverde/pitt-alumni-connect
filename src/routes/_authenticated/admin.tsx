@@ -111,7 +111,7 @@ function AdminPage() {
           Organizer tools
         </h1>
         <p className="mt-2" style={{ fontSize: 13, color: "var(--sterling)" }}>
-          Six people share this page. Every write is logged with your name.{" "}
+          Seven people share this page. Every write is logged with your name.{" "}
           <Link to="/" style={{ color: "var(--pitt-royal)" }}>
             Back to the board
           </Link>
