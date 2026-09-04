@@ -11,6 +11,8 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "../components/ui/sonner";
+import { RsvpDock } from "../components/rsvp/RsvpDock";
+
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { captureRsvpSource } from "../lib/rsvp-src";
 import { SAFE_STORAGE_SNIPPET } from "../lib/safe-storage";
