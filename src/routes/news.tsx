@@ -4,8 +4,7 @@ import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { getPublishedNews } from "@/lib/news.functions";
 import { getWeekendPage } from "@/lib/schedule.functions";
 import { SITE_ORIGIN } from "@/lib/site-url";
-import { SiteNav } from "@/components/SiteNav";
-import { SiteFooter } from "@/components/SiteFooter";
+import { PageShell } from "@/components/layout/PageShell";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { DiscordCta } from "@/components/DiscordCta";
 import { DiscordDayOf } from "@/components/DiscordDayOf";
@@ -147,8 +146,7 @@ function NewsPage() {
   const rollups = data.filter((item) => !isChange(item));
 
   return (
-    <div style={{ background: "var(--field-white)" }} className="min-h-screen">
-      <SiteNav />
+    <PageShell bare>
       <main className="mx-auto w-full max-w-[860px] px-5 pb-20">
         <header className="pt-10 pb-6 md:pt-14">
           <SlashEyebrow>Alumni Weekend · What changed</SlashEyebrow>
@@ -208,7 +206,6 @@ function NewsPage() {
           <DiscordCta />
         </div>
       </main>
-      <SiteFooter />
-    </div>
+    </PageShell>
   );
 }
