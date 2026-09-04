@@ -86,6 +86,22 @@
   --radius: 0.625rem;
   --notch-sm: 16px;
   --notch-lg: 28px;
+
+  /* Chamfer scale. Every diagonal cut in the layout, image or colour plane,
+     uses one of these tiers: cut is the depth of the 45 degree slice, radius
+     softens every vertex of the resulting polygon so no point is razor sharp.
+     Source of truth for components is src/components/media/chamfer.ts; these
+     mirrors exist for CSS-only surfaces. The board's --notch-* values above
+     are the older, separate system and stay as they are. */
+  --chamfer-sm-cut: 20px;
+  --chamfer-sm-radius: 8px;
+  --chamfer-md-cut: 40px;
+  --chamfer-md-radius: 12px;
+  --chamfer-lg-cut: 64px;
+  --chamfer-lg-radius: 16px;
+  --chamfer-hero-cut: 96px;
+  --chamfer-hero-radius: 22px;
+
   --nav-height: 72px;
   --counter-height: 57px;
   --decade-rail-height: 49px;

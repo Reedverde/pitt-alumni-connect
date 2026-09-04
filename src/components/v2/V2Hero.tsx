@@ -3,7 +3,8 @@ import { type HeroRenderArgs } from "@/components/board/BoardExperience";
 import { editionShortDates } from "@/lib/edition-format";
 import firstTwoWeeksSeal from "@/assets/first-two-weeks-seal.png.asset.json";
 import huddle from "@/assets/hero-team-huddle.jpg.asset.json";
-import { RoundedChamferPhoto, CHAMFER_RADIUS } from "@/components/v2/RoundedChamferPhoto";
+import { RoundedChamferPhoto } from "@/components/v2/RoundedChamferPhoto";
+import { RoundedChamferField } from "@/components/media/RoundedChamferBox";
 
 const ctaBase = {
   display: "inline-flex",
@@ -35,6 +36,21 @@ const HUDDLE_POINTS: Array<[number, number]> = [
   [0, 1],
 ];
 
+/** The two supporting planes echo the hero cuts, on the same token scale. */
+const ROYAL_PLANE_POINTS: Array<[number, number]> = [
+  [0.26, 0],
+  [1, 0],
+  [1, 1],
+  [0.08, 1],
+];
+
+const NAVY_PLANE_POINTS: Array<[number, number]> = [
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [0.14, 1],
+];
+
 /**
  * The /v2 hero. One dominant photograph: the team huddle, oversized and pushed
  * to the page edge, cut with aggressive asymmetric chamfers, with royal and
@@ -49,15 +65,14 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
   return (
     <section style={{ background: "var(--sabah-black)" }} className="relative overflow-hidden">
       {/* Royal plane echoing the photograph's top-left diagonal. */}
-      <div
+      <RoundedChamferField
         aria-hidden="true"
         className="pointer-events-none absolute inset-y-0 right-0 hidden md:block"
-        style={{
-          width: "58%",
-          background: "var(--royal-dark)",
-          clipPath: "polygon(26% 0, 100% 0, 100% 100%, 8% 100%)",
-          opacity: 0.55,
-        }}
+        fill="var(--royal-dark)"
+        opacity={0.55}
+        tier="hero"
+        points={ROYAL_PLANE_POINTS}
+        style={{ width: "58%" }}
       />
 
 
@@ -134,15 +149,13 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
         {/* The dominant image, oversized and run to the page edge. */}
         <div className="relative mt-8 md:col-span-7 md:mt-0">
           {/* Navy plane continuing the bottom-right cut. */}
-          <div
+          <RoundedChamferField
             aria-hidden="true"
             className="pointer-events-none absolute -bottom-8 left-[-6%] hidden md:block"
-            style={{
-              width: "46%",
-              height: "34%",
-              background: "var(--pitt-royal)",
-              clipPath: "polygon(0 0, 100% 0, 100% 100%, 14% 100%)",
-            }}
+            fill="var(--pitt-royal)"
+            tier="lg"
+            points={NAVY_PLANE_POINTS}
+            style={{ width: "46%", height: "34%" }}
           />
           <RoundedChamferPhoto
             className="relative md:mr-[-4vw]"
@@ -150,7 +163,7 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
             alt="Pitt players packed into a huddle with fists raised before a point"
             ratio="3 / 2"
             points={HUDDLE_POINTS}
-            radius={CHAMFER_RADIUS.hero}
+            tier="hero"
             position="50% 45%"
             eager
           />
