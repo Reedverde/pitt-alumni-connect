@@ -119,7 +119,7 @@ export const addMeAsPerson = createServerFn({ method: "POST" })
  *  ends and the answer stops moving: no grace period, and the page's read only
  *  state is a courtesy, not the boundary. */
 async function assertRsvpEditable(
-  client: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> },
+  client: SupabaseAuthedClient,
   eventYear: number,
 ) {
   const { data } = await client.rpc("rsvp_is_editable", { _event_year: eventYear });
