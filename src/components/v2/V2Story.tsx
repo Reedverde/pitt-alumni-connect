@@ -40,26 +40,32 @@ const linkButton = {
 
 /** The three weekend photographs: one shared ratio and one shared
  *  rounded-chamfer silhouette, so the row scans as a single set of cuts. */
-const DAY_RATIO = "4 / 3";
-const DAY_NOTCH = 72;
-const DAY_RADIUS = 14;
+const DAY_RATIO = "8 / 3";
+const DAY_NOTCH = 40;
+const DAY_RADIUS = 12;
 
 const DAYS = [
   {
     day: "Friday",
     photo: ALUMNI_WEEKEND.friday,
+    /** Drop the arena ceiling and the empty turf: hold the row of faces. */
+    position: "center 56%",
     summary:
       "Social night. City Kitchen, Pitt at Virginia Tech on the screen, then wherever the night takes us.",
   },
   {
     day: "Saturday",
     photo: ALUMNI_WEEKEND.saturday,
+    /** Group sits high in the frame under open sky. */
+    position: "center 45%",
     summary:
       "The big one. Family BBQ at Schenley Overlook, then Pitt women's soccer that evening.",
   },
   {
     day: "Sunday",
     photo: ALUMNI_WEEKEND.sunday,
+    /** Group sits low, below the treeline and the retaining wall. */
+    position: "center 62%",
     summary: "Currents vs alumni at the Bubble. Play if you want to, watch if you don't.",
   },
 ];
@@ -207,6 +213,7 @@ export function V2Story() {
                   ratio={DAY_RATIO}
                   notch={DAY_NOTCH}
                   radius={DAY_RADIUS}
+                  position={d.position}
                 />
                 <h3
                   className="mt-6"
