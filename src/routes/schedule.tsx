@@ -357,42 +357,7 @@ function WeekendPage() {
   );
 }
 
-/** Two plain-text notes the organizers keep current. Hidden when empty, so an
- *  Not an event. A single place to point people, no room block, no gold. */
-function HotelBlock() {
-  return (
-    <div className="mt-4">
-      <NotchedBox
-        corners={NOTCH_ALL}
-        notch={NOTCH_SM}
-        stroke="var(--chalk)"
-        dashed
-        fill="var(--pure-white)"
-        style={tileStyle}
-      >
-        <p className="label-caps" style={{ color: "var(--sterling)" }}>
-          Where to stay
-        </p>
-        <p className="mt-2 max-w-[560px]" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
-          Hilton Garden Inn Pittsburgh University Place, 3454 Forbes Ave, Oakland. Walking distance to
-          campus and the BBQ. No room block and no group rate, just somewhere to point people. Book
-          direct.
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-4">
-          <a
-            href="https://www.hilton.com/en/hotels/pitucgi-hilton-garden-inn-pittsburgh-university-place/"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={ghostButton}
-          >
-            Book direct
-          </a>
-          <Directions href={HOTEL_MAP_URL} label="Hilton Garden Inn Pittsburgh University Place" />
-        </div>
-      </NotchedBox>
-    </div>
-  );
-}
+/** One of the main weekend actions. Royal, never gold. */
 
 /** One of the main weekend actions. Royal, never gold. */
 function DiscordBlock() {
