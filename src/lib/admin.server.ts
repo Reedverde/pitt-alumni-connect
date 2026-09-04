@@ -2110,13 +2110,36 @@ export async function listEditions(): Promise<EditionRow[]> {
   }));
 }
 
-/** Placeholder lane events are meant to be replaced, so deleting one is routine. */
+/** Placeholder lane events are meant to be replaced, so deleting one is routine.
+ *  A real, dated event disappearing is a cancellation the public needs to see. */
 export async function deleteEditionEvent(actor: string | null, id: string) {
+  const { data: beforeRow } = await supabaseAdmin
+    .from("events")
+    .select("id, title, location, starts_at, time_tbd, is_placeholder")
+    .eq("id", id)
+    .maybeSingle();
   const { error } = await supabaseAdmin.from("events").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  await audit(actor, "edition.delete_event", "events", id, null, null);
-  return { ok: true };
+  await audit(actor, "edition.delete_event", "events", id, (beforeRow as Json) ?? null, null);
+
+  const before = beforeRow as Record<string, unknown> | null;
+  let queuedNews = false;
+  if (before && !before.is_placeholder) {
+    const title = String(before.title ?? "An event");
+    const { addPendingUpdate } = await import("./news.server");
+    const result = await addPendingUpdate({
+      kind: "schedule_cancelled",
+      title: `${title} is off the schedule`,
+      summary: `${title} has been cancelled. Check the Schedule for what is still on.`,
+      category: "Schedule",
+      relatedUrl: `${SITE_ORIGIN}/schedule`,
+      dedupeKey: `event_cancelled:${id}`,
+    });
+    queuedNews = result.created;
+  }
+  return { ok: true, queuedNews };
 }
+
 
 export function defaultEditionDates(eventYear: number) {
   return firstOctoberWeekend(eventYear);
