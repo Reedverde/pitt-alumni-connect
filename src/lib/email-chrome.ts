@@ -178,3 +178,18 @@ export function emailSocialBlock(discordUrl: string) {
 </tr></table>
 <p class="e-url" style="margin:8px 0 0;font-family:${FONT_STACK};font-size:12px;line-height:1.5;word-break:break-all;color:${STERLING}"><a href="${href}" style="color:${ROYAL};text-decoration:underline">${href}</a></p>`;
 }
+
+/** A plain vertical list. Used where naming several things inline would run
+ *  into an unreadable sentence, as with the weekend's five events. */
+export function emailList(items: string[]) {
+  if (items.length === 0) return "";
+  const rows = items
+    .map(
+      (item) =>
+        `<tr><td style="padding:0 0 8px;font-family:${FONT_STACK};font-size:16px;line-height:1.45;color:${INK}">&bull;&nbsp;&nbsp;${escapeHtml(
+          item,
+        )}</td></tr>`,
+    )
+    .join("");
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px"><tbody>${rows}</tbody></table>`;
+}
