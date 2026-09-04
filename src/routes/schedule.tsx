@@ -329,6 +329,9 @@ function WeekendPage() {
                   Nothing scheduled yet for this day.
                 </p>
               )}
+            </section>
+          );
+        })}
 
         <DiscordBlock />
 
