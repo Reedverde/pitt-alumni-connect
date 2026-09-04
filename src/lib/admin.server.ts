@@ -2424,7 +2424,23 @@ export type EditionEventRow = {
   is_placeholder: boolean;
   location: string | null;
   starts_at: string | null;
+  ends_at: string | null;
   notes: string | null;
+  admin_key: string | null;
+  admin_name: string | null;
+  timezone: string;
+  status: string;
+  audience: string;
+  organizer_notes: string | null;
+  map_url: string | null;
+  ticket_url: string | null;
+  prompt_rsvp: boolean;
+  ask_party_size: boolean;
+  critical_mass: number | null;
+  capacity: number | null;
+  published: boolean;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 export type EditionRow = Edition & {
@@ -2440,7 +2456,7 @@ export async function listEditions(): Promise<EditionRow[]> {
     supabaseAdmin
       .from("events")
       .select(
-        "id, event_year, title, day_number, division, time_tbd, is_placeholder, location, starts_at, notes",
+        "id, event_year, title, day_number, division, time_tbd, is_placeholder, location, starts_at, ends_at, notes, admin_key, admin_name, timezone, status, audience, organizer_notes, map_url, ticket_url, prompt_rsvp, ask_party_size, critical_mass, capacity, published, created_at, updated_at",
       )
       .order("day_number")
       .order("sort_order"),
@@ -2458,7 +2474,23 @@ export async function listEditions(): Promise<EditionRow[]> {
       is_placeholder: Boolean((row as { is_placeholder?: boolean }).is_placeholder),
       location: (row.location as string | null) ?? null,
       starts_at: (row.starts_at as string | null) ?? null,
+      ends_at: (row.ends_at as string | null) ?? null,
       notes: (row.notes as string | null) ?? null,
+      admin_key: (row.admin_key as string | null) ?? null,
+      admin_name: (row.admin_name as string | null) ?? null,
+      timezone: (row.timezone as string | null) ?? "America/New_York",
+      status: (row.status as string | null) ?? "tentative",
+      audience: (row.audience as string | null) ?? "everyone",
+      organizer_notes: (row.organizer_notes as string | null) ?? null,
+      map_url: (row.map_url as string | null) ?? null,
+      ticket_url: (row.ticket_url as string | null) ?? null,
+      prompt_rsvp: Boolean((row as { prompt_rsvp?: boolean }).prompt_rsvp),
+      ask_party_size: Boolean((row as { ask_party_size?: boolean }).ask_party_size),
+      critical_mass: (row.critical_mass as number | null) ?? null,
+      capacity: (row.capacity as number | null) ?? null,
+      published: Boolean((row as { published?: boolean }).published),
+      created_at: (row.created_at as string | null) ?? null,
+      updated_at: (row.updated_at as string | null) ?? null,
     });
     byYear.set(y, list);
   }
