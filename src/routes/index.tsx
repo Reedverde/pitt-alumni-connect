@@ -591,16 +591,48 @@ function BoardPage() {
                 : `${flatPeople.length} ${statusPhrase(phraseStatuses)}`}
             </p>
             {flatPeople.length > 0 ? (
-              <div className="mt-4 flex flex-wrap content-start items-start gap-2">
-                {flatPeople.map((person) => (
-                  <NameChip
-                    key={person.id}
-                    person={person}
-                    dimmed={isDimmed(person)}
-                    onClick={openChip}
-                  />
-                ))}
-              </div>
+              chunkByFiveYears ? (
+                <div className="mt-4">
+                  {yearChunks.map((chunk) => (
+                    <div key={chunk.start} className="mt-6 first:mt-0">
+                      <p
+                        className="label-caps"
+                        style={{
+                          fontFamily: '"Space Mono", monospace',
+                          color: "var(--sabah-black)",
+                        }}
+                      >
+                        {chunk.start}–{chunk.start + 4}
+                        <span style={{ color: "var(--sterling)" }}>
+                          {" "}
+                          · {chunk.people.length}
+                        </span>
+                      </p>
+                      <div className="mt-3 flex flex-wrap content-start items-start gap-2">
+                        {chunk.people.map((person) => (
+                          <NameChip
+                            key={person.id}
+                            person={person}
+                            dimmed={isDimmed(person)}
+                            onClick={openChip}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-4 flex flex-wrap content-start items-start gap-2">
+                  {flatPeople.map((person) => (
+                    <NameChip
+                      key={person.id}
+                      person={person}
+                      dimmed={isDimmed(person)}
+                      onClick={openChip}
+                    />
+                  ))}
+                </div>
+              )
             ) : (
               <EmptyPrompt
                 copy={
