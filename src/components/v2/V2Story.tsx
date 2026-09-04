@@ -135,17 +135,6 @@ export function V2Story() {
                   corners={["bl", "tr"]}
                   tier="lg"
                 />
-                <figcaption
-                  className="mt-4"
-                  style={{
-                    fontFamily: '"Space Mono", monospace',
-                    fontSize: 13,
-                    letterSpacing: "0.02em",
-                    color: "var(--steel-ink)",
-                  }}
-                >
-                  The first Pitt team to reach Nationals &middot; 2005
-                </figcaption>
               </figure>
             </div>
           </div>
