@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 
 import { getBoard, type BoardPerson, type BoardPhoto } from "@/lib/board.functions";
-import { getWeekendPage } from "@/lib/schedule.functions";
+
 import { buildYearGroups, claimedCount, type YearGroup } from "@/lib/board-grouping";
 import { rankMatches, tokenizeQuery, TIER_FUZZY, type MatchTier } from "@/lib/name-match";
 import { NameChip } from "@/components/board/NameChip";
@@ -22,7 +22,8 @@ import firstTwoWeeksSeal from "@/assets/first-two-weeks-seal.png.asset.json";
 import { NotchedBox } from "@/components/media/NotchedBox";
 import { NOTCH_ALL } from "@/components/media/notch";
 import { YearPhoto, cornersForRow } from "@/components/board/YearPhoto";
-import { ScheduleSummary, ghostButton, primaryButton } from "@/components/schedule/ScheduleSummary";
+import { ghostButton, primaryButton } from "@/components/schedule/ScheduleSummary";
+import { WeekendColumns } from "@/components/home/WeekendColumns";
 import { SidelineLoop } from "@/components/board/SidelineLoop";
 import { SITE_ORIGIN } from "@/lib/site-url";
 import {
@@ -55,18 +56,10 @@ function pickPhoto(photos: Record<string, BoardPhoto>, years: number[]) {
   return null;
 }
 
-const weekendQuery = queryOptions({
-  queryKey: ["weekend-page"],
-  queryFn: () => getWeekendPage(),
-  staleTime: 60_000,
-});
+const storyBody = { fontSize: 16, color: "var(--steel-ink)", lineHeight: 1.6 } as const;
 
 export const Route = createFileRoute("/")({
-  loader: ({ context }) =>
-    Promise.all([
-      context.queryClient.ensureQueryData(boardQuery),
-      context.queryClient.ensureQueryData(weekendQuery),
-    ]),
+  loader: ({ context }) => context.queryClient.ensureQueryData(boardQuery),
   head: () => ({
     meta: [
       { title: "Pitt Club Ultimate Alumni — Find your year" },
@@ -167,7 +160,6 @@ function flatEmptyCopy(statuses: string[]) {
 
 function BoardPage() {
   const { data } = useSuspenseQuery(boardQuery);
-  const { data: weekend } = useSuspenseQuery(weekendQuery);
   const queryClient = useQueryClient();
   const filters = useMemo(
     () =>
@@ -380,6 +372,48 @@ function BoardPage() {
     <div style={{ background: "var(--field-white)" }} className="board-chrome min-h-screen">
       <SiteNav onClaim={() => openClaim()} />
       <Hero season={season} clock={clock} countdownLive={countdownLive} onClaim={() => openClaim()} />
+
+      <div className="mx-auto w-full max-w-[1080px] px-5">
+        <section className="pt-12">
+          <SlashEyebrow>The climb</SlashEyebrow>
+          <h2 className="display-48 mt-4" style={{ color: "var(--sabah-black)" }}>
+            We came back.
+          </h2>
+          <div className="mt-4 max-w-[560px]">
+            <p style={storyBody}>
+              2025 was the first year since 2004 we missed Nationals. Everyone felt it. Then this
+              year, we made it back.
+            </p>
+            <p className="mt-4" style={storyBody}>
+              That's not a coincidence. It's not one class of seniors. It's every alum who ever
+              showed up to a Sunday scrimmage, made an introduction, sent a "you good?" text to a
+              sophomore having a rough season. The program doesn't run on nostalgia. It runs on
+              people staying in it.
+            </p>
+          </div>
+        </section>
+
+        <section className="pt-14">
+          <SlashEyebrow>Why this weekend</SlashEyebrow>
+          <h2 className="display-30 mt-4" style={{ color: "var(--sabah-black)" }}>
+            You don't stop being Pitt Ultimate. The roster just gets longer.
+          </h2>
+          <div className="mt-4 max-w-[560px]">
+            <p style={storyBody}>
+              Four years on the field, then the rest of it. Alumni Weekend is the one weekend a
+              year everybody's in the same city on purpose, currents and alumni, three teams, every
+              era.
+            </p>
+            <p className="mt-4" style={storyBody}>
+              Come watch the climb. Come meet the sophomore who's about to be someone. Come find
+              out who's hiring.
+            </p>
+          </div>
+        </section>
+
+        <WeekendColumns />
+      </div>
+
       <CounterBar
         claimed={data.totals.claimed}
         going={data.totals.going}
@@ -418,13 +452,6 @@ function BoardPage() {
       )}
 
       <main className="mx-auto w-full max-w-[1320px] px-5 pb-24">
-        {season.edition && (
-          <ScheduleSummary
-            edition={season.edition}
-            events={weekend.events}
-            divisions={data.divisions}
-          />
-        )}
 
         <header id="board" className="chrome-anchor pt-6 pb-8">
           <SlashEyebrow>The board</SlashEyebrow>
