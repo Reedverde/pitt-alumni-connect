@@ -70,3 +70,29 @@ export function clearAuthReturnTo(): void {
     /* nothing to clear */
   }
 }
+
+const CONFIRMED_KEY = "pcu.auth.confirmed";
+
+/** A one-time flag set the moment an email link finishes signing someone in.
+ *  /me reads it once and uses it to lead with the current year's question.
+ *  It is a stored intent rather than a hash jump because the profile loads
+ *  asynchronously and an anchor can fire before the card exists. */
+export function markSignInConfirmed(): void {
+  if (typeof window === "undefined") return;
+  try {
+    safeSet("session", CONFIRMED_KEY, "1");
+  } catch {
+    /* storage disabled: the page simply lands normally */
+  }
+}
+
+export function consumeSignInConfirmed(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = safeGet("session", CONFIRMED_KEY);
+    safeStorage("session")?.removeItem(CONFIRMED_KEY);
+    return raw === "1";
+  } catch {
+    return false;
+  }
+}
