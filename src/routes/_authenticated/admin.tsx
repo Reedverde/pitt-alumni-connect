@@ -109,7 +109,7 @@ function AdminInner() {
   const preset =
     search.view && search.view in PRESET_LABELS ? (search.view as PeopleFilterKey) : null;
   const go = (tab: TabKey, view?: string) =>
-    navigate({ search: { tab, ...(view ? { view } : {}) }, replace: true });
+    navigate({ search: { tab, view: view ?? undefined }, replace: true });
   /** A tile is the number and the list at once: opening one lands on exactly
    *  the people it counted. */
   const openTile = (tile: OverviewTile) =>
