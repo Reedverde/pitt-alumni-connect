@@ -48,11 +48,6 @@ function parseAddresses(raw: string): string[] {
   return [...seen];
 }
 
-async function sequenceIdFor(key: string): Promise<string | null> {
-  const { data } = await supabaseAdmin.from("sequences").select("id").eq("key", key).maybeSingle();
-  return (data as { id?: string } | null)?.id ?? null;
-}
-
 export async function runTargetedResend(opts: {
   campaignKey: string;
   addresses: string;
@@ -152,7 +147,6 @@ export async function runTargetedResend(opts: {
   // sends carries a unique (person_id, sequence_id) key, which is exactly the
   // already-sent rule a resend must ignore. The row is therefore logged with no
   // sequence id and a resend: kind, so the write can never be silently dropped.
-  void sequenceIdFor;
   const rows: TargetedRow[] = [];
   let sent = 0;
   let failed = 0;
