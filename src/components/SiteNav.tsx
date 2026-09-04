@@ -109,7 +109,7 @@ function MobileMenu() {
             Board
           </Link>
           <Link to="/schedule" className="label-caps px-1 py-2" style={itemStyle} activeProps={{ style: activeStyle }}>
-            Weekend
+            Schedule
           </Link>
           <Link to="/alumni" className="label-caps px-1 py-2" style={itemStyle} activeProps={{ style: activeStyle }}>
             Alumni
@@ -161,7 +161,7 @@ export function SiteNav(_props: { onClaim?: () => void }) {
           Board
         </Link>
         <Link to="/schedule" className="label-caps" style={linkStyle} activeProps={{ style: activeStyle }}>
-          Weekend
+          Schedule
         </Link>
         <Link to="/alumni" className="label-caps" style={linkStyle} activeProps={{ style: activeStyle }}>
           Alumni
