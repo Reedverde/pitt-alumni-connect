@@ -46,7 +46,10 @@ export type HeroRenderArgs = {
 type BoardExperienceProps = {
   renderHero: (args: HeroRenderArgs) => ReactNode;
   story?: ReactNode;
+  /** A route may substitute its own navigation. Defaults to the site nav. */
+  renderNav?: (args: { onClaim: () => void }) => ReactNode;
 };
+
 
 /** A year ending in 00 shows all four digits: "00" reads as a placeholder. */
 function sealLabel(year: number) {
