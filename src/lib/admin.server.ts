@@ -207,18 +207,23 @@ function decorate(person: PersonRow, ctx: Context, label: string | null): AdminP
           : ctx.verified.has(person.id)
             ? "claimed"
             : "unclaimed";
+  const boardYear = place?.board_year ?? person.grad_year;
   return {
     ...person,
     emails: ctx.emails.get(person.id) ?? [],
     event_answers: ctx.eventAnswers.get(person.id) ?? [],
+    rsvp_history: ctx.history.get(person.id) ?? [],
+    party_size: ctx.party.get(person.id) ?? null,
+    placed: boardYear !== null && boardYear !== undefined,
 
-    board_year: place?.board_year ?? person.grad_year,
+    board_year: boardYear,
     board_division: place?.board_division ?? person.seed_division,
     team_label: label,
     stint_count: ctx.stints.get(person.id) ?? 0,
     state,
   };
 }
+
 
 async function decorateAll(rows: PersonRow[], ctx: Context) {
   const out: AdminPerson[] = [];
