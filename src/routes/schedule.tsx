@@ -16,6 +16,7 @@ import {
   type EditionSummary,
 } from "@/lib/edition-format";
 import { SiteNav } from "@/components/SiteNav";
+import { SiteFooter } from "@/components/SiteFooter";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { LabelRow } from "@/components/board/LabelRow";
@@ -447,6 +448,7 @@ function OffSeason({
         <PastEditions editions={archive} />
       </main>
       <ActionRail />
+      <SiteFooter />
     </div>
   );
 }

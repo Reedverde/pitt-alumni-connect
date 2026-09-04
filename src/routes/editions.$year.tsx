@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 
 import { getSchedule, type ScheduleEvent } from "@/lib/schedule.functions";
 import { SiteNav } from "@/components/SiteNav";
+import { SiteFooter } from "@/components/SiteFooter";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { PhotoSlot } from "@/components/media/PhotoSlot";
@@ -140,6 +141,7 @@ function EditionArchivePage() {
           </p>
         )}
       </main>
+      <SiteFooter />
     </div>
   );
 }
