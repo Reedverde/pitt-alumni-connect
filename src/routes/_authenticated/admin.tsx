@@ -18,7 +18,6 @@ import {
   ExportPanel,
   GapsPanel,
   HeadcountPanel,
-  EventHeadcountPanel,
 } from "@/components/admin/Panels";
 
 import { EditionsPanel } from "@/components/admin/EditionsPanel";
@@ -35,6 +34,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   validateSearch: (search: Record<string, unknown>) => ({
     tab: typeof search.tab === "string" ? search.tab : undefined,
     view: typeof search.view === "string" ? search.view : undefined,
+    event: typeof search.event === "string" ? search.event : undefined,
   }),
   head: () => ({
     meta: [
@@ -108,8 +108,8 @@ function AdminInner() {
   const active: TabKey = (TABS.find((t) => t.key === search.tab)?.key ?? "overview") as TabKey;
   const preset =
     search.view && search.view in PRESET_LABELS ? (search.view as PeopleFilterKey) : null;
-  const go = (tab: TabKey, view?: string) =>
-    navigate({ search: { tab, view: view ?? undefined }, replace: true });
+  const go = (tab: TabKey, view?: string, event?: string) =>
+    navigate({ search: { tab, view: view ?? undefined, event: event ?? undefined }, replace: true });
   /** A tile is the number and the list at once: opening one lands on exactly
    *  the people it counted. */
   const openTile = (tile: OverviewTile) =>
@@ -185,12 +185,23 @@ function AdminInner() {
         })}
       </nav>
 
-      {active === "overview" ? <OverviewPanel overview={data.overview} onOpen={openTile} /> : null}
+      {active === "overview" ? (
+        <OverviewPanel
+          overview={data.overview}
+          events={data.eventHeadcounts}
+          onOpen={openTile}
+          onOpenEvent={(target) => go("people", target.filter, target.eventId)}
+        />
+      ) : null}
       {active === "review" ? <ReviewQueue queue={data.queue} onRefresh={refresh} /> : null}
       {active === "people" ? (
         <PeopleTable
           preset={preset}
           promptEventCount={data.eventHeadcounts.length}
+          eventId={search.event ?? null}
+          eventLabel={
+            data.eventHeadcounts.find((e) => e.eventId === search.event)?.title ?? null
+          }
           onClearPreset={() => go("people")}
         />
       ) : null}
@@ -202,7 +213,6 @@ function AdminInner() {
       {active === "schedule" ? (
         <>
           <HeadcountPanel headcount={data.headcount} />
-          <EventHeadcountPanel rows={data.eventHeadcounts} />
           <DonateQrPanel />
           <Section eyebrow="Data confidence" title="What we actually know">
             <DivisionsPanel rows={data.divisions} onSaved={refresh} />

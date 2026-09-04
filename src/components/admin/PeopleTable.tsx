@@ -481,12 +481,20 @@ export const PRESET_LABELS: Record<PeopleFilterKey, string> = {
   claimed: "Claimed a profile",
   no_contact: "No contact on file",
   missing_event_answers: "Going, events unanswered",
+  event_yes: "Yes to this event",
+  event_no: "No to this event",
+  event_no_choice: "No choice on this event",
   needs_review: "Flagged needs review",
   unplaced: "Cannot be placed",
   bad_contact: "Bounced or suppressed",
 };
 
-function matchesPreset(person: AdminPerson, preset: PeopleFilterKey, promptEventCount: number) {
+function matchesPreset(
+  person: AdminPerson,
+  preset: PeopleFilterKey,
+  promptEventCount: number,
+  eventId?: string | null,
+) {
   // The attendance views count only people who can actually answer, which is
   // what the overview tiles count too.
   const canAnswer = !person.deceased && person.show_on_board;
@@ -504,6 +512,18 @@ function matchesPreset(person: AdminPerson, preset: PeopleFilterKey, promptEvent
       return !person.deceased && person.emails.length === 0;
     case "missing_event_answers":
       return person.state === "going" && person.event_answers.length < promptEventCount;
+    // Per event views share one population with the overview tallies: people
+    // who can answer and said they are coming to the weekend.
+    case "event_yes":
+    case "event_no":
+    case "event_no_choice": {
+      if (!eventId) return false;
+      if (!canAnswer || person.state !== "going") return false;
+      const answer = person.event_answers.find((a) => a.event_id === eventId);
+      if (preset === "event_yes") return answer?.status === "yes";
+      if (preset === "event_no") return answer?.status === "no";
+      return !answer;
+    }
     case "needs_review":
       return person.needs_review;
     case "unplaced":
@@ -518,10 +538,14 @@ function matchesPreset(person: AdminPerson, preset: PeopleFilterKey, promptEvent
 export function PeopleTable({
   preset = null,
   promptEventCount = 0,
+  eventId = null,
+  eventLabel = null,
   onClearPreset,
 }: {
   preset?: PeopleFilterKey | null;
   promptEventCount?: number;
+  eventId?: string | null;
+  eventLabel?: string | null;
   onClearPreset?: () => void;
 } = {}) {
   const queryClient = useQueryClient();
@@ -577,7 +601,7 @@ export function PeopleTable({
       if (!inRange(p.grad_year, f.gradFrom, f.gradTo)) return false;
       if (!inRange(p.board_year, f.boardFrom, f.boardTo)) return false;
       for (const t of TRI_FIELDS) if (!tri(Boolean(p[t.key]), f[t.key])) return false;
-      if (preset && !matchesPreset(p, preset, promptEventCount)) return false;
+      if (preset && !matchesPreset(p, preset, promptEventCount, eventId)) return false;
       return true;
     });
 
@@ -588,7 +612,7 @@ export function PeopleTable({
       if (va === vb) return a.member_no - b.member_no;
       return va < vb ? -dir : dir;
     });
-  }, [data, f, sort, preset, promptEventCount]);
+  }, [data, f, sort, preset, promptEventCount, eventId]);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin-people"] });
   const toggleSort = (key: SortKey) =>
@@ -632,7 +656,10 @@ export function PeopleTable({
           style={{ border: hairline, borderRadius: 6, padding: "8px 10px", background: "var(--field-white)" }}
         >
           <span className="label-caps" style={{ color: "var(--sterling)" }}>Working view</span>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{PRESET_LABELS[preset]}</span>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>
+            {PRESET_LABELS[preset]}
+            {eventLabel ? `: ${eventLabel}` : ""}
+          </span>
           {onClearPreset ? (
             <button type="button" onClick={onClearPreset} style={{ ...secondaryButton, padding: "5px 9px", fontSize: 11 }}>
               Show everyone

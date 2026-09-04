@@ -1724,21 +1724,51 @@ export async function headcount(): Promise<Headcount> {
 export type EventHeadcountRow = {
   eventId: string;
   title: string;
+  /** Scheduling context, shown beside the title so a tally is never ambiguous. */
+  startsAt: string | null;
+  timeTbd: boolean;
+  location: string | null;
+  dayNumber: number | null;
+  /** People, not heads. */
   yes: number;
   no: number;
+  /** People in the denominator who have made no choice on this event. */
   unanswered: number;
+  /** Sum of party sizes on the yes answers only. Heads, not people. */
   heads: number;
+  /** Everyone the tallies were drawn from. Same for every event. */
+  denominator: number;
 };
 
-/** Per event answers for every event of the current edition. The unanswered
- *  figure is everyone going on the weekend RSVP minus the people who answered
- *  this event either way. */
+/** Per event answers for every published event of the current edition that
+ *  asks the question. One population for all three tallies: people who can
+ *  answer at all and said they are going to the weekend. Anything counted here
+ *  can be reopened as a people list with exactly the same rule. */
 export async function eventHeadcounts(): Promise<EventHeadcountRow[]> {
-  const { loadPromptEvents } = await import("./event-rsvp.server");
-  const events = await loadPromptEvents();
   const eventYear = await currentEditionYear();
 
-  const [goingRes, answerRes] = await Promise.all([
+  const { data: eventRows } = await supabaseAdmin
+    .from("events")
+    .select("id, title, starts_at, time_tbd, location, day_number, sort_order")
+    .eq("event_year", eventYear)
+    .eq("published", true)
+    .eq("prompt_rsvp", true)
+    .order("sort_order", { ascending: true });
+
+  const events = (eventRows ?? []) as {
+    id: string;
+    title: string;
+    starts_at: string | null;
+    time_tbd: boolean;
+    location: string | null;
+    day_number: number | null;
+  }[];
+
+  const [peopleRes, goingRes, answerRes] = await Promise.all([
+    supabaseAdmin
+      .from("people")
+      .select("id, deceased, archived, show_on_board")
+      .limit(3000),
     supabaseAdmin
       .from("rsvps")
       .select("person_id")
@@ -1752,14 +1782,26 @@ export async function eventHeadcounts(): Promise<EventHeadcountRow[]> {
       : Promise.resolve({ data: [] as { event_id: string; person_id: string; status: string; party_size: number }[] }),
   ]);
 
-  const going = new Set((goingRes.data ?? []).map((r) => r.person_id as string));
+  // The denominator matches the People table's attendance views: nobody
+  // archived, nobody memorial, nobody hidden from the board, and only people
+  // who said they are coming to the weekend at all.
+  const answerable = new Set(
+    ((peopleRes.data ?? []) as { id: string; deceased: boolean; archived: boolean; show_on_board: boolean }[])
+      .filter((p) => !p.archived && !p.deceased && p.show_on_board)
+      .map((p) => p.id),
+  );
+  const going = new Set(
+    (goingRes.data ?? []).map((r) => r.person_id as string).filter((id) => answerable.has(id)),
+  );
+
   const byEvent = new Map<string, { yes: Set<string>; no: Set<string>; heads: number }>();
 
-  for (const row of answerRes.data ?? []) {
+  for (const row of (answerRes.data ?? []) as { event_id: string; person_id: string; status: string; party_size: number | null }[]) {
+    if (!going.has(row.person_id)) continue;
     const bucket = byEvent.get(row.event_id) ?? { yes: new Set<string>(), no: new Set<string>(), heads: 0 };
     if (row.status === "yes") {
       bucket.yes.add(row.person_id);
-      bucket.heads += Number(row.party_size ?? 1);
+      bucket.heads += Math.max(1, Number(row.party_size ?? 1));
     } else if (row.status === "no") {
       bucket.no.add(row.person_id);
     }
@@ -1773,10 +1815,15 @@ export async function eventHeadcounts(): Promise<EventHeadcountRow[]> {
     return {
       eventId: event.id,
       title: event.title,
+      startsAt: event.starts_at,
+      timeTbd: Boolean(event.time_tbd),
+      location: event.location,
+      dayNumber: event.day_number,
       yes: bucket.yes.size,
       no: bucket.no.size,
       unanswered,
       heads: bucket.heads,
+      denominator: going.size,
     };
   });
 }
@@ -1916,6 +1963,9 @@ export type PeopleFilterKey =
   | "claimed"
   | "no_contact"
   | "missing_event_answers"
+  | "event_yes"
+  | "event_no"
+  | "event_no_choice"
   | "needs_review"
   | "unplaced"
   | "bad_contact";

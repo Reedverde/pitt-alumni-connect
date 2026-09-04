@@ -1,4 +1,5 @@
-import type { AdminOverview, OverviewTile, PeopleFilterKey } from "@/lib/admin.server";
+import type { AdminOverview, EventHeadcountRow, OverviewTile, PeopleFilterKey } from "@/lib/admin.server";
+import { EventTallyPanel, type EventTallyTarget } from "./EventTallyPanel";
 import { Num, Section, hairline } from "./ui";
 
 /** One screen an organizer can open cold. Every tile is a button: the number
@@ -6,10 +7,14 @@ import { Num, Section, hairline } from "./ui";
  *  on exactly the people it counted. Dense and quiet on purpose. */
 export function OverviewPanel({
   overview,
+  events,
   onOpen,
+  onOpenEvent,
 }: {
   overview: AdminOverview;
+  events: EventHeadcountRow[];
   onOpen: (tile: OverviewTile) => void;
+  onOpenEvent: (target: EventTallyTarget) => void;
 }) {
   const group = (keys: string[]) =>
     keys.map((k) => overview.tiles.find((t) => t.key === k)).filter(Boolean) as OverviewTile[];
@@ -43,6 +48,9 @@ export function OverviewPanel({
       }
     >
       <Grid tiles={attendance} onOpen={onOpen} />
+      <div className="mt-10">
+        <EventTallyPanel rows={events} onOpen={onOpenEvent} />
+      </div>
       <h3 className="label-caps mt-8 mb-3" style={{ color: "var(--sterling)" }}>
         Next actions
       </h3>
