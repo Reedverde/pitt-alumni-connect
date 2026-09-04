@@ -278,7 +278,7 @@ function Dock() {
 function Shell({
   children,
   className,
-  notch = 26,
+  notch = 36,
 }: {
   children: React.ReactNode;
   className?: string;
