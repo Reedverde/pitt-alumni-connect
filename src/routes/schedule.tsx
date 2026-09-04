@@ -37,7 +37,7 @@ const scheduleQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/schedule")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(weekendQuery),
+  loader: ({ context }) => context.queryClient.ensureQueryData(scheduleQuery),
   head: () => ({
     meta: [
       { title: "Alumni Weekend Schedule — Pitt Club Ultimate" },
