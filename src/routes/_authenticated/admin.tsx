@@ -18,7 +18,6 @@ import {
   ExportPanel,
   GapsPanel,
   HeadcountPanel,
-  EventHeadcountPanel,
 } from "@/components/admin/Panels";
 
 import { EditionsPanel } from "@/components/admin/EditionsPanel";
@@ -214,7 +213,6 @@ function AdminInner() {
       {active === "schedule" ? (
         <>
           <HeadcountPanel headcount={data.headcount} />
-          <EventHeadcountPanel rows={data.eventHeadcounts} />
           <DonateQrPanel />
           <Section eyebrow="Data confidence" title="What we actually know">
             <DivisionsPanel rows={data.divisions} onSaved={refresh} />

@@ -215,7 +215,8 @@ export function HeadcountPanel({ headcount }: { headcount: Headcount }) {
         </p>
       </div>
       <p className="mt-3" style={{ fontSize: 13, color: "var(--sterling)" }}>
-        Heads per event are counted below, where people said how many they are bringing.
+        Per event answers and expected heads live on the Overview tab, where every tally opens the
+        people behind it.
       </p>
     </Section>
   );
