@@ -433,7 +433,7 @@ export const adminTargetedResend = createServerFn({ method: "POST" })
     if (!result.dryRun) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       await supabaseAdmin.from("audit_log").insert({
-        actor_person_id: actor.personId,
+        actor_person_id: actor,
         action: "targeted_resend",
         table_name: "sends",
         record_id: null,
