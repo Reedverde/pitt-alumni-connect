@@ -400,6 +400,27 @@ function BoardPage() {
   // Only-fuzzy results must never be presented as if they were exact.
   const onlyFuzzy = searching && ranked.length > 0 && ranked.every((r) => r.tier === TIER_FUZZY);
 
+  // Unclaimed and no-contact lists are long, so they render in five-year
+  // chunks instead of one flat run. Search results stay flat and ranked.
+  const chunkByFiveYears =
+    flatMode &&
+    !searching &&
+    (statusFilter === "unclaimed" || statusFilter === "no_contact");
+  const yearChunks: { start: number; people: BoardPerson[] }[] = !chunkByFiveYears
+    ? []
+    : (() => {
+        const buckets = new Map<number, BoardPerson[]>();
+        for (const person of flatPeople) {
+          const start = Math.floor(person.board_year / 5) * 5;
+          const bucket = buckets.get(start) ?? [];
+          bucket.push(person);
+          buckets.set(start, bucket);
+        }
+        return [...buckets.entries()]
+          .map(([start, list]) => ({ start, people: list }))
+          .sort((a, b) => b.start - a.start);
+      })();
+
   return (
     <ChipSessionContext.Provider value={session.signedIn}>
     <div style={{ background: "var(--field-white)" }} className="board-chrome min-h-screen">
