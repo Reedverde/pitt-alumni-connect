@@ -29,8 +29,7 @@ const item = {
 const active = { color: "var(--sabah-black)", borderBottom: "1px solid var(--sabah-black)" } as const;
 
 const LEFT = [
-  { to: "/v2", label: "Home", exact: true },
-  { to: "/", label: "Board", exact: true },
+  { to: "/", label: "Home", exact: true },
   { to: "/schedule", label: "Schedule", exact: false },
 ] as const;
 
