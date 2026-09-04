@@ -499,17 +499,15 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
 
         {flatMode ? (
           <div className="pt-6">
-            <p
-              className="label-caps"
-              aria-live="polite"
-              style={{ fontFamily: '"Space Mono", monospace', color: "var(--sterling)" }}
-            >
-              {searching
-                ? onlyFuzzy
-                  ? `NO EXACT MATCH FOR "${searchQuery.trim().toUpperCase()}". CLOSEST:`
-                  : `${flatPeople.length} MATCHING "${searchQuery.trim().toUpperCase()}"`
-                : `${flatPeople.length} ${statusPhrase(phraseStatuses)}`}
-            </p>
+            {onlyFuzzy && (
+              <p
+                className="label-caps"
+                style={{ fontFamily: '"Space Mono", monospace', color: "var(--sterling)" }}
+              >
+                {`NO EXACT MATCH FOR "${searchQuery.trim().toUpperCase()}". CLOSEST:`}
+              </p>
+            )}
+
             {flatPeople.length > 0 ? (
               chunkByFiveYears ? (
                 <div className="mt-4">
