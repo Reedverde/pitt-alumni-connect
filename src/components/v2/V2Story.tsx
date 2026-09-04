@@ -49,7 +49,7 @@ const DAYS = [
     /** Drop the arena ceiling and the empty turf: hold the row of faces. */
     position: "center 56%",
     summary:
-      "Social night. City Kitchen, Pitt at Virginia Tech on the screen, then wherever the night takes us.",
+      "Social night. One bar, one game on the screen, then wherever the night takes us. Schedule has the details.",
   },
   {
     day: "Saturday",
@@ -57,14 +57,14 @@ const DAYS = [
     /** Group sits high in the frame under open sky. */
     position: "center 45%",
     summary:
-      "The big one. Family BBQ at Schenley Overlook, then Pitt women's soccer that evening.",
+      "The big one. A family cookout in the afternoon, then a Pitt game that evening.",
   },
   {
     day: "Sunday",
     photo: ALUMNI_WEEKEND.sunday,
     /** Group sits low, below the treeline and the retaining wall. */
     position: "center 68%",
-    summary: "Currents vs alumni at the Bubble. Play if you want to, watch if you don't.",
+    summary: "Currents against alumni. Play if you want to, watch if you don't.",
   },
 ];
 
