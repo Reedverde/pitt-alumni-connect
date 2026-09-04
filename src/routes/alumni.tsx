@@ -1,11 +1,8 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 
-import { SiteNav } from "@/components/SiteNav";
-import { SiteFooter } from "@/components/SiteFooter";
+import { PageShell } from "@/components/layout/PageShell";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
-import { ActionRail } from "@/components/board/ActionRail";
-import { ClosingCta } from "@/components/claim/ClosingCta";
 import { ClaimDialog } from "@/components/claim/ClaimDialog";
 import { PhotoSlot, StatementCard } from "@/components/media/PhotoSlot";
 import { primaryButton } from "@/components/claim/ui";
@@ -89,9 +86,7 @@ function AlumniPage() {
   const navigate = useNavigate();
   const [claimOpen, setClaimOpen] = useState(false);
   return (
-    <div style={{ background: "var(--field-white)" }} className="min-h-screen">
-      <SiteNav />
-
+    <PageShell bare>
       <main className="mx-auto w-full max-w-[1080px] px-5 pb-24">
         <header className="pt-10 md:pt-14">
           <Measure>
