@@ -17,7 +17,9 @@ import { dayLabel, dayName, editionDateRange, editionDay, editionEyebrow } from 
 const editionQuery = (eventYear: number) =>
   queryOptions({
     queryKey: ["schedule", eventYear],
-    queryFn: () => getSchedule({ data: { eventYear } }),
+    // An unpublished weekend is a normal answer, not a failure, so the page
+    // can render a written explanation with a 200 instead of an error.
+    queryFn: () => getSchedule({ data: { eventYear } }).catch(() => null),
   });
 
 export const Route = createFileRoute("/editions/$year")({
@@ -59,6 +61,7 @@ function timeLabel(event: ScheduleEvent) {
 function EditionArchivePage() {
   const { year } = Route.useParams();
   const { data } = useSuspenseQuery(editionQuery(Number(year)));
+  if (!data) return <EditionUnavailable />;
   const { edition, events } = data;
 
   const days = [...new Set(events.map((e) => e.day_number ?? 1))].sort((a, b) => a - b);
