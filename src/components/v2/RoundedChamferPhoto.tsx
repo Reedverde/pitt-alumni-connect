@@ -17,7 +17,6 @@ function roundedPolygonPath(points: Pt[], radius: number): string {
     return `M ${points.map(([x, y]) => `${x} ${y}`).join(" L ")} Z`;
   }
   const d: string[] = [];
-  const segs: Array<{ from: Pt; to: Pt }> = [];
 
   for (let i = 0; i < n; i++) {
     const prev = points[(i - 1 + n) % n];
