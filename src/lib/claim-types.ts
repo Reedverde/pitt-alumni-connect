@@ -57,6 +57,8 @@ export type RosterCorrectionInput = {
   playedAs?: string | null;
   division?: string | null;
   note?: string | null;
+  /** Which surface it came from: the claim flow, or the person's own page. */
+  source?: string | null;
 };
 
 export type DivisionOption = { code: string; label: string };
