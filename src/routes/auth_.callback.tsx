@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { supabase } from "@/integrations/supabase/client";
 import { finalizeLogin } from "@/lib/account.functions";
-import { clearAuthReturnTo, readAuthReturnTo } from "@/lib/event-intent";
+import { clearAuthReturnTo, markSignInConfirmed, readAuthReturnTo } from "@/lib/event-intent";
 
 import { inspectSignInToken } from "@/lib/signin-token.functions";
 import { getNavIdentity } from "@/lib/account.functions";
