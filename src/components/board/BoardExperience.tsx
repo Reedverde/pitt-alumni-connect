@@ -454,50 +454,48 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
             FIND YOUR YEAR
           </h2>
           <p className="mt-3 max-w-[560px] text-left" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
-            Every person who ever played. Grey until they say whether or not they are coming.
+            Every person who ever played. Search your name, then say whether you are coming.
+          </p>
+          <p className="mt-2 max-w-[560px] text-left" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
+            Everyone sits under their last recorded playing season. Where we have no playing
+            history on file, we place them by graduation year instead.
           </p>
           <BoardKey />
         </header>
 
-        <BoardSearch
-          value={searchInput}
-          onChange={setSearchInput}
-          onClear={() => {
+        <BoardControls
+          search={searchInput}
+          onSearch={setSearchInput}
+          onClearSearch={() => {
             setSearchInput("");
             setSearchQuery("");
           }}
-        />
-        <StatusRadioChips
-          legend="Programs"
-          options={filters}
-          value={divisionFilter}
-          onPick={pickDivision}
-        />
-        <StatusRadioChips
-          legend="Filter by"
-          options={STATUS_FILTERS.map((s) => ({ code: s.code, label: s.label }))}
-          value={statusFilter}
-          onPick={pickStatus}
+          programs={filters}
+          program={divisionFilter}
+          onProgram={setDivisionFilter}
+          status={statusFilter}
+          onStatus={setStatusFilter}
+          eras={eras}
+          era={eraFilter}
+          onEra={setEraFilter}
+          newestFirst={newestFirst}
+          onSort={setNewestFirst}
+          resultLabel={resultLabel}
+          anyFilter={divisionFilter !== null || statusFilter !== null || eraFilter !== null || searching}
+          onReset={() => {
+            setDivisionFilter(null);
+            setStatusFilter(null);
+            setEraFilter(null);
+            setSearchInput("");
+            setSearchQuery("");
+          }}
         />
         {statusFilter !== null && STATUS_BLURBS[statusFilter] && (
           <p className="mt-3 max-w-[560px]" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
             {STATUS_BLURBS[statusFilter]}
           </p>
         )}
-        {!flatMode && <DecadeRail groups={groups} />}
 
-        {!flatMode && (
-        <div className="mt-6 flex justify-end">
-          <button
-            type="button"
-            onClick={() => setNewestFirst((v) => !v)}
-            className="label-caps rounded-[7px] px-3 py-2"
-            style={{ border: "1px solid var(--chalk)", color: "var(--sterling)", background: "var(--pure-white)" }}
-          >
-            {newestFirst ? "Newest first" : "Oldest first"}
-          </button>
-        </div>
-        )}
 
         {flatMode ? (
           <div className="pt-6">
