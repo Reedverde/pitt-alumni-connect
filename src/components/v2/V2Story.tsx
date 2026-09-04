@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ChamferPhoto } from "@/components/v2/ChamferPhoto";
+import { RoundedChamferPhoto } from "@/components/v2/RoundedChamferPhoto";
 import { ALUMNI_WEEKEND } from "@/components/v2/curated-photos";
 import nationalsCelebration from "@/assets/hero-nationals-celebration.jpg.asset.json";
 import firstNationals2005 from "@/assets/pitt-first-nationals-team-2005.jpg.asset.json";
@@ -37,10 +38,11 @@ const linkButton = {
   textDecoration: "none",
 };
 
-/** The three weekend photographs: one shared ratio, one shared radius, so the
- *  row scans as a set instead of three separate cuts. */
+/** The three weekend photographs: one shared ratio and one shared
+ *  rounded-chamfer silhouette, so the row scans as a single set of cuts. */
 const DAY_RATIO = "4 / 3";
-const DAY_RADIUS = 12;
+const DAY_NOTCH = 72;
+const DAY_RADIUS = 14;
 
 const DAYS = [
   {
@@ -199,21 +201,13 @@ export function V2Story() {
           <div className="mt-14 grid grid-cols-1 gap-10 md:mt-20 md:grid-cols-3 md:items-start md:gap-8">
             {DAYS.map((d) => (
               <div key={d.day}>
-                <figure className="m-0">
-                  <img
-                    src={d.photo.src}
-                    alt={d.photo.alt}
-                    loading="lazy"
-                    decoding="async"
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      aspectRatio: DAY_RATIO,
-                      objectFit: "cover",
-                      borderRadius: DAY_RADIUS,
-                    }}
-                  />
-                </figure>
+                <RoundedChamferPhoto
+                  src={d.photo.src}
+                  alt={d.photo.alt}
+                  ratio={DAY_RATIO}
+                  notch={DAY_NOTCH}
+                  radius={DAY_RADIUS}
+                />
                 <h3
                   className="mt-6"
                   style={{
