@@ -294,6 +294,15 @@ function WeekendPage() {
                 </div>
               </NotchedBox>
 
+              {isToday ? (
+                <DiscordDayOf
+                  className="mt-4"
+                  startsOn={edition.starts_on}
+                  endsOn={edition.ends_on}
+                />
+              ) : null}
+
+
               <div className="mt-4 flex flex-col gap-4">
                 {wholeProgram.map((event) => (
                   <EventTile key={event.id} event={event} wholeProgram corners={["tl"]} eventYear={edition.event_year} />
