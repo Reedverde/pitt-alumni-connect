@@ -155,7 +155,9 @@ const STATUS_WORDS: Record<string, string> = {
 
 /** "going", "claimed or going", and so on, in a fixed reading order. */
 function statusPhrase(statuses: string[]) {
-  const ordered = ["claimed", "maybe", "going"].filter((s) => statuses.includes(s));
+  const ordered = ["claimed", "maybe", "going", "unclaimed", "no_contact"].filter((s) =>
+    statuses.includes(s),
+  );
   const words = ordered.map((s) => STATUS_WORDS[s]);
   if (words.length === 0) return "nobody";
   if (words.length === 1) return words[0];
