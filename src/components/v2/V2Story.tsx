@@ -64,7 +64,6 @@ const DAYS = [
 /** Everything on /v2 between the hero and the claim board. The board itself is
  *  untouched: this block only sets up the story and the way into it. */
 export function V2Story() {
-  const pile = ACTION.contested;
   const transition = ACTION.sky;
 
 
