@@ -1,10 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
-
-import { boardQuery } from "@/components/board/BoardExperience";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ChamferPhoto } from "@/components/v2/ChamferPhoto";
-import { anyV2Photo, pickV2Photo } from "@/components/v2/photos";
+import { ACTION, ALUMNI_WEEKEND } from "@/components/v2/curated-photos";
 
 const BONE = "#F6F3ED";
 
@@ -39,16 +36,31 @@ const linkButton = {
 const DAYS = [
   {
     day: "Friday",
+    photo: ALUMNI_WEEKEND.friday,
+    ratio: "4 / 3",
+    corners: ["tl", "br"] as const,
+    notch: 56,
+    offset: "md:mt-0",
     summary:
       "Social night. City Kitchen, Pitt at Virginia Tech on the screen, then wherever the night takes us.",
   },
   {
     day: "Saturday",
+    photo: ALUMNI_WEEKEND.saturday,
+    ratio: "3 / 4",
+    corners: ["tr", "bl"] as const,
+    notch: 72,
+    offset: "md:-mt-16",
     summary:
       "The big one. Family BBQ at Schenley Overlook, then Pitt women's soccer that evening.",
   },
   {
     day: "Sunday",
+    photo: ALUMNI_WEEKEND.sunday,
+    ratio: "16 / 10",
+    corners: ["tl", "br"] as const,
+    notch: 48,
+    offset: "md:mt-10",
     summary: "Currents vs alumni at the Bubble. Play if you want to, watch if you don't.",
   },
 ];
@@ -56,13 +68,9 @@ const DAYS = [
 /** Everything on /v2 between the hero and the claim board. The board itself is
  *  untouched: this block only sets up the story and the way into it. */
 export function V2Story() {
-  const { data } = useSuspenseQuery(boardQuery);
-  const photos = data.photosByYear;
-
-  const climb = pickV2Photo(photos, [2015, 2014, 2011]) ?? anyV2Photo(photos);
-  const roots = pickV2Photo(photos, [1998, 1999, 2003]) ?? anyV2Photo(photos, climb ? [climb.year] : []);
-  const pile = pickV2Photo(photos, [2005, 2007, 2004]) ?? anyV2Photo(photos, climb ? [climb.year] : []);
-  const band = pickV2Photo(photos, [2010, 2012, 2006]) ?? anyV2Photo(photos, pile ? [pile.year] : []);
+  const climb = ACTION.nightRun;
+  const roots = ACTION.catchClose;
+  const pile = ACTION.contested;
 
   return (
     <>
@@ -89,30 +97,26 @@ export function V2Story() {
               </h2>
             </div>
             <div className="md:col-span-5">
-              {climb && (
-                <ChamferPhoto
-                  src={climb.src}
-                  alt={climb.alt}
-                  ratio="5 / 4"
-                  corners={["tr", "bl"]}
-                  notch={68}
-                />
-              )}
+              <ChamferPhoto
+                src={climb.src}
+                alt={climb.alt}
+                ratio="5 / 4"
+                corners={["tr", "bl"]}
+                notch={68}
+              />
             </div>
           </div>
 
           <div className="mt-14 grid grid-cols-1 gap-10 md:mt-20 md:grid-cols-12 md:gap-8">
             {/* Portrait crop, deliberately dropped below the text baseline. */}
             <div className="md:col-span-4 md:pt-16">
-              {roots && (
-                <ChamferPhoto
-                  src={roots.src}
-                  alt={roots.alt}
-                  ratio="3 / 4"
-                  corners={["tl", "br"]}
-                  notch={52}
-                />
-              )}
+              <ChamferPhoto
+                src={roots.src}
+                alt={roots.alt}
+                ratio="3 / 4"
+                corners={["tl", "br"]}
+                notch={52}
+              />
             </div>
 
             <div className="md:col-span-8">
@@ -128,16 +132,14 @@ export function V2Story() {
                   a sophomore having a rough season. The program doesn't run on nostalgia. It runs
                   on people staying in it.
                 </p>
-                {pile && (
-                  <ChamferPhoto
-                    src={pile.src}
-                    alt={pile.alt}
-                    ratio="4 / 3"
-                    corners={["tr", "bl"]}
-                    notch={48}
-                    className="md:-mt-10"
-                  />
-                )}
+                <ChamferPhoto
+                  src={pile.src}
+                  alt={pile.alt}
+                  ratio="4 / 3"
+                  corners={["tr", "bl"]}
+                  notch={48}
+                  className="md:-mt-10"
+                />
               </div>
             </div>
           </div>
@@ -161,7 +163,7 @@ export function V2Story() {
       <section style={{ background: "var(--pitt-royal)" }} className="relative overflow-hidden">
         <div className="mx-auto w-full max-w-[1320px] px-5 pt-16 pb-16 md:pt-20 md:pb-20">
           <div className="grid grid-cols-1 items-end gap-8 md:grid-cols-12">
-            <div className="md:col-span-7">
+            <div className="md:col-span-8">
               <p className="flex items-center" style={{ color: "var(--pure-white)" }}>
                 <span
                   aria-hidden="true"
@@ -186,35 +188,30 @@ export function V2Story() {
                 Three days
               </h2>
             </div>
-            <div className="md:col-span-5">
-              {band && (
-                <ChamferPhoto
-                  src={band.src}
-                  alt={band.alt}
-                  ratio="16 / 9"
-                  corners={["tl", "br"]}
-                  notch={56}
-                />
-              )}
+            <div className="md:col-span-4">
+              <p className="max-w-[360px]" style={{ ...body, color: "var(--concrete)" }}>
+                Three days in Pittsburgh, built out of the last twenty years of Alumni Weekends.
+              </p>
             </div>
           </div>
 
-          <div className="mt-12 grid grid-cols-1 gap-px md:grid-cols-3">
-            {DAYS.map((d, i) => (
-              <div
-                key={d.day}
-                className="px-0 py-6 md:px-6"
-                style={{
-                  borderTop: "1px solid var(--royal-dark)",
-                  background: i === 1 ? "var(--royal-dark)" : "transparent",
-                }}
-              >
+          <div className="mt-14 grid grid-cols-1 gap-10 md:mt-20 md:grid-cols-3 md:items-start md:gap-8">
+            {DAYS.map((d) => (
+              <div key={d.day} className={d.offset}>
+                <ChamferPhoto
+                  src={d.photo.src}
+                  alt={d.photo.alt}
+                  ratio={d.ratio}
+                  corners={[...d.corners]}
+                  notch={d.notch}
+                />
                 <h3
+                  className="mt-6"
                   style={{
                     fontFamily: '"Archivo", sans-serif',
                     fontWeight: 800,
-                    fontSize: 26,
-                    letterSpacing: "-0.02em",
+                    fontSize: 30,
+                    letterSpacing: "-0.025em",
                     textTransform: "uppercase",
                     color: "var(--pure-white)",
                   }}
