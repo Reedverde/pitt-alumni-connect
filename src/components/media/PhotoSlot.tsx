@@ -169,6 +169,7 @@ export function PhotoSlot({
 /** A dashed notched card that holds a short statement instead of a photograph. */
 export function StatementCard({
   children,
+  caption,
   index = "00",
   ratio = "1 / 1",
   corners = NOTCH_ALL,
@@ -176,6 +177,9 @@ export function StatementCard({
   className,
 }: {
   children: string;
+  /** A finished second line. Without one the card can read as an empty frame
+   *  waiting for a picture, which is what it used to look like on a phone. */
+  caption?: string;
   index?: string;
   ratio?: string;
   corners?: NotchCorner[];
@@ -198,29 +202,50 @@ export function StatementCard({
     );
   }
 
+  // Solid and filled, never dashed. A dashed outline is the visual language of
+  // "something is missing here", and this card is the finished statement.
   return (
     <NotchedBox
       className={className}
       corners={corners}
       notch={NOTCH_LG}
+      fill="var(--concrete)"
       stroke="var(--chalk)"
-      dashed
       style={{ aspectRatio: ratio, width: "100%" }}
     >
       <div
         style={{
           position: "absolute",
           inset: 0,
-          padding: 16,
+          padding: 20,
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
+          gap: 12,
         }}
       >
-        <p style={{ ...labelStyle, color: "var(--sabah-black)", lineHeight: 1.6, margin: 0 }}>
+        <p style={{ ...labelStyle, color: "var(--sabah-black)", lineHeight: 1.5, margin: 0 }}>
           {children}
         </p>
-        <span style={{ ...numeralStyle, color: "var(--sterling)", alignSelf: "flex-end" }}>{index}</span>
+        <div className="flex items-end justify-between gap-4">
+          {caption ? (
+            <p
+              style={{
+                margin: 0,
+                maxWidth: "42ch",
+                fontFamily: '"Space Grotesk", sans-serif',
+                fontSize: 14,
+                lineHeight: 1.5,
+                color: "var(--steel-ink)",
+              }}
+            >
+              {caption}
+            </p>
+          ) : (
+            <span />
+          )}
+          <span style={{ ...numeralStyle, color: "var(--sterling)", flexShrink: 0 }}>{index}</span>
+        </div>
       </div>
     </NotchedBox>
   );
