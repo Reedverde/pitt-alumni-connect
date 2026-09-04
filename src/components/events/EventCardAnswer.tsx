@@ -20,9 +20,9 @@ const WEEKEND_WORD: Record<string, string> = {
 };
 
 /**
- * The per event answer, rendered on the card itself. Only the two prompt
- * events (BBQ, Alumni Game) ever show one. Everyone sees it: a signed out tap
- * is held through the sign-in round trip and applied on return.
+ * The per event answer, rendered on the card itself. Every event of the
+ * current edition shows one, placeholders included. Everyone sees it: a
+ * signed out tap is held through the sign-in round trip and applied on return.
  */
 export function EventCardAnswer({ eventId, eventTitle }: { eventId: string; eventTitle: string }) {
   const navigate = useNavigate();
