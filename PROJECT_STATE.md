@@ -578,3 +578,5 @@ Three migrations ran, plus code.
 **Admin.** Event answers show inline in the People tab expanded row, joined per person from `event_rsvps`, no separate dashboard. The header copy now says six people share the page, not three.
 
 Nothing was sent. `outbound_email_mode` stayed `transactional_only` and every sequence `active` flag is unchanged.
+
+**2026-09-04 route rename.** The schedule page moved from `/weekend` to `/schedule` (`src/routes/schedule.tsx`). `src/routes/weekend.tsx` is now a permanent 301 stub that forwards the query string, so `?src=email` attribution in previously sent emails survives. Hash fragments never reach the server, so pre-move `#where-to-stay` links land at the top of `/schedule`; every internal hash link was updated. All nav, footer, homepage, news, `event-intent` returnTo, mail, admin, news, and ICS URL builders now emit `/schedule`, and the page carries a canonical tag. The stub route is `noindex`.

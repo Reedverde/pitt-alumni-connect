@@ -133,7 +133,7 @@ function NewsPage() {
         {data.length === 0 ? (
           <p className="py-10" style={{ fontSize: 16, color: "var(--sterling)" }}>
             Nothing posted yet. When the schedule, travel, or lodging changes, it shows up here.{" "}
-            <Link to="/weekend" style={{ color: "var(--pitt-royal)" }}>
+            <Link to="/schedule" style={{ color: "var(--pitt-royal)" }}>
               See the weekend
             </Link>
             .

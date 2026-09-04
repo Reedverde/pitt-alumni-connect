@@ -111,7 +111,7 @@ function EventTile({
 }
 
 
-/** Condensed schedule for the homepage. Same rules as /weekend: whole-program
+/** Condensed schedule for the homepage. Same rules as /schedule: whole-program
  *  events run full width with a gold left border, division events sit in
  *  equal-width lanes beneath the day header. Hidden divisions never appear. */
 export function ScheduleSummary({
@@ -146,7 +146,7 @@ export function ScheduleSummary({
       {(edition.lodging_note?.trim() || edition.travel_note?.trim()) && (
         <p className="mt-2 max-w-[560px]" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
           Coming from out of town?{" "}
-          <Link to="/weekend" hash="where-to-stay" style={{ color: "var(--pitt-royal)", fontWeight: 700 }}>
+          <Link to="/schedule" hash="where-to-stay" style={{ color: "var(--pitt-royal)", fontWeight: 700 }}>
             Where to stay and how to get around
           </Link>
         </p>
@@ -218,7 +218,7 @@ export function ScheduleSummary({
       })}
 
       <div className="mt-8">
-        <Link to="/weekend" style={ghostButton}>
+        <Link to="/schedule" style={ghostButton}>
           See the full schedule
         </Link>
       </div>

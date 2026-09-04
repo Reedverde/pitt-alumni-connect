@@ -34,7 +34,7 @@ export function SiteFooter() {
           <Link to="/" className="label-caps" style={{ color: "var(--steel-ink)", textDecoration: "none" }}>
             Board
           </Link>
-          <Link to="/weekend" className="label-caps" style={{ color: "var(--steel-ink)", textDecoration: "none" }}>
+          <Link to="/schedule" className="label-caps" style={{ color: "var(--steel-ink)", textDecoration: "none" }}>
             Weekend
           </Link>
           <Link to="/alumni" className="label-caps" style={{ color: "var(--steel-ink)", textDecoration: "none" }}>

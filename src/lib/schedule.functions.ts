@@ -59,7 +59,7 @@ export type WeekendPageData = {
   archive: (EditionSummary & { going: number })[];
 };
 
-/** /weekend is a permanent URL. It resolves its own state and never 404s or empties. */
+/** /schedule is a permanent URL. It resolves its own state and never 404s or empties. */
 export const getWeekendPage = createServerFn({ method: "GET" }).handler(
   async (): Promise<WeekendPageData> => {
     const { loadEvents } = await import("@/lib/ics.server");

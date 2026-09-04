@@ -2190,7 +2190,7 @@ export async function updateEditionDates(
       title: "The lodging note changed",
       summary: norm(input.lodging_note).slice(0, 240) || "The lodging note was cleared.",
       category: "Lodging",
-      relatedUrl: `${SITE_ORIGIN}/weekend`,
+      relatedUrl: `${SITE_ORIGIN}/schedule`,
       dedupeKey: `lodging:${input.event_year}:${stamp}`,
     });
   if (prev && norm(prev.travel_note) !== norm(input.travel_note))
@@ -2199,7 +2199,7 @@ export async function updateEditionDates(
       title: "The travel note changed",
       summary: norm(input.travel_note).slice(0, 240) || "The travel note was cleared.",
       category: "Travel",
-      relatedUrl: `${SITE_ORIGIN}/weekend`,
+      relatedUrl: `${SITE_ORIGIN}/schedule`,
       dedupeKey: `travel:${input.event_year}:${stamp}`,
     });
   if (prev && (prev.starts_on !== input.starts_on || prev.ends_on !== input.ends_on))
@@ -2208,7 +2208,7 @@ export async function updateEditionDates(
       title: `Alumni Weekend ${input.event_year} dates are set`,
       summary: `${input.starts_on} through ${input.ends_on}.`,
       category: "Weekend",
-      relatedUrl: `${SITE_ORIGIN}/weekend`,
+      relatedUrl: `${SITE_ORIGIN}/schedule`,
       dedupeKey: `dates:${input.event_year}:${input.starts_on}:${input.ends_on}`,
     });
   return { ok: true };
@@ -2280,7 +2280,7 @@ export async function createEditionEvent(
       title: `${row.title} is on the schedule`,
       summary: row.location ? `At ${row.location}.` : "",
       category: "Schedule",
-      relatedUrl: `${SITE_ORIGIN}/weekend`,
+      relatedUrl: `${SITE_ORIGIN}/schedule`,
       dedupeKey: `event:${(data?.id as string) ?? row.title}`,
     });
   }
@@ -2298,7 +2298,7 @@ export async function listEditionEvents(eventYear: number) {
 }
 
 /**
- * Editing an existing event. Only what the public can see on /weekend counts as
+ * Editing an existing event. Only what the public can see on /schedule counts as
  * news: the day, the start time, the location, or a TBD becoming a real time.
  * Title tidy ups, notes, sort order, and no op saves stay quiet.
  */
@@ -2379,7 +2379,7 @@ export async function updateEditionEvent(
     title: `${title} has a schedule change`,
     summary,
     category: "Schedule",
-    relatedUrl: `${SITE_ORIGIN}/weekend`,
+    relatedUrl: `${SITE_ORIGIN}/schedule`,
     dedupeKey: `event_change:${input.id}:${stamp}`,
   });
   return { ok: true, queuedNews: true };

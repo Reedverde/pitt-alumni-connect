@@ -697,7 +697,7 @@ function Hero({
             >
               Claim your name
             </button>
-            <Link to="/weekend" style={{ ...ghostButton, color: "var(--pure-white)", border: "1px solid var(--steel-ink)" }}>
+            <Link to="/schedule" style={{ ...ghostButton, color: "var(--pure-white)", border: "1px solid var(--steel-ink)" }}>
               See the schedule
             </Link>
           </div>

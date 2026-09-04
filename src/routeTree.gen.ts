@@ -17,6 +17,7 @@ import { Route as NewsRouteImport } from './routes/news'
 import { Route as NewsDotxmlRouteImport } from './routes/news[.]xml'
 import { Route as QrRouteImport } from './routes/qr'
 import { Route as RsvpRouteImport } from './routes/rsvp'
+import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as WeekendRouteImport } from './routes/weekend'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated/me'
@@ -70,6 +71,11 @@ const QrRoute = QrRouteImport.update({
 const RsvpRoute = RsvpRouteImport.update({
   id: '/rsvp',
   path: '/rsvp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScheduleRoute = ScheduleRouteImport.update({
+  id: '/schedule',
+  path: '/schedule',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WeekendRoute = WeekendRouteImport.update({
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/news.xml': typeof NewsDotxmlRoute
   '/qr': typeof QrRoute
   '/rsvp': typeof RsvpRoute
+  '/schedule': typeof ScheduleRoute
   '/weekend': typeof WeekendRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/news.xml': typeof NewsDotxmlRoute
   '/qr': typeof QrRoute
   '/rsvp': typeof RsvpRoute
+  '/schedule': typeof ScheduleRoute
   '/weekend': typeof WeekendRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/me': typeof AuthenticatedMeRoute
@@ -207,6 +215,7 @@ export interface FileRoutesById {
   '/news.xml': typeof NewsDotxmlRoute
   '/qr': typeof QrRoute
   '/rsvp': typeof RsvpRoute
+  '/schedule': typeof ScheduleRoute
   '/weekend': typeof WeekendRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/me': typeof AuthenticatedMeRoute
@@ -233,6 +242,7 @@ export interface FileRouteTypes {
     | '/news.xml'
     | '/qr'
     | '/rsvp'
+    | '/schedule'
     | '/weekend'
     | '/admin'
     | '/me'
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/news.xml'
     | '/qr'
     | '/rsvp'
+    | '/schedule'
     | '/weekend'
     | '/admin'
     | '/me'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/news.xml'
     | '/qr'
     | '/rsvp'
+    | '/schedule'
     | '/weekend'
     | '/_authenticated/admin'
     | '/_authenticated/me'
@@ -308,6 +320,7 @@ export interface RootRouteChildren {
   NewsDotxmlRoute: typeof NewsDotxmlRoute
   QrRoute: typeof QrRoute
   RsvpRoute: typeof RsvpRoute
+  ScheduleRoute: typeof ScheduleRoute
   WeekendRoute: typeof WeekendRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   EditionsYearRoute: typeof EditionsYearRoute
@@ -379,6 +392,13 @@ declare module '@tanstack/react-router' {
       path: '/rsvp'
       fullPath: '/rsvp'
       preLoaderRoute: typeof RsvpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/schedule': {
+      id: '/schedule'
+      path: '/schedule'
+      fullPath: '/schedule'
+      preLoaderRoute: typeof ScheduleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/weekend': {
@@ -511,6 +531,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewsDotxmlRoute: NewsDotxmlRoute,
   QrRoute: QrRoute,
   RsvpRoute: RsvpRoute,
+  ScheduleRoute: ScheduleRoute,
   WeekendRoute: WeekendRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   EditionsYearRoute: EditionsYearRoute,
