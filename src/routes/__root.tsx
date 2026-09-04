@@ -149,6 +149,9 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      {/* One card, every page: the answer is always within reach. */}
+      <RsvpDock />
     </QueryClientProvider>
   );
 }
+
