@@ -790,7 +790,8 @@ function AnnualCard({
         </h3>
 
         {/* The answer is stated in words, not carried by the filled button
-            alone. Never gold: gold means attending on a board chip. */}
+            alone. Never gold: gold means attending on a board chip. Heads are
+            asked per event now, so the overall answer carries no number. */}
         <p
           className="mt-3"
           style={{ fontFamily: '"Space Mono", monospace', fontSize: 15, color: "var(--steel-ink)" }}
@@ -798,7 +799,6 @@ function AnnualCard({
           {answer
             ? `Your answer: ${STATUS_LABELS[answer].toUpperCase()}`
             : "NO RESPONSE YET"}
-          {answer === "going" && partySize > 1 ? ` · ${partySize} HEADS` : ""}
         </p>
 
         {editable ? (
@@ -816,8 +816,14 @@ function AnnualCard({
                 </button>
               ))}
             </div>
-            {answer === "going" && <PartySizeStepper value={partySize} onChange={onPartySize} />}
+            {answer === "going" && (
+              <p className="mt-3" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
+                Bringing people? Say how many on each event below, so the organizers count the
+                right number for the right meal.
+              </p>
+            )}
           </>
+
         ) : (
           <p className="mt-4" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
             {closed
