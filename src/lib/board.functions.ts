@@ -23,6 +23,8 @@ export type BoardPerson = {
   /** Every program the person holds history in, for filtering only. The chip's
    *  team badge still resolves from board_division. */
   divisions: string[];
+  /** False when the person has no row in identities at all: no way to reach them. */
+  has_contact?: boolean;
   state: "unclaimed" | "claimed" | "going" | "maybe" | "memorial";
 };
 
@@ -60,7 +62,7 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
     supabase
       .from("board_people")
       .select(
-        "id, first_name, last_name, played_as, deceased, board_year, board_division, team_label, state, is_current, is_coach, divisions, has_coached, coach_role",
+        "id, first_name, last_name, played_as, deceased, board_year, board_division, team_label, state, is_current, is_coach, divisions, has_coached, coach_role, has_contact",
       )
       .order("board_year", { ascending: false })
       .limit(2000),
@@ -74,7 +76,7 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
       .order("uploaded_at", { ascending: true }),
     supabase
       .from("board_coaches")
-      .select("id, first_name, last_name, played_as, deceased, state, role_label")
+      .select("id, first_name, last_name, played_as, deceased, state, role_label, has_contact")
       .limit(200),
   ]);
 
@@ -137,6 +139,7 @@ export const getBoard = createServerFn({ method: "GET" }).handler(async (): Prom
       coach_role: row.role_label === "manager" ? "manager" : "coach",
       divisions: [],
       role_label: row.role_label === "manager" ? "manager" : "coach",
+      has_contact: row.has_contact !== false,
       state: row.state as BoardPerson["state"],
     })),
     totals,
