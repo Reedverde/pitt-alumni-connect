@@ -11,10 +11,11 @@ export type PromptEvent = {
   location: string | null;
 };
 
-/** Every event on the current edition gets an individual RSVP prompt, including
- *  events still marked is_placeholder (a placeholder can still collect interest
- *  signal before its time or location locks). key is the event id itself now,
- *  since there is no longer a fixed small set of named slots to key by. */
+/** Prompt events are the current edition's events flagged prompt_rsvp: only
+ *  these collect an individual RSVP answer. Placeholders are eligible too (a
+ *  placeholder can still collect interest signal before its time or location
+ *  locks). key is the event id itself now, since there is no longer a fixed
+ *  small set of named slots to key by. */
 export async function loadPromptEvents(): Promise<PromptEvent[]> {
   const edition = await loadCurrentEdition();
   const { data } = await supabaseAdmin
