@@ -322,8 +322,13 @@ function BoardPage() {
   const flatMode = filtered || searching;
   // CLAIMED means "has claimed their name", whatever they answered, so it is a
   // superset of GOING and MAYBE. It matches the counter bar's claimed figure.
+  // NO_CONTACT is a slice of unclaimed: unclaimed with zero identities rows.
   const expandStatus = (code: string) =>
-    code === "claimed" ? ["claimed", "going", "maybe"] : [code];
+    code === "claimed"
+      ? ["claimed", "going", "maybe"]
+      : code === "no_contact"
+        ? ["unclaimed"]
+        : [code];
   const effStatuses = filtered
     ? expandStatus(statusFilter as string)
     : STATUS_FILTERS.map((s) => s.code);
@@ -349,6 +354,8 @@ function BoardPage() {
   const isHidden = (person: BoardPerson) => {
     if (!matchesDivision(person)) return true;
     if (!filtered) return false;
+    if (statusFilter === "no_contact")
+      return !(person.state === "unclaimed" && person.has_contact === false);
     // Filtering by status means a list of people, not the wall.
     return !effStatuses.includes(person.state);
   };
@@ -527,6 +534,11 @@ function BoardPage() {
           value={statusFilter}
           onPick={pickStatus}
         />
+        {statusFilter !== null && STATUS_BLURBS[statusFilter] && (
+          <p className="mt-3 max-w-[560px]" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
+            {STATUS_BLURBS[statusFilter]}
+          </p>
+        )}
         {!flatMode && <DecadeRail groups={groups} />}
 
         {!flatMode && (
