@@ -1,3 +1,5 @@
+import { createContext, useContext } from "react";
+
 import type { BoardPerson } from "@/lib/board.functions";
 
 const STATE_WORDS: Record<BoardPerson["state"], string> = {
@@ -7,6 +9,11 @@ const STATE_WORDS: Record<BoardPerson["state"], string> = {
   maybe: "maybe going to Alumni Weekend",
   memorial: "remembered",
 };
+
+/** Whether a viewer is signed in. Chips read it from context so the board does
+ *  not have to thread a prop through every row component, and so a single
+ *  session lookup serves hundreds of chips. */
+export const ChipSessionContext = createContext(false);
 
 function chipStyle(state: BoardPerson["state"]): React.CSSProperties {
   switch (state) {
@@ -45,10 +52,13 @@ export function NameChip({
   dimmed: boolean;
   onClick?: (person: BoardPerson) => void;
 }) {
+  const signedIn = useContext(ChipSessionContext);
   const name = [person.first_name, person.last_name].filter(Boolean).join(" ");
   const display = person.played_as ? `${name} "${person.played_as}"` : name;
   const teamPart = person.team_label ? `, ${person.team_label}` : "";
   const isUnclaimed = person.state === "unclaimed";
+  // No row in identities at all: nobody has an address or a number for them.
+  const noContact = isUnclaimed && person.has_contact === false;
   const clickable = Boolean(onClick) && person.state !== "memorial";
   const isCurrent = person.is_current === true;
   // Anyone who ever coached or managed carries the tag, even if they also played.
@@ -64,16 +74,24 @@ export function NameChip({
       id={`person-${person.id}`}
       disabled={!clickable}
       onClick={clickable ? () => onClick?.(person) : undefined}
+      title={noContact && signedIn ? "Help us reach them" : undefined}
       aria-label={`${display}${teamPart}${isCurrent ? ", current player" : ""}${
         roleTag === "MANAGER" ? ", manager" : roleTag === "COACH" ? ", coach" : ""
       }${
         person.board_year > 0 ? `, ${person.board_year}` : ""
-      }, ${STATE_WORDS[person.state]}${
-        clickable ? (isUnclaimed ? ". Claim this name" : ". Update this answer") : ""
+      }, ${STATE_WORDS[person.state]}${noContact ? ", no contact info on file" : ""}${
+        clickable
+          ? noContact && signedIn
+            ? ". Help us reach them"
+            : isUnclaimed
+              ? ". Claim this name"
+              : ". Update this answer"
+          : ""
       }`}
       className="group inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full transition-[opacity,border-color] duration-150"
       style={{
         ...chipStyle(person.state),
+        ...(noContact ? { border: "1.5px dashed var(--chalk)" } : null),
         padding: "7px 13px",
         opacity: dimmed ? 0.25 : 1,
         cursor: clickable ? "pointer" : "default",
@@ -105,7 +123,27 @@ export function NameChip({
           {person.board_year}
         </span>
       )}
-      {isUnclaimed && (
+      {noContact && signedIn ? (
+        // Signed in, no way to reach them: the trailing affordance asks for help
+        // instead of offering a claim. Anonymous visitors see nothing here.
+        <span
+          aria-hidden="true"
+          className="inline-flex items-center gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus:opacity-100"
+          style={{ fontSize: 11, color: "var(--sterling)" }}
+        >
+          <span
+            style={{
+              fontFamily: '"Space Grotesk", sans-serif',
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+            }}
+          >
+            Help us reach them
+          </span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--pitt-royal)" }}>?</span>
+        </span>
+      ) : isUnclaimed ? (
         <span
           aria-hidden="true"
           className="opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus:opacity-100"
@@ -113,7 +151,7 @@ export function NameChip({
         >
           +
         </span>
-      )}
+      ) : null}
     </button>
   );
 }
