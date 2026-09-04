@@ -134,6 +134,8 @@ const directionsLink: CSSProperties = {
   background: "transparent",
   border: "none",
   padding: 0,
+  /* Tall enough to hit with a thumb even though the text is small. */
+  minHeight: 44,
   color: "var(--pitt-royal)",
   fontFamily: '"Space Grotesk", sans-serif',
   fontSize: 13,
