@@ -677,9 +677,12 @@ export const getNavIdentity = createServerFn({ method: "GET" })
     personId: string | null;
     firstName: string | null;
     rsvpStatus: RsvpStatus | null;
+    isAdmin: boolean;
   }> => {
     const personId = await resolveMyPersonId(context.supabase, context.userId);
-    if (!personId) return { personId: null, firstName: null, rsvpStatus: null };
+    const { data: isAdmin } = await context.supabase.rpc("is_admin");
+    if (!personId)
+      return { personId: null, firstName: null, rsvpStatus: null, isAdmin: Boolean(isAdmin) };
     const { currentEditionYear } = await import("./editions.server");
     const eventYear = await currentEditionYear();
     const [personRes, rsvpRes] = await Promise.all([
@@ -695,6 +698,7 @@ export const getNavIdentity = createServerFn({ method: "GET" })
       personId,
       firstName: (personRes.data?.first_name as string | null) ?? null,
       rsvpStatus: ((rsvpRes.data?.status as RsvpStatus | undefined) ?? null),
+      isAdmin: Boolean(isAdmin),
     };
   });
 

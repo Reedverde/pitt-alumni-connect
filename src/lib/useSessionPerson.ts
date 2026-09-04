@@ -44,5 +44,6 @@ export function useSessionPerson() {
     personId: query.data?.personId ?? null,
     firstName: query.data?.firstName ?? null,
     rsvpStatus: query.data?.rsvpStatus ?? null,
+    isAdmin: query.data?.isAdmin ?? false,
   };
 }
