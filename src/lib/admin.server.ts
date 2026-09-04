@@ -2502,36 +2502,127 @@ export async function listEditions(): Promise<EditionRow[]> {
   }));
 }
 
+/** Every event write shares one shape. The database trigger records the change
+ *  and decides whether the public deserves an update, so nothing here queues
+ *  news by hand: one reliable path, no duplicates. */
+export type EditionEventInput = {
+  admin_key?: string | null;
+  admin_name?: string | null;
+  title?: string;
+  day_number?: number;
+  division?: string | null;
+  location?: string | null;
+  map_url?: string | null;
+  ticket_url?: string | null;
+  notes?: string | null;
+  organizer_notes?: string | null;
+  time_tbd?: boolean;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  timezone?: string | null;
+  status?: string;
+  audience?: string;
+  prompt_rsvp?: boolean;
+  ask_party_size?: boolean;
+  critical_mass?: number | null;
+  capacity?: number | null;
+  published?: boolean;
+  is_placeholder?: boolean;
+};
+
+const text = (value: string | null | undefined, max: number) => {
+  const trimmed = (value ?? "").trim();
+  return trimmed ? trimmed.slice(0, max) : null;
+};
+
+const positive = (value: number | null | undefined) => {
+  if (value === null || value === undefined) return null;
+  const n = Math.trunc(Number(value));
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+
+/** Heads already promised on an event: the sum of party sizes on yes answers. */
+async function expectedHeads(eventId: string): Promise<number> {
+  const { data } = await supabaseAdmin
+    .from("event_rsvps")
+    .select("party_size, status")
+    .eq("event_id", eventId)
+    .eq("status", "yes");
+  return (data ?? []).reduce((sum, row) => sum + Number((row as { party_size?: number }).party_size ?? 1), 0);
+}
+
+/** The trigger writes pending news keyed by event id. Asking the table is how
+ *  the admin screen learns whether this save produced a public update. */
+async function queuedNewsFor(eventId: string, sinceIso: string): Promise<boolean> {
+  const { count } = await supabaseAdmin
+    .from("news_pending_updates")
+    .select("id", { count: "exact", head: true })
+    .like("dedupe_key", `evt:${eventId}:%`)
+    .gte("created_at", sinceIso);
+  return (count ?? 0) > 0;
+}
+
+/** A moment safely before the write, allowing for clock drift. */
+function watermark() {
+  return new Date(Date.now() - 10_000).toISOString();
+}
+
+function buildEventPatch(input: EditionEventInput, before?: Record<string, unknown>) {
+  const patch: Record<string, unknown> = {};
+  if (input.title !== undefined) {
+    const title = text(input.title, 160);
+    if (!title) throw new Error("Give the event a name.");
+    patch.title = title;
+  }
+  if (input.admin_key !== undefined)
+    patch.admin_key = text(input.admin_key, 60)?.toLowerCase().replace(/[^a-z0-9-]+/g, "-") ?? null;
+  if (input.admin_name !== undefined) patch.admin_name = text(input.admin_name, 120);
+  if (input.day_number !== undefined)
+    patch.day_number = Math.min(7, Math.max(1, Math.trunc(input.day_number || 1)));
+  if (input.division !== undefined) patch.division = input.division || null;
+  if (input.location !== undefined) patch.location = text(input.location, 160);
+  if (input.map_url !== undefined) patch.map_url = text(input.map_url, 500);
+  if (input.ticket_url !== undefined) patch.ticket_url = text(input.ticket_url, 500);
+  if (input.notes !== undefined) patch.notes = text(input.notes, 800);
+  if (input.organizer_notes !== undefined) patch.organizer_notes = text(input.organizer_notes, 800);
+  if (input.timezone !== undefined) patch.timezone = text(input.timezone, 60) ?? "America/New_York";
+  if (input.audience !== undefined)
+    patch.audience = EVENT_AUDIENCES.includes(input.audience as never) ? input.audience : "everyone";
+  if (input.status !== undefined)
+    patch.status = EVENT_STATUSES.includes(input.status as never) ? input.status : "tentative";
+  if (input.prompt_rsvp !== undefined) patch.prompt_rsvp = Boolean(input.prompt_rsvp);
+  if (input.ask_party_size !== undefined) patch.ask_party_size = Boolean(input.ask_party_size);
+  if (input.critical_mass !== undefined) patch.critical_mass = positive(input.critical_mass);
+  if (input.capacity !== undefined) patch.capacity = positive(input.capacity);
+  if (input.published !== undefined) patch.published = Boolean(input.published);
+  if (input.is_placeholder !== undefined) patch.is_placeholder = Boolean(input.is_placeholder);
+  if (input.time_tbd !== undefined || input.starts_at !== undefined) {
+    const tbd = input.time_tbd ?? Boolean(before?.time_tbd);
+    const starts =
+      input.starts_at !== undefined ? input.starts_at : ((before?.starts_at as string | null) ?? null);
+    patch.time_tbd = tbd || !starts;
+    patch.starts_at = tbd ? null : starts || null;
+  }
+  if (input.ends_at !== undefined) patch.ends_at = input.ends_at || null;
+  if (patch.time_tbd === true) patch.ends_at = null;
+  return patch;
+}
+
 /** Placeholder lane events are meant to be replaced, so deleting one is routine.
- *  A real, dated event disappearing is a cancellation the public needs to see. */
+ *  A real, dated event disappearing is a cancellation the public needs to see,
+ *  and the database trigger is what says so. */
 export async function deleteEditionEvent(actor: string | null, id: string) {
+  const since = watermark();
   const { data: beforeRow } = await supabaseAdmin
     .from("events")
-    .select("id, title, location, starts_at, time_tbd, is_placeholder")
+    .select("id, title, location, starts_at, time_tbd, is_placeholder, published")
     .eq("id", id)
     .maybeSingle();
   const { error } = await supabaseAdmin.from("events").delete().eq("id", id);
   if (error) throw new Error(error.message);
   await audit(actor, "edition.delete_event", "events", id, (beforeRow as Json) ?? null, null);
-
-  const before = beforeRow as Record<string, unknown> | null;
-  let queuedNews = false;
-  if (before && !before.is_placeholder) {
-    const title = String(before.title ?? "An event");
-    const { addPendingUpdate } = await import("./news.server");
-    const result = await addPendingUpdate({
-      kind: "schedule_cancelled",
-      title: `${title} is off the schedule`,
-      summary: `${title} has been cancelled. Check the Schedule for what is still on.`,
-      category: "Schedule",
-      relatedUrl: `${SITE_ORIGIN}/schedule`,
-      dedupeKey: `event_cancelled:${id}`,
-    });
-    queuedNews = result.created;
-  }
-  return { ok: true, queuedNews };
+  return { ok: true, queuedNews: await queuedNewsFor(id, since) };
 }
-
 
 export function defaultEditionDates(eventYear: number) {
   return firstOctoberWeekend(eventYear);
@@ -2659,65 +2750,40 @@ export async function setEditionCurrent(actor: string | null, eventYear: number)
 /** Events can be added to any edition, so next year is built before it goes live. */
 export async function createEditionEvent(
   actor: string | null,
-  input: {
-    event_year: number;
-    title: string;
-    day_number: number;
-    division: string | null;
-    location: string | null;
-    notes: string | null;
-    time_tbd: boolean;
-    starts_at: string | null;
-  },
+  input: EditionEventInput & { event_year: number },
 ) {
-  const title = input.title.trim().slice(0, 160);
-  if (!title) throw new Error("Give the event a name.");
+  const patch = buildEventPatch({ time_tbd: true, ...input });
+  if (!patch.title) throw new Error("Give the event a name.");
   const row = {
     event_year: input.event_year,
-    title,
-    day_number: Math.min(7, Math.max(1, Math.trunc(input.day_number || 1))),
-    division: input.division || null,
-    location: input.location?.trim().slice(0, 160) || null,
-    notes: input.notes?.trim().slice(0, 400) || null,
-    time_tbd: input.time_tbd || !input.starts_at,
-    starts_at: input.time_tbd ? null : input.starts_at || null,
     sort_order: 0,
-  };
-  const { data, error } = await supabaseAdmin.from("events").insert(row).select("id").single();
+    // Everything on a published schedule asks the question unless an organizer
+    // deliberately turns it off.
+    prompt_rsvp: input.prompt_rsvp ?? true,
+    published: input.published ?? false,
+    ...patch,
+  } as Record<string, unknown>;
+
+  const blockers = eventBlockers(row as never, null);
+  if (blockers.length > 0) throw new Error(blockers[0]);
+
+  const since = watermark();
+  const { data, error } = await supabaseAdmin.from("events").insert(row as never).select("id").single();
   if (error) throw new Error(error.message);
-  await audit(actor, "edition.add_event", "events", (data?.id as string) ?? null, null, row);
-
-  // Adding an event to the public plan is news either way. A confirmed time
-  // says so; a TBD says the slot exists and the time is still coming.
-  const { addPendingUpdate } = await import("./news.server");
-  const when =
-    !row.time_tbd && row.starts_at
-      ? new Intl.DateTimeFormat("en-US", {
-          timeZone: "America/New_York",
-          weekday: "long",
-          hour: "numeric",
-          minute: "2-digit",
-        }).format(new Date(row.starts_at))
-      : null;
-  const parts = [when ? `${when}.` : "Time still TBD.", row.location ? `At ${row.location}.` : ""]
-    .filter(Boolean)
-    .join(" ");
-  const queued = await addPendingUpdate({
-    kind: row.time_tbd ? "schedule_added" : "schedule_confirmed",
-    title: `${row.title} is on the schedule`,
-    summary: parts,
-    category: "Schedule",
-    relatedUrl: `${SITE_ORIGIN}/schedule`,
-    dedupeKey: `event:${(data?.id as string) ?? row.title}`,
-  });
-  return { ok: true, queuedNews: queued.created };
+  const id = (data?.id as string) ?? null;
+  await audit(actor, "edition.add_event", "events", id, null, row as Json);
+  return {
+    ok: true,
+    id,
+    queuedNews: id ? await queuedNewsFor(id, since) : false,
+    warnings: eventWarnings(row as never, 0),
+  };
 }
-
 
 export async function listEditionEvents(eventYear: number) {
   const { data } = await supabaseAdmin
     .from("events")
-    .select("id, title, day_number, starts_at, time_tbd, location, division")
+    .select("id, title, day_number, starts_at, time_tbd, location, division, status, audience")
     .eq("event_year", eventYear)
     .order("day_number")
     .order("sort_order");
@@ -2725,103 +2791,89 @@ export async function listEditionEvents(eventYear: number) {
 }
 
 /**
- * Editing an existing event. Only what the public can see on /schedule counts as
- * news: the day, the start time, the location, or a TBD becoming a real time.
- * Title tidy ups, notes, sort order, and no op saves stay quiet.
+ * Editing an existing event. The write is all this does: the database trigger
+ * records the before and after, and queues a public update when the change is
+ * one the public can see. Quiet corrections stay quiet.
  */
-export async function updateEditionEvent(
-  actor: string | null,
-  input: {
-    id: string;
-    title?: string;
-    day_number?: number;
-    division?: string | null;
-    location?: string | null;
-    notes?: string | null;
-    time_tbd?: boolean;
-    starts_at?: string | null;
-  },
-) {
+export async function updateEditionEvent(actor: string | null, input: EditionEventInput & { id: string }) {
   const { data: beforeRow } = await supabaseAdmin
     .from("events")
-    .select("id, event_year, title, day_number, division, location, notes, time_tbd, starts_at")
+    .select("*")
     .eq("id", input.id)
     .maybeSingle();
   if (!beforeRow) throw new Error("That event no longer exists.");
   const before = beforeRow as Record<string, unknown>;
 
-  const patch: Record<string, unknown> = {};
-  if (typeof input.title === "string") {
-    const title = input.title.trim().slice(0, 160);
-    if (!title) throw new Error("Give the event a name.");
-    patch.title = title;
-  }
-  if (typeof input.day_number === "number")
-    patch.day_number = Math.min(7, Math.max(1, Math.trunc(input.day_number)));
-  if (input.division !== undefined) patch.division = input.division || null;
-  if (input.location !== undefined) patch.location = input.location?.trim().slice(0, 160) || null;
-  if (input.notes !== undefined) patch.notes = input.notes?.trim().slice(0, 400) || null;
-  if (input.time_tbd !== undefined || input.starts_at !== undefined) {
-    const tbd = input.time_tbd ?? (before.time_tbd as boolean);
-    const starts = input.starts_at !== undefined ? input.starts_at : (before.starts_at as string | null);
-    patch.time_tbd = tbd || !starts;
-    patch.starts_at = tbd ? null : starts || null;
-  }
-  if (Object.keys(patch).length === 0) return { ok: true, queuedNews: false };
+  const patch = buildEventPatch(input, before);
+  if (Object.keys(patch).length === 0) return { ok: true, queuedNews: false, warnings: [] as string[] };
 
+  const after = { ...before, ...patch };
+  const heads = await expectedHeads(input.id);
+  const blockers = eventBlockers(after as never, heads);
+  if (blockers.length > 0) throw new Error(blockers[0]);
+
+  const since = watermark();
   const { error } = await supabaseAdmin.from("events").update(patch as never).eq("id", input.id);
   if (error) throw new Error(error.message);
   await audit(actor, "edition.update_event", "events", input.id, before as Json, patch as Json);
 
-  const after = { ...before, ...patch };
-  const changedDay = after.day_number !== before.day_number;
-  const changedTime = String(after.starts_at ?? "") !== String(before.starts_at ?? "");
-  const changedPlace =
-    String(after.location ?? "").trim().toLowerCase() !==
-    String(before.location ?? "").trim().toLowerCase();
-  const changedTbd = after.time_tbd !== before.time_tbd;
-  if (!changedDay && !changedTime && !changedPlace && !changedTbd) {
-    return { ok: true, queuedNews: false };
+  return {
+    ok: true,
+    queuedNews: await queuedNewsFor(input.id, since),
+    warnings: eventWarnings(after as never, heads),
+  };
+}
+
+/** The durable change history, newest first. Every add, edit and deletion,
+ *  however it reached the database. */
+export type EventChangeRow = {
+  id: number;
+  event_id: string | null;
+  op: string;
+  changed_fields: string[];
+  title: string | null;
+  source: string | null;
+  actor: string | null;
+  newsworthy: boolean;
+  created_at: string;
+};
+
+export async function listEventChanges(limit = 60): Promise<EventChangeRow[]> {
+  const { data } = await supabaseAdmin
+    .from("event_changes")
+    .select("id, event_id, op, changed_fields, before, after, actor_person_id, source, newsworthy, created_at")
+    .order("id", { ascending: false })
+    .limit(Math.min(200, Math.max(1, limit)));
+
+  const rows = (data ?? []) as Record<string, unknown>[];
+  const ids = [...new Set(rows.map((r) => r.actor_person_id as string).filter(Boolean))];
+  const names = new Map<string, string>();
+  if (ids.length > 0) {
+    const { data: people } = await supabaseAdmin
+      .from("people")
+      .select("id, first_name, last_name")
+      .in("id", ids);
+    for (const person of people ?? [])
+      names.set(person.id as string, [person.first_name, person.last_name].filter(Boolean).join(" "));
   }
 
-  // A schedule that is still TBD in every way it just changed is not yet news.
-  if (after.time_tbd && !changedPlace && !changedDay) return { ok: true, queuedNews: false };
-
-  const title = String(after.title ?? "The schedule");
-  // An update is only useful if it carries the new concrete information.
-  const whenText =
-    !after.time_tbd && after.starts_at
-      ? new Intl.DateTimeFormat("en-US", {
-          timeZone: "America/New_York",
-          weekday: "long",
-          hour: "numeric",
-          minute: "2-digit",
-        }).format(new Date(String(after.starts_at)))
-      : null;
-  const bits: string[] = [];
-  if (changedTbd && !after.time_tbd)
-    bits.push(whenText ? `has a confirmed time, ${whenText}` : "has a confirmed time");
-  else if (changedTime) bits.push(whenText ? `moved to ${whenText}` : "moved to a new time");
-  if (changedDay && !whenText) bits.push("moved to a different day");
-  if (changedPlace) bits.push(after.location ? `is now at ${after.location}` : "changed location");
-  const summary = bits.length ? `${title} ${bits.join(" and ")}.` : "";
-
-
-  // Stable per distinct material state, so retries collapse and a later real
-  // change still gets its own entry.
-  const stamp = [after.day_number, after.starts_at ?? "tbd", String(after.location ?? "").trim()]
-    .join("|")
-    .toLowerCase();
-  const { addPendingUpdate } = await import("./news.server");
-  await addPendingUpdate({
-    kind: "schedule_changed",
-    title: `${title} has a schedule change`,
-    summary,
-    category: "Schedule",
-    relatedUrl: `${SITE_ORIGIN}/schedule`,
-    dedupeKey: `event_change:${input.id}:${stamp}`,
+  return rows.map((r) => {
+    const after = (r.after ?? null) as Record<string, unknown> | null;
+    const before = (r.before ?? null) as Record<string, unknown> | null;
+    return {
+      id: Number(r.id),
+      event_id: (r.event_id as string | null) ?? null,
+      op: String(r.op),
+      changed_fields: ((r.changed_fields as string[] | null) ?? []).filter(
+        (f) => f !== "created_at" && f !== "updated_at",
+      ),
+      title: (after?.title as string | null) ?? (before?.title as string | null) ?? null,
+      source: (r.source as string | null) ?? null,
+      actor: names.get(r.actor_person_id as string) ?? null,
+      newsworthy: Boolean(r.newsworthy),
+      created_at: String(r.created_at),
+    };
   });
-  return { ok: true, queuedNews: true };
 }
 
 // ------------------------------------------------- sign-in attempts
