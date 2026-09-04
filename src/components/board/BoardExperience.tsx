@@ -23,6 +23,9 @@ import { YearPhoto, cornersForRow } from "@/components/board/YearPhoto";
 import { ghostButton } from "@/components/schedule/ScheduleSummary";
 import { SidelineLoop } from "@/components/board/SidelineLoop";
 import { countdown, resolveSeason } from "@/lib/edition-format";
+import { BoardControls } from "@/components/board/BoardControls";
+import { attendanceOf, buildEras, profileStatusOf, programLabel } from "@/lib/board-status";
+
 
 /** The server already rendered this data. Refetching it the instant the page
  *  hydrates puts a cold Worker on the critical path of a first ever visit,
@@ -65,30 +68,25 @@ function pickPhoto(photos: Record<string, BoardPhoto>, years: number[]) {
   return null;
 }
 
-const DIVISION_CHIP_LABELS: Record<string, string> = {
-  MENS_A: "Sabah",
-  MENS_B: "BITT / Pressure",
-  WOMENS_A: "Danger",
-  WOMENS_B: "Danger B",
-};
-
-/** Five states. "Not this year" is never publicly listable, and unclaimed is
- *  the board's background rather than a status. */
+/** Every status the Status dropdown can be set to. Attendance ("this year")
+ *  and profile status live in separate groups and never blend. */
 const STATUS_FILTERS = [
-  { code: "going", label: "Going" },
+  { code: "going", label: "Coming" },
   { code: "maybe", label: "Maybe" },
-  { code: "claimed", label: "Claimed" },
-  { code: "unclaimed", label: "Unclaimed" },
-  { code: "no_contact", label: "No contact info" },
+  { code: "claimed", label: "Claimed their name" },
+  { code: "unclaimed", label: "Not claimed yet" },
+  { code: "no_contact", label: "No way to reach them" },
+  { code: "memorial", label: "In memoriam" },
 ] as const;
 
-/** The one sentence that sits under the filter chips while a filter is on. */
+/** The one sentence that sits under the controls while a filter is on. */
 const STATUS_BLURBS: Record<string, string> = {
   going: "Said they are attending 2026 Alumni Weekend.",
   maybe: "You should encourage your teammates to come. Reach out to them today.",
   claimed: "Verified their contact information.",
   unclaimed: "Haven't checked in or verified their contact info.",
   no_contact: "Have contact info for them? Please let us know by clicking their name.",
+  memorial: "Teammates we have lost. Remembered here, never counted as an answer.",
 };
 
 /** Copy for a row where nothing matches the toggles that are on. It reads as
@@ -97,6 +95,7 @@ function emptyCopy(label: string, statuses: string[]) {
   const only = statuses.length === 1 ? statuses[0] : null;
   if (only === "going") return `Nobody has said yes from ${label} yet. Be the first.`;
   if (only === "maybe") return `Nobody from ${label} is on the fence yet. Be the first.`;
+  if (only === "memorial") return `Nobody from ${label} is remembered here.`;
   if (statuses.length === 2 && statuses.includes("going") && statuses.includes("maybe"))
     return `Nobody from ${label} has answered yet. Be the first.`;
   if (statuses.length === 0) return `Turn a filter back on to see ${label}.`;
@@ -104,16 +103,18 @@ function emptyCopy(label: string, statuses: string[]) {
 }
 
 const STATUS_WORDS: Record<string, string> = {
-  going: "going",
+  going: "coming",
   maybe: "maybe",
   claimed: "claimed",
-  unclaimed: "unclaimed",
-  no_contact: "with no contact info",
+  unclaimed: "not claimed yet",
+  no_contact: "with no way to reach them",
+  memorial: "remembered here",
 };
 
-/** "going", "claimed or going", and so on, in a fixed reading order. */
+
+/** "coming", "claimed or coming", and so on, in a fixed reading order. */
 function statusPhrase(statuses: string[]) {
-  const ordered = ["claimed", "maybe", "going", "unclaimed", "no_contact"].filter((s) =>
+  const ordered = ["claimed", "maybe", "going", "unclaimed", "no_contact", "memorial"].filter((s) =>
     statuses.includes(s),
   );
   const words = ordered.map((s) => STATUS_WORDS[s]);
@@ -130,6 +131,7 @@ function flatEmptyCopy(statuses: string[]) {
   if (only === "claimed") return "Nobody has claimed yet. Be the first.";
   if (only === "unclaimed") return "Everyone has checked in already.";
   if (only === "no_contact") return "We can reach everyone on the board.";
+  if (only === "memorial") return "Nobody is remembered here yet.";
   if (statuses.length === 0) return "Turn a filter back on to see the board.";
   return "Nobody has answered yet. Be the first.";
 }
@@ -140,21 +142,22 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
   const filters = useMemo(
     () =>
       data.divisions
-        .map((d) => ({
-        code: d.code,
-        label: DIVISION_CHIP_LABELS[d.code] ?? d.label,
-        }))
-        .concat([{ code: "__coaches", label: "Coaches" }]),
+        .map((d) => ({ code: d.code, label: programLabel(d.code, d.label) }))
+        .concat([{ code: "__coaches", label: "Coaches and managers" }]),
     [data.divisions],
   );
+
   // Single-select: null means every program.
   const [divisionFilter, setDivisionFilter] = useState<string | null>(null);
   // Single-select: null means "everyone", the normal year-row board.
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  // Search is its own constraint: it composes with the two filters above.
+  // Single-select era band: null means every year.
+  const [eraFilter, setEraFilter] = useState<string | null>(null);
+  // Search is its own constraint: it composes with the filters above.
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [newestFirst, setNewestFirst] = useState(true);
+
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
   const [claimPrefill, setClaimPrefill] = useState("");
@@ -233,15 +236,25 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
     () => buildYearGroups(people.filter((p) => p.board_year > 1997)),
     [people],
   );
+  const eras = useMemo(() => buildEras(people.map((p) => p.board_year)), [people]);
+  const eraBand = eras.find((e) => e.key === eraFilter) ?? null;
+  const inEra = (year: number) =>
+    eraBand === null || (year >= eraBand.from && year <= eraBand.to);
+
   // The anchor block is just another row with a sort key below every real year,
   // so it obeys the toggle: first when oldest first, last when newest first.
   const orderedRows = useMemo(() => {
     const rows: Array<{ kind: "anchor" | "year"; key: string; group?: YearGroup }> = [
-      ...(anchorPeople.length > 0 ? [{ kind: "anchor" as const, key: "anchor" }] : []),
-      ...groups.map((group) => ({ kind: "year" as const, key: group.key, group })),
+      ...(anchorPeople.length > 0 && (eraBand === null || eraBand.from <= 1997)
+        ? [{ kind: "anchor" as const, key: "anchor" }]
+        : []),
+      ...groups
+        .filter((group) => group.years.some((y) => inEra(y)))
+        .map((group) => ({ kind: "year" as const, key: group.key, group })),
     ];
     return newestFirst ? rows.reverse() : rows;
-  }, [groups, anchorPeople, newestFirst]);
+  }, [groups, anchorPeople, newestFirst, eraBand]);
+
 
   const clock = countdown(data.edition, data.nextEdition);
 
@@ -263,17 +276,11 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
     node.focus({ preventScroll: true });
   }, [focusPersonId, people]);
 
-  const pickDivision = (code: string) =>
-    setDivisionFilter((prev) => (prev === code ? null : code));
-
   // Light debounce so a fast typist does not re-filter 454 rows per keystroke.
   useEffect(() => {
     const id = setTimeout(() => setSearchQuery(searchInput), 160);
     return () => clearTimeout(id);
   }, [searchInput]);
-
-  const pickStatus = (code: string) =>
-    setStatusFilter((prev) => (prev === code ? null : code));
 
   const filtered = statusFilter !== null;
   const searchTokens = tokenizeQuery(searchQuery);
@@ -311,14 +318,18 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
     return (person.divisions ?? []).includes(divisionFilter);
   };
 
+  // Program, era and status compose. Attendance ("this year") and profile
+  // status are read through the two separated helpers, never off the blended
+  // state word, so the two ideas can never drift apart in the UI.
   const isHidden = (person: BoardPerson) => {
     if (!matchesDivision(person)) return true;
+    if (typeof person.board_year === "number" && !inEra(person.board_year)) return true;
     if (!filtered) return false;
-    if (statusFilter === "no_contact")
-      return !(person.state === "unclaimed" && person.has_contact === false);
-    // Filtering by status means a list of people, not the wall.
-    return !effStatuses.includes(person.state);
+    if (statusFilter === "going" || statusFilter === "maybe")
+      return attendanceOf(person) !== statusFilter;
+    return profileStatusOf(person) !== statusFilter;
   };
+
 
   // A row is "empty" when nothing that could carry a status does, under the
   // toggles that are on.
@@ -332,7 +343,7 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
     ).length;
 
   const byYearThenName = (a: BoardPerson, b: BoardPerson) =>
-    b.board_year - a.board_year ||
+    (newestFirst ? b.board_year - a.board_year : a.board_year - b.board_year) ||
     `${a.last_name ?? a.first_name} ${a.first_name}`
       .toLowerCase()
       .localeCompare(`${b.last_name ?? b.first_name} ${b.first_name}`.toLowerCase());
@@ -358,6 +369,17 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
   // Only-fuzzy results must never be presented as if they were exact.
   const onlyFuzzy = searching && ranked.length > 0 && ranked.every((r) => r.tier === TIER_FUZZY);
 
+  // One live line under the controls, so the board never leaves a reader
+  // wondering what the dropdowns just did.
+  const visibleCount = flatMode
+    ? flatPeople.length
+    : people.filter((p) => !isHidden(p)).length;
+  const resultLabel = searching
+    ? `${flatPeople.length} matching "${searchQuery.trim()}"`
+    : filtered
+      ? `${visibleCount} ${statusPhrase(phraseStatuses)}`
+      : `${visibleCount} names on the board`;
+
   // Unclaimed and no-contact lists are long, so they render in five-year
   // chunks instead of one flat run. Search results stay flat and ranked.
   const chunkByFiveYears =
@@ -376,8 +398,9 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
         }
         return [...buckets.entries()]
           .map(([start, list]) => ({ start, people: list }))
-          .sort((a, b) => b.start - a.start);
+          .sort((a, b) => (newestFirst ? b.start - a.start : a.start - b.start));
       })();
+
 
   return (
     <ChipSessionContext.Provider value={session.signedIn}>
@@ -454,64 +477,60 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
             FIND YOUR YEAR
           </h2>
           <p className="mt-3 max-w-[560px] text-left" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
-            Every person who ever played. Grey until they say whether or not they are coming.
+            Every person who ever played. Search your name, then say whether you are coming.
+          </p>
+          <p className="mt-2 max-w-[560px] text-left" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
+            Everyone sits under their last recorded playing season. Where we have no playing
+            history on file, we place them by graduation year instead.
           </p>
           <BoardKey />
         </header>
 
-        <BoardSearch
-          value={searchInput}
-          onChange={setSearchInput}
-          onClear={() => {
+        <BoardControls
+          search={searchInput}
+          onSearch={setSearchInput}
+          onClearSearch={() => {
             setSearchInput("");
             setSearchQuery("");
           }}
-        />
-        <StatusRadioChips
-          legend="Programs"
-          options={filters}
-          value={divisionFilter}
-          onPick={pickDivision}
-        />
-        <StatusRadioChips
-          legend="Filter by"
-          options={STATUS_FILTERS.map((s) => ({ code: s.code, label: s.label }))}
-          value={statusFilter}
-          onPick={pickStatus}
+          programs={filters}
+          program={divisionFilter}
+          onProgram={setDivisionFilter}
+          status={statusFilter}
+          onStatus={setStatusFilter}
+          eras={eras}
+          era={eraFilter}
+          onEra={setEraFilter}
+          newestFirst={newestFirst}
+          onSort={setNewestFirst}
+          resultLabel={resultLabel}
+          anyFilter={divisionFilter !== null || statusFilter !== null || eraFilter !== null || searching}
+          onReset={() => {
+            setDivisionFilter(null);
+            setStatusFilter(null);
+            setEraFilter(null);
+            setSearchInput("");
+            setSearchQuery("");
+          }}
         />
         {statusFilter !== null && STATUS_BLURBS[statusFilter] && (
           <p className="mt-3 max-w-[560px]" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
             {STATUS_BLURBS[statusFilter]}
           </p>
         )}
-        {!flatMode && <DecadeRail groups={groups} />}
 
-        {!flatMode && (
-        <div className="mt-6 flex justify-end">
-          <button
-            type="button"
-            onClick={() => setNewestFirst((v) => !v)}
-            className="label-caps rounded-[7px] px-3 py-2"
-            style={{ border: "1px solid var(--chalk)", color: "var(--sterling)", background: "var(--pure-white)" }}
-          >
-            {newestFirst ? "Newest first" : "Oldest first"}
-          </button>
-        </div>
-        )}
 
         {flatMode ? (
           <div className="pt-6">
-            <p
-              className="label-caps"
-              aria-live="polite"
-              style={{ fontFamily: '"Space Mono", monospace', color: "var(--sterling)" }}
-            >
-              {searching
-                ? onlyFuzzy
-                  ? `NO EXACT MATCH FOR "${searchQuery.trim().toUpperCase()}". CLOSEST:`
-                  : `${flatPeople.length} MATCHING "${searchQuery.trim().toUpperCase()}"`
-                : `${flatPeople.length} ${statusPhrase(phraseStatuses)}`}
-            </p>
+            {onlyFuzzy && (
+              <p
+                className="label-caps"
+                style={{ fontFamily: '"Space Mono", monospace', color: "var(--sterling)" }}
+              >
+                {`NO EXACT MATCH FOR "${searchQuery.trim().toUpperCase()}". CLOSEST:`}
+              </p>
+            )}
+
             {flatPeople.length > 0 ? (
               chunkByFiveYears ? (
                 <div className="mt-4">
@@ -602,7 +621,10 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
               />
             ),
           )}
-          {data.coaches.length > 0 && <CoachesRow people={data.coaches} onClaim={openChip} />}
+          {eraFilter === null && data.coaches.length > 0 && (
+            <CoachesRow people={data.coaches} onClaim={openChip} />
+          )}
+
         </div>
         )}
 
@@ -790,126 +812,62 @@ function GoldDot() {
   );
 }
 
-/** One neutral radio row. Used by both the program filter and the status
- *  filter so there is only ever one pattern. No gold: gold means attending. */
-function StatusRadioChips({
-  legend,
-  options,
-  value,
-  onPick,
-}: {
-  legend: string;
-  options: { code: string; label: string }[];
-  value: string | null;
-  onPick: (code: string) => void;
-}) {
-  return (
-    <div className="mt-2">
-      <p className="label-caps mb-2" style={{ color: "var(--sterling)" }}>
-        {legend}
-      </p>
-      <div role="radiogroup" aria-label={legend} className="flex flex-wrap gap-2">
-        {options.map((o) => {
-          const on = value === o.code;
-          return (
-            <button
-              key={o.code}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              onClick={() => onPick(o.code)}
-              className="cursor-pointer rounded-full px-3 py-2"
-              style={{
-                background: on ? "var(--pitt-royal)" : "transparent",
-                border: on ? "1px solid transparent" : "1px solid var(--chalk)",
-                color: on ? "var(--pure-white)" : "var(--sterling)",
-                fontSize: 12,
-                fontWeight: 500,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-              }}
-            >
-              {o.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/** Small legend that maps the board chip colors to what they mean. */
+/** The legend, folded away behind one line. It is reference material, not the
+ *  first thing to read, and it keeps this year's answer separate from the
+ *  permanent state of a record. Every swatch is paired with a word. */
 function BoardKey() {
-  const items = [
-    { label: "Not claimed", dot: "var(--chalk)", border: "1px solid var(--chalk)", bg: "transparent", text: "var(--sterling)" },
-    { label: "Claimed", dot: "var(--pitt-royal)", border: "1px solid var(--pitt-royal)", bg: "transparent", text: "var(--pitt-royal)" },
+  const thisYear = [
+    { label: "Coming", dot: "var(--sabah-black)", border: "1px solid transparent", bg: "var(--pitt-gold)", text: "var(--sabah-black)" },
     { label: "Maybe", dot: "var(--pitt-gold)", border: "1px solid var(--pitt-gold)", bg: "transparent", text: "var(--steel-ink)" },
-    { label: "Going", dot: "var(--sabah-black)", border: "1px solid transparent", bg: "var(--pitt-gold)", text: "var(--sabah-black)" },
-    { label: "Remembered", dot: "var(--pure-white)", border: "1px solid transparent", bg: "var(--sabah-black)", text: "var(--pure-white)" },
   ];
-  return (
-    <div className="mt-5">
-      <p className="label-caps mb-2" style={{ color: "var(--sterling)" }}>
-        Key
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {items.map((item) => (
+  const profile = [
+    { label: "Claimed their name", dot: "var(--pitt-royal)", border: "1px solid var(--pitt-royal)", bg: "transparent", text: "var(--pitt-royal)" },
+    { label: "Not claimed yet", dot: "var(--chalk)", border: "1px solid var(--chalk)", bg: "transparent", text: "var(--steel-ink)" },
+    { label: "In memoriam", dot: "var(--pure-white)", border: "1px solid transparent", bg: "var(--sabah-black)", text: "var(--pure-white)" },
+  ];
+  const row = (items: typeof thisYear) => (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span
+          key={item.label}
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5"
+          style={{ background: item.bg, border: item.border, color: item.text, fontSize: 12, fontWeight: 500 }}
+        >
           <span
-            key={item.label}
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5"
-            style={{ background: item.bg, border: item.border, color: item.text, fontSize: 12, fontWeight: 500 }}
-          >
-            <span
-              aria-hidden="true"
-              className="inline-block rounded-full"
-              style={{ width: 6, height: 6, background: item.dot }}
-            />
-            <span className="label-caps" style={{ fontSize: 10 }}>{item.label}</span>
-          </span>
-        ))}
-      </div>
+            aria-hidden="true"
+            className="inline-block rounded-full"
+            style={{ width: 6, height: 6, background: item.dot }}
+          />
+          <span className="label-caps" style={{ fontSize: 10 }}>{item.label}</span>
+        </span>
+      ))}
     </div>
   );
-}
-
-function buildDecades(groups: YearGroup[]) {
-  const years = groups.flatMap((g) => g.years);
-  if (years.length === 0) return [] as { label: string; from: number; to: number }[];
-  const max = Math.max(...years);
-  const bands = [{ label: "1998–2009", from: 1998, to: 2009 }];
-  for (let from = 2010; from <= max; from += 10) {
-    const to = Math.min(from + 9, max);
-    bands.push({ label: from === to ? String(from) : `${from}–${to}`, from, to });
-  }
-  return bands;
-}
-
-function DecadeRail({ groups }: { groups: YearGroup[] }) {
-  const DECADES = buildDecades(groups);
   return (
-    <nav
-      aria-label="Jump to a decade"
-      className="decade-rail sticky z-20 mt-6 flex flex-wrap items-center gap-3 py-3"
-      style={{ background: "var(--field-white)", borderBottom: "1px solid var(--chalk)" }}
-    >
-      {DECADES.map((decade, i) => {
-        const target = groups.find((g) => g.latestYear >= decade.from && g.years[0] <= decade.to);
-        return (
-          <span key={decade.label} className="flex items-center gap-3">
-            {i > 0 && <span style={{ color: "var(--chalk)" }}>·</span>}
-            <a
-              href={target ? `#${target.key}` : "#top"}
-              className="label-caps"
-              style={{ color: "var(--pitt-royal)" }}
-            >
-              {decade.label}
-            </a>
-          </span>
-        );
-      })}
-    </nav>
+    <details className="mt-5 max-w-[560px]">
+      <summary
+        className="label-caps cursor-pointer"
+        style={{ color: "var(--pitt-royal)", minHeight: 36, display: "flex", alignItems: "center" }}
+      >
+        What the colours mean
+      </summary>
+      <div className="mt-2 pb-1">
+        <p className="label-caps" style={{ color: "var(--sterling)" }}>
+          This year
+        </p>
+        {row(thisYear)}
+        <p className="label-caps mt-4" style={{ color: "var(--sterling)" }}>
+          Profile
+        </p>
+        {row(profile)}
+        <p className="mt-3" style={{ fontSize: 13, color: "var(--steel-ink)" }}>
+          In memoriam is a permanent, respectful category. It is never an answer about the weekend.
+        </p>
+      </div>
+    </details>
   );
 }
+
 
 /** Coach-only people have no year to place them on, so they pin above the board. */
 function CoachesRow({
@@ -1036,57 +994,6 @@ function EmptyPrompt({
         )}
       </div>
     </NotchedBox>
-  );
-}
-
-/** One text field above the filter rows. No gold, no submit. */
-function BoardSearch({
-  value,
-  onChange,
-  onClear,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  onClear: () => void;
-}) {
-  return (
-    <div className="pt-6">
-      <label htmlFor="board-search" className="sr-only">
-        Find a name
-      </label>
-      <div className="relative w-full sm:max-w-[360px]">
-        <input
-          id="board-search"
-          type="text"
-          value={value}
-          autoComplete="off"
-          placeholder="Find a name"
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") onClear();
-          }}
-          className="w-full rounded-[7px] px-3 py-2 pr-9 outline-none"
-          style={{
-            border: "1px solid var(--chalk)",
-            background: "var(--pure-white)",
-            color: "var(--sabah-black)",
-            fontFamily: '"Space Grotesk", sans-serif',
-            fontSize: 15,
-          }}
-        />
-        {value !== "" && (
-          <button
-            type="button"
-            onClick={onClear}
-            aria-label="Clear search"
-            className="absolute right-2 top-1/2 -translate-y-1/2 px-1"
-            style={{ color: "var(--sterling)", fontSize: 16, lineHeight: 1 }}
-          >
-            ×
-          </button>
-        )}
-      </div>
-    </div>
   );
 }
 

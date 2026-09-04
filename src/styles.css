@@ -150,10 +150,11 @@
   --sidebar-ring: oklch(0.55 0.08 262.088);
 }
 
-/* The board has two persistent bars plus its sticky jump rail. Every other
- * route inherits the nav-only chrome height above. */
+/* The board carries two persistent bars: the nav and the counter. Era
+ * navigation is a control now, not a sticky rail. Every other route inherits
+ * the nav-only chrome height above. */
 .board-chrome {
-  --chrome-height: calc(var(--nav-height) + var(--counter-height) + var(--decade-rail-height));
+  --chrome-height: calc(var(--nav-height) + var(--counter-height));
 }
 
 .site-nav {
@@ -326,7 +327,7 @@
   }
 }
 
-:where(button, a, input, select, textarea):focus-visible {
+:where(button, a, input, select, textarea, summary):focus-visible {
   outline: 2px solid var(--pitt-royal);
   outline-offset: 2px;
 }

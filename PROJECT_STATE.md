@@ -695,3 +695,11 @@ Homepage swap (2026-09-04). The former /v2 editorial homepage is now the primary
 - Unpublished weekends are a normal page, not an error. `getSchedule` returns null rather than throwing, and `/editions/$year` renders a written explanation with two ways onward. `/editions/2025` now returns 200.
 
 Still open from the audit: phase D language and primitive consolidation, phase F editorial pass on alumni, donate and editions, phase G `/me` rebuild.
+
+## Connected alumni redesign, Phase 2 Find Your Year cleanup (2026-09-04)
+
+- New `src/lib/board-status.ts` holds the shared profile status, attendance and era band helpers so the board and future views agree on one vocabulary.
+- New `src/components/board/BoardControls.tsx` replaces the old chip clusters and the sticky decade rail with one responsive control bar: search, program, status, era and sort, plus a plain result count.
+- `BoardExperience.tsx` filters on era bands, reports a single result label, and folds the colour key into a disclosure instead of an always open legend.
+- Retired `StatusRadioChips`, `BoardSearch`, `DecadeRail` and their helpers.
+- `.board-chrome` sticky offset is now nav plus counter only, since the jump rail is gone, and `summary` gets the shared focus ring.
