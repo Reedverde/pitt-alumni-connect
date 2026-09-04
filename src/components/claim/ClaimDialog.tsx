@@ -7,6 +7,7 @@ import {
   listDivisions,
   searchPeople,
   submitRosterCorrection,
+  confirmRosterFacts,
   submitRsvp,
 } from "@/lib/rsvp.functions";
 import { PartySizeStepper } from "./PartySizeStepper";
@@ -96,6 +97,7 @@ export function ClaimDialog({
   const runSearch = useServerFn(searchPeople);
   const runClaim = useServerFn(claimProfile);
   const runCorrection = useServerFn(submitRosterCorrection);
+  const runConfirmFacts = useServerFn(confirmRosterFacts);
   const runSubmit = useServerFn(submitRsvp);
   const { data: divisions } = useQuery({
     queryKey: ["divisions"],
