@@ -113,6 +113,12 @@ export type AdminPerson = PersonRow & {
   contact_flagged: boolean;
   /** Derived: at least one address of theirs is not suppressed. */
   reachable: boolean;
+  /** An address exists on the record. Says nothing about whether it works. */
+  email_on_file: boolean;
+  /** Someone opened a sign in link sent to one of their addresses. */
+  email_verified: boolean;
+  /** When they last read their own permanent facts and said something. */
+  profile_review: ProfileReviewSummary;
 };
 
 
@@ -134,6 +140,8 @@ type Context = {
   badEmails: Set<string>;
   /** Derived deliverability, from the person_reachability view. */
   reachable: Set<string>;
+  /** Latest explicit profile review per person. Absent means never reviewed. */
+  reviews: Map<string, ProfileReviewSummary>;
 };
 
 
@@ -229,6 +237,7 @@ async function loadContext(): Promise<Context> {
     eventAnswers,
     badEmails,
     reachable,
+    reviews: await loadProfileReviews(),
   };
 
 }
@@ -259,6 +268,9 @@ function decorate(person: PersonRow, ctx: Context, label: string | null): AdminP
       ctx.badEmails.has(e.email.toLowerCase()),
     ),
     reachable: ctx.reachable.has(person.id),
+    email_on_file: (ctx.emails.get(person.id) ?? []).length > 0,
+    email_verified: (ctx.emails.get(person.id) ?? []).some((e) => e.verified),
+    profile_review: ctx.reviews.get(person.id) ?? { state: "never", lastReviewedAt: null },
     placed: boardYear !== null && boardYear !== undefined,
 
     board_year: boardYear,
@@ -1984,7 +1996,12 @@ export type PeopleFilterKey =
   | "event_no_choice"
   | "needs_review"
   | "unplaced"
-  | "bad_contact";
+  | "bad_contact"
+  | "email_on_file"
+  | "email_verified"
+  | "profile_confirmed"
+  | "profile_correction_pending"
+  | "profile_unreviewed";
 
 export type OverviewTile = {
   key: string;
@@ -2072,6 +2089,21 @@ export async function overview(
     }
   }
 
+  let emailOnFile = 0;
+  let emailVerified = 0;
+  let profileConfirmed = 0;
+  let profileCorrections = 0;
+  const reviewMap = ctx.reviews;
+  for (const person of people) {
+    if (person.deceased || person.archived) continue;
+    const emails = ctx.emails.get(person.id) ?? [];
+    if (emails.length > 0) emailOnFile++;
+    if (emails.some((e) => e.verified)) emailVerified++;
+    const review = reviewMap.get(person.id);
+    if (review?.state === "confirmed") profileConfirmed++;
+    if (review?.state === "correction_pending") profileCorrections++;
+  }
+
   const needsReview = people.filter((p) => !p.archived).length
     ? (
         await supabaseAdmin
@@ -2099,6 +2131,10 @@ export async function overview(
     { key: "duplicates", label: "Possible duplicates", value: duplicates.length, hint: "Pairs waiting on a merge or a keep separate ruling.", tab: "duplicates" },
     { key: "unplaced", label: "Cannot be placed", value: unplaced, hint: "No stint and no grad year, so no board year.", tab: "people", filter: "unplaced" },
     { key: "needs_review", label: "Flagged records", value: needsReview, hint: "Marked needs review by an organizer.", tab: "people", filter: "needs_review" },
+    { key: "email_on_file", label: "Address on file", value: emailOnFile, hint: "We hold an address. Nobody has proved it reaches them.", tab: "people", filter: "email_on_file" },
+    { key: "email_verified", label: "Verified inbox", value: emailVerified, hint: "Opened a sign in link, so the address is proven.", tab: "people", filter: "email_verified" },
+    { key: "profile_confirmed", label: "Profile confirmed", value: profileConfirmed, hint: "Read their own permanent facts and said they are right.", tab: "people", filter: "profile_confirmed" },
+    { key: "profile_correction_pending", label: "Correction pending", value: profileCorrections, hint: "Reviewed and sent a correction that is still waiting.", tab: "people", filter: "profile_correction_pending" },
     { key: "bad_contact", label: "Bounced or suppressed", value: badContact, hint: "Their address hard bounced, complained, or is suppressed.", tab: "people", filter: "bad_contact" },
   ];
 
