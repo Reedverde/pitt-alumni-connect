@@ -330,13 +330,7 @@ function WeekendPage() {
                 </p>
               )}
 
-              {day.title === "Saturday" && <HotelBlock />}
-            </section>
-          );
-        })}
         <DiscordBlock />
-
-        <WhereToStay edition={edition} />
 
         <LatestNews />
 
