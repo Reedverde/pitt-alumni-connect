@@ -10,7 +10,7 @@ import {
   adminUpdatePerson,
   getAdminPeople,
 } from "@/lib/admin.functions";
-import type { AdminPerson } from "@/lib/admin.server";
+import type { AdminPerson, PeopleFilterKey } from "@/lib/admin.server";
 import { Empty, Num, Section, cellStyle, hairline, headStyle, inputStyle, primaryButton, secondaryButton } from "./ui";
 
 const DIVISIONS = ["MENS_A", "MENS_B", "WOMENS_A", "WOMENS_B"];
@@ -471,7 +471,59 @@ const EMPTY_FILTERS = {
   deceased: "any" as Tri,
 };
 
-export function PeopleTable() {
+/** A saved working view: an overview tile hands the table exactly the people it
+ *  counted, so a number and its list can never disagree. */
+export const PRESET_LABELS: Record<PeopleFilterKey, string> = {
+  going: "Going this year",
+  maybe: "Maybe this year",
+  not_this_year: "Not this year",
+  no_response: "No response yet",
+  claimed: "Claimed a profile",
+  no_contact: "No contact on file",
+  missing_event_answers: "Going, events unanswered",
+  needs_review: "Flagged needs review",
+  unplaced: "Cannot be placed",
+  bad_contact: "Bounced or suppressed",
+};
+
+function matchesPreset(person: AdminPerson, preset: PeopleFilterKey, promptEventCount: number) {
+  // The attendance views count only people who can actually answer, which is
+  // what the overview tiles count too.
+  const canAnswer = !person.deceased && person.show_on_board;
+  switch (preset) {
+    case "going":
+    case "maybe":
+    case "not_this_year":
+      return canAnswer && person.state === preset;
+    case "no_response":
+      // Silence, not a no. Memorial records are never chased.
+      return canAnswer && (person.state === "unclaimed" || person.state === "claimed");
+    case "claimed":
+      return person.emails.some((e) => e.verified);
+    case "no_contact":
+      return !person.deceased && person.emails.length === 0;
+    case "missing_event_answers":
+      return person.state === "going" && person.event_answers.length < promptEventCount;
+    case "needs_review":
+      return person.needs_review;
+    case "unplaced":
+      return !person.placed && !person.deceased;
+    case "bad_contact":
+      return person.contact_flagged;
+    default:
+      return true;
+  }
+}
+
+export function PeopleTable({
+  preset = null,
+  promptEventCount = 0,
+  onClearPreset,
+}: {
+  preset?: PeopleFilterKey | null;
+  promptEventCount?: number;
+  onClearPreset?: () => void;
+} = {}) {
   const queryClient = useQueryClient();
   const fetchPeople = useServerFn(getAdminPeople);
   const [f, setF] = useState(EMPTY_FILTERS);
@@ -525,6 +577,7 @@ export function PeopleTable() {
       if (!inRange(p.grad_year, f.gradFrom, f.gradTo)) return false;
       if (!inRange(p.board_year, f.boardFrom, f.boardTo)) return false;
       for (const t of TRI_FIELDS) if (!tri(Boolean(p[t.key]), f[t.key])) return false;
+      if (preset && !matchesPreset(p, preset, promptEventCount)) return false;
       return true;
     });
 
@@ -535,7 +588,7 @@ export function PeopleTable() {
       if (va === vb) return a.member_no - b.member_no;
       return va < vb ? -dir : dir;
     });
-  }, [data, f, sort]);
+  }, [data, f, sort, preset, promptEventCount]);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin-people"] });
   const toggleSort = (key: SortKey) =>
@@ -573,6 +626,21 @@ export function PeopleTable() {
         </p>
       }
     >
+      {preset ? (
+        <div
+          className="mb-3 flex flex-wrap items-center gap-3"
+          style={{ border: hairline, borderRadius: 6, padding: "8px 10px", background: "var(--field-white)" }}
+        >
+          <span className="label-caps" style={{ color: "var(--sterling)" }}>Working view</span>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>{PRESET_LABELS[preset]}</span>
+          {onClearPreset ? (
+            <button type="button" onClick={onClearPreset} style={{ ...secondaryButton, padding: "5px 9px", fontSize: 11 }}>
+              Show everyone
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <input
           value={f.query}

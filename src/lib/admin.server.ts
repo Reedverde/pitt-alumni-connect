@@ -88,6 +88,12 @@ export type AdminEmail = {
   verified: boolean;
 };
 
+export type AdminRsvpHistoryRow = {
+  event_year: number;
+  status: string;
+  party_size: number;
+};
+
 export type AdminPerson = PersonRow & {
   emails: AdminEmail[];
   board_year: number | null;
@@ -97,18 +103,33 @@ export type AdminPerson = PersonRow & {
   state: "unclaimed" | "claimed" | "going" | "maybe" | "not_this_year" | "memorial";
   /** Per event answers for the current edition, joined from event_rsvps. */
   event_answers: { event_id: string; label: string; status: "yes" | "no"; party_size: number }[];
+  /** Every edition this person has answered, newest first. Read only. */
+  rsvp_history: AdminRsvpHistoryRow[];
+  /** Heads for the current edition, only meaningful while state is going. */
+  party_size: number | null;
+  /** False when neither a stint nor a grad year can place them on the board. */
+  placed: boolean;
+  /** One of their addresses hard bounced, complained, or is suppressed. */
+  contact_flagged: boolean;
 };
+
 
 type Context = {
   placement: Map<string, { board_year: number | null; board_division: string | null }>;
   stints: Map<string, number>;
   rsvp: Map<string, string>;
+  /** Heads for the current edition, keyed by person. */
+  party: Map<string, number>;
+  /** Every edition a person has answered, newest first. */
+  history: Map<string, AdminRsvpHistoryRow[]>;
   verified: Set<string>;
   /** Any identity row at all, verified or not. A claim in progress still counts. */
   hasIdentity: Set<string>;
   /** Admin only. Never joined into a public view or a member facing payload. */
   emails: Map<string, AdminEmail[]>;
   eventAnswers: Map<string, AdminPerson["event_answers"]>;
+  /** Addresses we must not mail again: suppressed, hard bounced, complained. */
+  badEmails: Set<string>;
 };
 
 
@@ -117,7 +138,11 @@ async function loadContext(): Promise<Context> {
   const [placeRes, stintRes, rsvpRes, identRes] = await Promise.all([
     supabaseAdmin.from("person_board_placement").select("person_id, board_year, board_division"),
     supabaseAdmin.from("stints").select("person_id"),
-    supabaseAdmin.from("rsvps").select("person_id, status").eq("event_year", currentYear),
+    supabaseAdmin
+      .from("rsvps")
+      .select("person_id, event_year, status, party_size")
+      .order("event_year", { ascending: false })
+      .limit(20000),
     supabaseAdmin
       .from("identities")
       .select("person_id, email, is_primary, verified_at")
@@ -133,7 +158,23 @@ async function loadContext(): Promise<Context> {
   for (const row of stintRes.data ?? [])
     stints.set(row.person_id as string, (stints.get(row.person_id as string) ?? 0) + 1);
   const rsvp = new Map<string, string>();
-  for (const row of rsvpRes.data ?? []) rsvp.set(row.person_id as string, row.status as string);
+  const party = new Map<string, number>();
+  const history = new Map<string, AdminRsvpHistoryRow[]>();
+  for (const row of rsvpRes.data ?? []) {
+    const pid = row.person_id as string;
+    const entry: AdminRsvpHistoryRow = {
+      event_year: Number(row.event_year),
+      status: String(row.status),
+      party_size: Number(row.party_size ?? 1),
+    };
+    const list = history.get(pid) ?? [];
+    list.push(entry);
+    history.set(pid, list);
+    if (entry.event_year === currentYear) {
+      rsvp.set(pid, entry.status);
+      party.set(pid, entry.party_size);
+    }
+  }
   const verified = new Set<string>();
   const hasIdentity = new Set<string>();
   const emails = new Map<string, AdminEmail[]>();
@@ -150,10 +191,33 @@ async function loadContext(): Promise<Context> {
     emails.set(pid, list);
   }
   const { loadEventAnswersByPerson } = await import("./event-rsvp.server");
-  const eventAnswers = await loadEventAnswersByPerson();
-  return { placement, stints, rsvp, verified, hasIdentity, emails, eventAnswers };
+  const [eventAnswers, supRes, sendRes] = await Promise.all([
+    loadEventAnswersByPerson(),
+    supabaseAdmin.from("suppressions").select("email").limit(2000),
+    supabaseAdmin.from("sends").select("to_email, bounced, bounce_type, complained").limit(20000),
+  ]);
+  const badEmails = new Set<string>();
+  for (const row of supRes.data ?? []) badEmails.add(String(row.email).toLowerCase());
+  for (const row of sendRes.data ?? []) {
+    const address = row.to_email ? String(row.to_email).toLowerCase() : null;
+    if (!address) continue;
+    if (row.complained || (row.bounced && row.bounce_type === "hard")) badEmails.add(address);
+  }
+  return {
+    placement,
+    stints,
+    rsvp,
+    party,
+    history,
+    verified,
+    hasIdentity,
+    emails,
+    eventAnswers,
+    badEmails,
+  };
 
 }
+
 
 function decorate(person: PersonRow, ctx: Context, label: string | null): AdminPerson {
   const place = ctx.placement.get(person.id);
@@ -169,18 +233,26 @@ function decorate(person: PersonRow, ctx: Context, label: string | null): AdminP
           : ctx.verified.has(person.id)
             ? "claimed"
             : "unclaimed";
+  const boardYear = place?.board_year ?? person.grad_year;
   return {
     ...person,
     emails: ctx.emails.get(person.id) ?? [],
     event_answers: ctx.eventAnswers.get(person.id) ?? [],
+    rsvp_history: ctx.history.get(person.id) ?? [],
+    party_size: ctx.party.get(person.id) ?? null,
+    contact_flagged: (ctx.emails.get(person.id) ?? []).some((e) =>
+      ctx.badEmails.has(e.email.toLowerCase()),
+    ),
+    placed: boardYear !== null && boardYear !== undefined,
 
-    board_year: place?.board_year ?? person.grad_year,
+    board_year: boardYear,
     board_division: place?.board_division ?? person.seed_division,
     team_label: label,
     stint_count: ctx.stints.get(person.id) ?? 0,
     state,
   };
 }
+
 
 async function decorateAll(rows: PersonRow[], ctx: Context) {
   const out: AdminPerson[] = [];
@@ -1277,10 +1349,17 @@ export async function undoMerge(actor: string | null, input: { loserId: string }
 
 // ---------------------------------------------------------------- export
 
+/** The planning export. Admin only, audited, and deliberately wide: one row a
+ *  person, with this edition's answer, heads, and a column for every event that
+ *  asks, so a spreadsheet can do the catering arithmetic. */
 export async function exportCsv(actor: string | null) {
   const { data } = await supabaseAdmin.from("people").select(PERSON_COLUMNS).limit(3000);
   const ctx = await loadContext();
   const rows = await decorateAll((data ?? []) as PersonRow[], ctx);
+  const eventYear = (await loadCurrentEdition()).event_year;
+
+  const { loadPromptEvents } = await import("./event-rsvp.server");
+  const events = await loadPromptEvents();
 
   const { data: identities } = await supabaseAdmin
     .from("identities")
@@ -1289,6 +1368,9 @@ export async function exportCsv(actor: string | null) {
   const primary = new Map<string, string>();
   for (const row of identities ?? [])
     if (!primary.has(row.person_id as string)) primary.set(row.person_id as string, row.email as string);
+
+  const slug = (title: string) =>
+    title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 40);
 
   const header = [
     "member_no",
@@ -1302,13 +1384,18 @@ export async function exportCsv(actor: string | null) {
     "is_anchor",
     "needs_review",
     "primary_email",
+    `answer_${eventYear}`,
+    `heads_${eventYear}`,
+    ...events.flatMap((event) => [`${slug(event.title)}_answer`, `${slug(event.title)}_heads`]),
   ];
   const esc = (v: unknown) => {
     const s = v === null || v === undefined ? "" : String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const body = rows.map((r) =>
-    [
+  const body = rows.map((r) => {
+    const answers = new Map(r.event_answers.map((a) => [a.event_id, a]));
+    const annual = r.rsvp_history.find((h) => h.event_year === eventYear) ?? null;
+    return [
       r.member_no,
       r.first_name,
       r.last_name,
@@ -1320,15 +1407,28 @@ export async function exportCsv(actor: string | null) {
       r.is_anchor,
       r.needs_review,
       primary.get(r.id) ?? "",
+      annual?.status ?? "no_response",
+      annual?.status === "going" ? annual.party_size : "",
+      ...events.flatMap((event) => {
+        const answer = answers.get(event.id);
+        // An absent row is genuinely unanswered, never a no.
+        return [answer?.status ?? "", answer?.status === "yes" ? answer.party_size : ""];
+      }),
     ]
       .map(esc)
-      .join(","),
-  );
+      .join(",");
+  });
   const csv = [header.join(","), ...body].join("\n");
   const date = new Date().toISOString().slice(0, 10);
-  await audit(actor, "admin_csv_export", "people", null, null, { rows: rows.length, date });
-  return { filename: `pitt-alumni-export-${date}.csv`, csv, rows: rows.length };
+  await audit(actor, "admin_csv_export", "people", null, null, {
+    rows: rows.length,
+    date,
+    event_year: eventYear,
+    columns: header.length,
+  });
+  return { filename: `pitt-alumni-planning-${eventYear}-${date}.csv`, csv, rows: rows.length };
 }
+
 
 // ---------------------------------------------------------------- panels
 
@@ -1805,7 +1905,141 @@ export async function rsvpSources(): Promise<SourceCount[]> {
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
+/** Filters the People table understands. Every overview tile that points at a
+ *  person list names one of these, so a number and the list behind it can
+ *  never drift apart. */
+export type PeopleFilterKey =
+  | "going"
+  | "maybe"
+  | "not_this_year"
+  | "no_response"
+  | "claimed"
+  | "no_contact"
+  | "missing_event_answers"
+  | "needs_review"
+  | "unplaced"
+  | "bad_contact";
+
+export type OverviewTile = {
+  key: string;
+  label: string;
+  value: number;
+  hint: string;
+  /** Where the number opens. A people filter, or another organizer tab. */
+  tab: "people" | "review" | "duplicates" | "sends" | "mail";
+  filter?: PeopleFilterKey;
+};
+
+export type AdminOverview = {
+  eventYear: number;
+  eligible: number;
+  heads: number;
+  tiles: OverviewTile[];
+};
+
+/** One place to open. Every figure here is computed from the same rows the
+ *  People table shows, so a tile and its list always agree. */
+export async function overview(
+  queue: QueueItem[],
+  duplicates: DuplicatePair[],
+): Promise<AdminOverview> {
+  const eventYear = (await loadCurrentEdition()).event_year;
+  const ctx = await loadContext();
+  const { data: peopleRows } = await supabaseAdmin
+    .from("people")
+    .select("id, deceased, archived, show_on_board, grad_year")
+    .limit(3000);
+  const people = (peopleRows ?? []) as {
+    id: string;
+    deceased: boolean;
+    archived: boolean;
+    show_on_board: boolean;
+    grad_year: number | null;
+  }[];
+
+  const { loadPromptEvents } = await import("./event-rsvp.server");
+  const promptEvents = await loadPromptEvents();
+  const promptIds = new Set(promptEvents.map((e) => e.id));
+
+  const badAddresses = ctx.badEmails;
+
+  let eligible = 0;
+  let going = 0;
+  let heads = 0;
+  let maybe = 0;
+  let notThisYear = 0;
+  let noResponse = 0;
+  let claimed = 0;
+  let noContact = 0;
+  let missingEventAnswers = 0;
+  let unplaced = 0;
+  let badContact = 0;
+
+  for (const person of people) {
+    if (person.archived) continue;
+    const live = !person.deceased && person.show_on_board;
+    if (live) eligible++;
+    const status = ctx.rsvp.get(person.id) ?? null;
+    if (live) {
+      if (status === "going") {
+        going++;
+        heads += ctx.party.get(person.id) ?? 1;
+      } else if (status === "maybe") maybe++;
+      else if (status === "not_this_year") notThisYear++;
+      else noResponse++;
+    }
+    if (ctx.verified.has(person.id)) claimed++;
+    const emails = ctx.emails.get(person.id) ?? [];
+    if (!person.deceased && emails.length === 0) noContact++;
+    if (emails.some((e) => badAddresses.has(e.email.toLowerCase()))) badContact++;
+    const placedYear = ctx.placement.get(person.id)?.board_year ?? person.grad_year;
+    if (!person.deceased && !person.archived && (placedYear === null || placedYear === undefined))
+      unplaced++;
+    if (status === "going" && promptIds.size > 0) {
+      const answered = new Set(
+        (ctx.eventAnswers.get(person.id) ?? [])
+          .filter((a) => promptIds.has(a.event_id))
+          .map((a) => a.event_id),
+      );
+      if (answered.size < promptIds.size) missingEventAnswers++;
+    }
+  }
+
+  const needsReview = people.filter((p) => !p.archived).length
+    ? (
+        await supabaseAdmin
+          .from("people")
+          .select("id", { count: "exact", head: true })
+          .eq("needs_review", true)
+          .eq("archived", false)
+      ).count ?? 0
+    : 0;
+
+  const newPeople = queue.filter((q) => q.type === "new_person" && q.status === "pending").length;
+  const otherQueue = queue.filter((q) => q.type !== "new_person" && q.status === "pending").length;
+
+  const tiles: OverviewTile[] = [
+    { key: "going", label: "Going", value: going, hint: "Answered yes for this edition.", tab: "people", filter: "going" },
+    { key: "heads", label: "Expected heads", value: heads, hint: "Party sizes of everyone going.", tab: "people", filter: "going" },
+    { key: "maybe", label: "Maybe", value: maybe, hint: "Still deciding.", tab: "people", filter: "maybe" },
+    { key: "not_this_year", label: "Not this year", value: notThisYear, hint: "Answered, but not coming.", tab: "people", filter: "not_this_year" },
+    { key: "no_response", label: "No response", value: noResponse, hint: "Never answered. Silence is not a no.", tab: "people", filter: "no_response" },
+    { key: "claimed", label: "Claimed profiles", value: claimed, hint: "Verified an address and claimed a record.", tab: "people", filter: "claimed" },
+    { key: "no_contact", label: "No contact on file", value: noContact, hint: "Nobody can be reached at all.", tab: "people", filter: "no_contact" },
+    { key: "missing_event_answers", label: "Going, events unanswered", value: missingEventAnswers, hint: "Coming, but has not answered every event that asks.", tab: "people", filter: "missing_event_answers" },
+    { key: "new_person", label: "New person reviews", value: newPeople, hint: "Someone asked to be added.", tab: "review" },
+    { key: "queue", label: "Other pending reviews", value: otherQueue, hint: "Edits, tips and memorial notes.", tab: "review" },
+    { key: "duplicates", label: "Possible duplicates", value: duplicates.length, hint: "Pairs waiting on a merge or a keep separate ruling.", tab: "duplicates" },
+    { key: "unplaced", label: "Cannot be placed", value: unplaced, hint: "No stint and no grad year, so no board year.", tab: "people", filter: "unplaced" },
+    { key: "needs_review", label: "Flagged records", value: needsReview, hint: "Marked needs review by an organizer.", tab: "people", filter: "needs_review" },
+    { key: "bad_contact", label: "Bounced or suppressed", value: badContact, hint: "Their address hard bounced, complained, or is suppressed.", tab: "people", filter: "bad_contact" },
+  ];
+
+  return { eventYear, eligible, heads, tiles };
+}
+
 export type AdminDashboard = {
+
   isAdmin: true;
   queue: QueueItem[];
   teamNames: TeamNameRow[];
@@ -1823,6 +2057,7 @@ export type AdminDashboard = {
   sendTotals: SendTotals;
   rsvpSources: SourceCount[];
   rsvpBreakdown: RsvpBreakdown;
+  overview: AdminOverview;
 };
 
 export async function dashboard(): Promise<AdminDashboard> {
@@ -1847,6 +2082,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     rsvpSources(),
     rsvpBreakdown(),
   ]);
+  const summary = await overview(queue, duplicates);
   return {
     isAdmin: true,
     queue,
@@ -1864,6 +2100,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     sendTotals: totals,
     rsvpSources: sources,
     rsvpBreakdown: breakdown,
+    overview: summary,
     seasonYear: CURRENT_SEASON,
   };
 }
