@@ -65,7 +65,7 @@ const DAYS = [
     day: "Sunday",
     photo: ALUMNI_WEEKEND.sunday,
     /** Group sits low, below the treeline and the retaining wall. */
-    position: "center 62%",
+    position: "center 68%",
     summary: "Currents vs alumni at the Bubble. Play if you want to, watch if you don't.",
   },
 ];
