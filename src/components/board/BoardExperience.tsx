@@ -134,7 +134,7 @@ function flatEmptyCopy(statuses: string[]) {
   return "Nobody has answered yet. Be the first.";
 }
 
-export function BoardExperience({ renderHero, story }: BoardExperienceProps) {
+export function BoardExperience({ renderHero, story, renderNav }: BoardExperienceProps) {
   const { data } = useSuspenseQuery(boardQuery);
   const queryClient = useQueryClient();
   const filters = useMemo(
