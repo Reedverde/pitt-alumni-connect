@@ -35,7 +35,7 @@ export function SiteFooter() {
         </div>
         <nav className="flex flex-wrap items-center gap-x-5 gap-y-3">
           <Link to="/" className="label-caps" style={footerLink}>
-            Board
+            Home
           </Link>
           <Link to="/schedule" className="label-caps" style={footerLink}>
             Schedule

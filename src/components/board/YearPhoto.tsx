@@ -3,7 +3,7 @@ import { NOTCH_ALL, NOTCH_SM, type NotchCorner } from "@/components/media/notch"
 import type { BoardPhoto } from "@/lib/board.functions";
 import { photoUrl } from "@/lib/photo-slots";
 
-const DUOTONE = "grayscale(1) contrast(0.95) sepia(0.3) hue-rotate(185deg) saturate(2.4)";
+
 
 /** Every photograph on the site is cut on all four corners. */
 export function cornersForRow(_index: number): NotchCorner[] {
@@ -16,7 +16,6 @@ const img = {
   width: "100%",
   height: "100%",
   objectFit: "cover" as const,
-  filter: DUOTONE,
 };
 
 /**

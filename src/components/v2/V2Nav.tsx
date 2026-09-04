@@ -29,8 +29,7 @@ const item = {
 const active = { color: "var(--sabah-black)", borderBottom: "1px solid var(--sabah-black)" } as const;
 
 const LEFT = [
-  { to: "/v2", label: "Home", exact: true },
-  { to: "/", label: "Board", exact: true },
+  { to: "/", label: "Home", exact: true },
   { to: "/schedule", label: "Schedule", exact: false },
 ] as const;
 
@@ -141,7 +140,7 @@ export function V2Nav() {
         </div>
 
         <div className="flex justify-center">
-          <Link to="/v2" aria-label="Pitt Club Ultimate, home" className="flex items-center py-2">
+          <Link to="/" aria-label="Pitt Club Ultimate, home" className="flex items-center py-2">
             <img
               src={pittClubUltimateLogo.url}
               alt="Pitt Club Ultimate"

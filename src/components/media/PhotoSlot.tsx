@@ -22,7 +22,7 @@ type PhotoSlotProps = {
   alt?: string;
   /** The one slot above the fold. Everything else lazy loads. */
   eager?: boolean;
-  /** Skip the duotone treatment and show the photograph in full colour. */
+  /** Retained for compatibility. Every photograph is full colour now. */
   fullColor?: boolean;
   /** Outline colour drawn on top of the photograph, e.g. "var(--pure-white)". */
   outline?: string;
@@ -34,7 +34,9 @@ type PhotoSlotProps = {
   className?: string;
 };
 
-const DUOTONE = "grayscale(1) contrast(0.95) sepia(0.3) hue-rotate(185deg) saturate(2.4)";
+/** Photographs render in their own colours. Kept as an empty string so the
+ *  fullColor prop stays a no op for callers that still pass it. */
+const DUOTONE = undefined;
 
 const labelStyle: CSSProperties = {
   fontFamily: '"Space Grotesk", sans-serif',
@@ -160,32 +162,11 @@ export function PhotoSlot({
     );
   }
 
-  return (
-    <NotchedBox
-      className={className}
-      corners={corners}
-      notch={notch}
-      stroke="var(--chalk)"
-      dashed
-      fill="var(--concrete)"
-      style={frame}
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          padding: 14,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          color: "var(--sterling)",
-        }}
-      >
-        <span style={labelStyle}>{label} →</span>
-        <span style={{ ...numeralStyle, alignSelf: "flex-end" }}>{index}</span>
-      </div>
-    </NotchedBox>
-  );
+  // No photograph assigned yet: render nothing. A dashed grey plane with a
+  // caption reads as a broken image to a reader and left whole sections of
+  // the site looking unfinished. The slot reappears the moment an organizer
+  // assigns a picture to it.
+  return null;
 }
 
 /** A dashed notched card that holds a short statement instead of a photograph. */

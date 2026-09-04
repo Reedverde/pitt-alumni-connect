@@ -27,6 +27,7 @@ import { DripDispatchPanel } from "@/components/admin/DripDispatchPanel";
 import { AuthAttemptsPanel } from "@/components/admin/AuthAttemptsPanel";
 import { NewsPanel } from "@/components/admin/NewsPanel";
 import { Section } from "@/components/admin/ui";
+import { PageShell } from "@/components/layout/PageShell";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -79,7 +80,17 @@ function NotFound() {
   );
 }
 
+/** Organizer tools stay dense and table first, but they wear the same chrome
+ *  as the rest of the site so moving in and out of them is not jarring. */
 function AdminPage() {
+  return (
+    <PageShell bare>
+      <AdminInner />
+    </PageShell>
+  );
+}
+
+function AdminInner() {
   const queryClient = useQueryClient();
   const fetchDashboard = useServerFn(getAdminDashboard);
   const navigate = useNavigate({ from: "/admin" });

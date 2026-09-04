@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 
 import { SiteNav } from "@/components/SiteNav";
+import { SiteFooter } from "@/components/SiteFooter";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ActionRail } from "@/components/board/ActionRail";
 import { ClosingCta } from "@/components/claim/ClosingCta";
@@ -249,6 +250,7 @@ function AlumniPage() {
           void navigate({ to: "/", hash: personId ? `person-${personId}` : undefined });
         }}
       />
+      <SiteFooter />
     </div>
   );
 }

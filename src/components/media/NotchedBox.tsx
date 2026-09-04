@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
-import { NOTCH_SM, notchClipPath, notchPoints, type NotchCorner } from "./notch";
+import { NOTCH_SM, type NotchCorner } from "./notch";
+import { chamferPath } from "./chamfer";
 
 type NotchedBoxProps = {
   corners?: NotchCorner[];
@@ -12,12 +13,12 @@ type NotchedBoxProps = {
   dashed?: boolean;
   /** Draw the outline above the content, so a clipped photo cannot cover it. */
   strokeOnTop?: boolean;
-  /** Background fill, clipped to the notched shape. */
+  /** Background fill, clipped to the shaped silhouette. */
   fill?: string;
   /**
-   * Clip the children to the notched shape. Needed for images, which would
-   * otherwise keep square corners and hide the notch. Off by default: on a
-   * text tile the diagonal cuts into the first glyph of the top-left line.
+   * Clip the children to the shape. Needed for images, which would otherwise
+   * keep square corners and hide the cut. Off by default: on a text tile the
+   * diagonal cuts into the first glyph of the top-left line.
    */
   clipContent?: boolean;
   className?: string;
@@ -26,8 +27,11 @@ type NotchedBoxProps = {
 };
 
 /**
- * A container with 45-degree corner cuts. The outline is an SVG polygon, not a
- * CSS border, because clip-path would eat the border along the diagonal.
+ * A container with 45 degree corner cuts and softened vertices.
+ *
+ * One shape language: the angle stays strong, but every vertex is rounded, the
+ * same rule the chamfer tiers follow. The outline is an SVG path, not a CSS
+ * border, because clip-path would eat a border along the diagonal.
  */
 export function NotchedBox({
   corners = ["tl"],
@@ -55,7 +59,15 @@ export function NotchedBox({
     return () => ro.disconnect();
   }, []);
 
-  const clipPath = notchClipPath(notch, corners);
+  // Softened vertices scale with the cut, so a small tile and a large plane
+  // read as the same family rather than two different shapes.
+  const radius = notch <= 20 ? 8 : notch <= 48 ? 12 : 16;
+  const measured = size.w > 0 && size.h > 0;
+  const clipD = measured
+    ? chamferPath({ w: size.w, h: size.h, cut: notch, radius, corners })
+    : "";
+  const clipPath = clipD ? `path("${clipD}")` : undefined;
+
   const inset = strokeWidth / 2;
   // Keep content out of the removed triangles: a cut corner pushes its two
   // sides in by the notch size. Uncut sides keep their normal padding.
@@ -68,35 +80,43 @@ export function NotchedBox({
         paddingBottom: cut("bl") || cut("br") ? notch : undefined,
         paddingLeft: cut("tl") || cut("bl") ? notch : undefined,
       };
+
   const showOutline = Boolean(stroke) && size.w > notch * 2 && size.h > notch * 2;
-  const points = showOutline
-    ? notchPoints(size.w - strokeWidth, size.h - strokeWidth, notch, corners)
-        .map(([x, y]) => `${x + inset},${y + inset}`)
-        .join(" ")
+  const outlineD = showOutline
+    ? chamferPath({
+        w: size.w - strokeWidth,
+        h: size.h - strokeWidth,
+        cut: notch,
+        radius,
+        corners,
+      })
     : "";
+
+  const outline = outlineD ? (
+    <svg
+      aria-hidden="true"
+      width={size.w}
+      height={size.h}
+      viewBox={`0 0 ${size.w} ${size.h}`}
+      style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "visible" }}
+    >
+      <path
+        d={outlineD}
+        transform={`translate(${inset} ${inset})`}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+        strokeDasharray={dashed ? "6 5" : undefined}
+      />
+    </svg>
+  ) : null;
 
   return (
     <div ref={ref} className={className} style={{ position: "relative", ...style }}>
       {fill && (
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: fill, clipPath }} />
       )}
-      {showOutline && !strokeOnTop && (
-        <svg
-          aria-hidden="true"
-          width={size.w}
-          height={size.h}
-          viewBox={`0 0 ${size.w} ${size.h}`}
-          style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "visible" }}
-        >
-          <polygon
-            points={points}
-            fill="none"
-            stroke={stroke}
-            strokeWidth={strokeWidth}
-            strokeDasharray={dashed ? "6 5" : undefined}
-          />
-        </svg>
-      )}
+      {!strokeOnTop && outline}
       <div
         style={{
           position: "relative",
@@ -108,23 +128,7 @@ export function NotchedBox({
       >
         {children}
       </div>
-      {showOutline && strokeOnTop && (
-        <svg
-          aria-hidden="true"
-          width={size.w}
-          height={size.h}
-          viewBox={`0 0 ${size.w} ${size.h}`}
-          style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "visible" }}
-        >
-          <polygon
-            points={points}
-            fill="none"
-            stroke={stroke}
-            strokeWidth={strokeWidth}
-            strokeDasharray={dashed ? "6 5" : undefined}
-          />
-        </svg>
-      )}
+      {strokeOnTop && outline}
     </div>
   );
 }

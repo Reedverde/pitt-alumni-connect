@@ -1,9 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
 
 import { getSchedule, type ScheduleEvent } from "@/lib/schedule.functions";
 import { SiteNav } from "@/components/SiteNav";
+import { PageShell } from "@/components/layout/PageShell";
+import { primaryButton } from "@/components/claim/ui";
+import { SiteFooter } from "@/components/SiteFooter";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { PhotoSlot } from "@/components/media/PhotoSlot";
@@ -14,7 +17,9 @@ import { dayLabel, dayName, editionDateRange, editionDay, editionEyebrow } from 
 const editionQuery = (eventYear: number) =>
   queryOptions({
     queryKey: ["schedule", eventYear],
-    queryFn: () => getSchedule({ data: { eventYear } }),
+    // An unpublished weekend is a normal answer, not a failure, so the page
+    // can render a written explanation with a 200 instead of an error.
+    queryFn: () => getSchedule({ data: { eventYear } }).catch(() => null),
   });
 
 export const Route = createFileRoute("/editions/$year")({
@@ -36,14 +41,8 @@ export const Route = createFileRoute("/editions/$year")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  errorComponent: () => (
-    <main className="mx-auto max-w-[560px] px-5 py-24">
-      <h1 className="display-30">That weekend isn't here</h1>
-      <p className="mt-3" style={{ fontSize: 16, color: "var(--sterling)" }}>
-        Try the current schedule instead.
-      </p>
-    </main>
-  ),
+  errorComponent: EditionUnavailable,
+  notFoundComponent: EditionUnavailable,
   component: EditionArchivePage,
 });
 
@@ -62,6 +61,7 @@ function timeLabel(event: ScheduleEvent) {
 function EditionArchivePage() {
   const { year } = Route.useParams();
   const { data } = useSuspenseQuery(editionQuery(Number(year)));
+  if (!data) return <EditionUnavailable />;
   const { edition, events } = data;
 
   const days = [...new Set(events.map((e) => e.day_number ?? 1))].sort((a, b) => a - b);
@@ -140,6 +140,38 @@ function EditionArchivePage() {
           </p>
         )}
       </main>
+      <SiteFooter />
     </div>
+  );
+}
+
+/**
+ * A weekend with no published record is a normal state, not a failure. The
+ * reader gets a written explanation and two ways onward instead of an error.
+ */
+function EditionUnavailable() {
+  return (
+    <PageShell width="column">
+      <SlashEyebrow>Alumni Weekend</SlashEyebrow>
+      <h1 className="display-48 mt-3" style={{ color: "var(--sabah-black)" }}>
+        NOT PUBLISHED YET
+      </h1>
+      <p className="mt-4" style={{ fontSize: 16, color: "var(--steel-ink)", lineHeight: 1.6 }}>
+        There is no published record for this weekend. It may not have happened yet, or the schedule
+        may still be going up.
+      </p>
+      <div className="mt-8 flex flex-wrap gap-4">
+        <Link to="/schedule" style={{ ...primaryButton, display: "inline-block", textDecoration: "none" }}>
+          THIS YEAR&rsquo;S WEEKEND
+        </Link>
+        <Link
+          to="/"
+          className="label-caps"
+          style={{ color: "var(--pitt-royal)", textDecoration: "none", alignSelf: "center" }}
+        >
+          Back to the board
+        </Link>
+      </div>
+    </PageShell>
   );
 }
