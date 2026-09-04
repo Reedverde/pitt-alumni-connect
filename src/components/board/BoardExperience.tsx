@@ -382,7 +382,10 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
   return (
     <ChipSessionContext.Provider value={session.signedIn}>
     <div style={{ background: "var(--field-white)" }} className="board-chrome min-h-screen">
-      <SiteNav onClaim={() => openClaim()} />
+      {renderNav
+        ? renderNav({ onClaim: () => openClaim() })
+        : <SiteNav onClaim={() => openClaim()} />}
+
       {renderHero({ season, clock, countdownLive, onClaim: () => openClaim() })}
 
       {story}
