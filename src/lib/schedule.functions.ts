@@ -28,14 +28,15 @@ export type ScheduleData = {
  *  With no year, the current edition. With a year, that published edition. */
 export const getSchedule = createServerFn({ method: "GET" })
   .inputValidator((input: { eventYear?: number } | undefined) => input ?? {})
-  .handler(async ({ data }): Promise<ScheduleData> => {
+  .handler(async ({ data }): Promise<ScheduleData | null> => {
     const { loadEvents } = await import("@/lib/ics.server");
     const { loadCurrentEdition, loadEdition } = await import("@/lib/editions.server");
 
     const edition = data.eventYear ? await loadEdition(data.eventYear) : await loadCurrentEdition();
-    if (!edition || (!edition.is_current && !edition.published)) {
-      throw new Error("That weekend isn't published.");
-    }
+    // An unpublished or unknown weekend is a normal answer, not a failure.
+    // Returning null lets the page explain itself with a normal response
+    // instead of surfacing a server error.
+    if (!edition || (!edition.is_current && !edition.published)) return null;
 
     const events = await loadEvents(edition.event_year);
     return {
