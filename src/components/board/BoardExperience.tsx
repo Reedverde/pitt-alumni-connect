@@ -23,6 +23,9 @@ import { YearPhoto, cornersForRow } from "@/components/board/YearPhoto";
 import { ghostButton } from "@/components/schedule/ScheduleSummary";
 import { SidelineLoop } from "@/components/board/SidelineLoop";
 import { countdown, resolveSeason } from "@/lib/edition-format";
+import { BoardControls } from "@/components/board/BoardControls";
+import { attendanceOf, buildEras, profileStatusOf, programLabel } from "@/lib/board-status";
+
 
 /** The server already rendered this data. Refetching it the instant the page
  *  hydrates puts a cold Worker on the critical path of a first ever visit,
