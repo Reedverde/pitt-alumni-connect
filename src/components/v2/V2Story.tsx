@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
-import { ChamferPhoto } from "@/components/v2/ChamferPhoto";
-import { RoundedChamferPhoto } from "@/components/v2/RoundedChamferPhoto";
+import { RoundedChamferPhoto, CHAMFER_RADIUS } from "@/components/v2/RoundedChamferPhoto";
 import { ALUMNI_WEEKEND } from "@/components/v2/curated-photos";
 import nationalsCelebration from "@/assets/hero-nationals-celebration.jpg.asset.json";
 import firstNationals2005 from "@/assets/pitt-first-nationals-team-2005.jpg.asset.json";
@@ -98,12 +97,13 @@ export function V2Story() {
               </h2>
             </div>
             <div className="md:col-span-5">
-              <ChamferPhoto
+              <RoundedChamferPhoto
                 src={nationalsCelebration.url}
                 alt="Pitt players erupting in celebration on the field after qualifying for Nationals"
                 ratio="5 / 4"
                 corners={["tr", "bl"]}
                 notch={68}
+                radius={CHAMFER_RADIUS.portrait}
               />
             </div>
           </div>
@@ -130,12 +130,13 @@ export function V2Story() {
 
             <div className="md:col-span-5">
               <figure className="m-0">
-                <ChamferPhoto
+                <RoundedChamferPhoto
                   src={firstNationals2005.url}
                   alt="The 2005 Pitt squad, the first Pitt team to reach Nationals, posed together on the field"
                   ratio="3 / 2"
                   corners={["bl", "tr"]}
                   notch={60}
+                  radius={CHAMFER_RADIUS.portrait}
                 />
                 <figcaption
                   className="mt-4"
@@ -274,12 +275,13 @@ export function V2Story() {
               </p>
             </div>
             <div className="md:col-span-7">
-              <ChamferPhoto
+              <RoundedChamferPhoto
                 src={clemsonBye.url}
                 alt="Pitt players in blue and gold hoodies lying together on the grass during the Clemson bye week, a disc resting among them"
                 ratio="21 / 9"
                 corners={["tl", "tr", "br", "bl"]}
                 notch={40}
+                radius={CHAMFER_RADIUS.wide}
                 position="center 55%"
               />
             </div>
