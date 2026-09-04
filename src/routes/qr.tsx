@@ -11,7 +11,7 @@ export const Route = createFileRoute("/qr")({
       {
         name: "description",
         content:
-          "Printable QR poster for Alumni Weekend. Scan to claim your name and tell us if you are coming.",
+          "Printable QR poster for Alumni Weekend. Scan to claim your name on the alumni board.",
       },
       { name: "robots", content: "noindex, nofollow" },
       { property: "og:title", content: "Scan to claim your name" },
@@ -46,7 +46,7 @@ function QrPoster() {
         </div>
 
         <p className="qr-url">{HUMAN_URL}</p>
-        <p className="qr-body">Claim your name and tell us if you are coming.</p>
+        <p className="qr-body">Claim your name on the board. October is a separate question.</p>
       </div>
     </main>
   );

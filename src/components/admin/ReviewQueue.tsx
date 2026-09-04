@@ -109,7 +109,56 @@ function MemorialCard({ item, onDone }: { item: QueueItem; onDone: () => void })
   );
 }
 
+function SubmittedFields({ payload }: { payload: Record<string, unknown> }) {
+  const text = (key: string) => {
+    const v = payload[key];
+    return typeof v === "string" && v.trim() ? v.trim() : null;
+  };
+  const num = (key: string) => (typeof payload[key] === "number" ? (payload[key] as number) : null);
+
+  const start = num("start_year") ?? num("stint_year");
+  const end = num("end_year");
+  const yearsUnsure = payload.years_unsure === true;
+  const years = yearsUnsure
+    ? "Not sure"
+    : start && end
+      ? `${start} to ${end}`
+      : start
+        ? `${start} onward`
+        : end
+          ? `through ${end}`
+          : null;
+
+  const rows: Array<[string, string | null]> = [
+    ["Played as", text("played_as")],
+    ["Program", payload.division_unsure === true ? "Not sure" : text("division")],
+    ["Years played", years],
+    ["Class of", num("grad_year") ? String(num("grad_year")) : null],
+    ["Email", text("email")],
+    ["Their note", text("note")],
+  ];
+
+  const shown = rows.filter(([, value]) => value !== null);
+  if (shown.length === 0) return null;
+
+  return (
+    <dl className="mt-3 grid gap-x-4 gap-y-1 sm:grid-cols-[auto_1fr]">
+      {shown.map(([label, value]) => (
+        <div key={label} className="contents">
+          <dt className="label-caps" style={{ color: "var(--sterling)" }}>
+            {label}
+          </dt>
+          <dd style={{ fontSize: 14, color: "var(--steel-ink)", overflowWrap: "anywhere" }}>
+            {value}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 function NewPersonCard({ item, onDone }: { item: QueueItem; onDone: () => void }) {
+
   const resolve = useServerFn(adminResolveSuggestion);
   const [busy, setBusy] = useState(false);
 
@@ -143,6 +192,10 @@ function NewPersonCard({ item, onDone }: { item: QueueItem; onDone: () => void }
           {item.peer_vouched ? "peer vouched" : "no peer vouch yet"}
         </p>
       </div>
+      {/* Everything the person told us, so a placement decision does not need a
+          round of email. Visible to organizers only, never on the board. */}
+      <SubmittedFields payload={item.payload} />
+
       {item.matches.length > 0 ? (
         <p className="mt-2" style={{ fontSize: 12, color: "var(--sterling)" }}>
           Possible duplicates:{" "}

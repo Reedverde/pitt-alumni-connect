@@ -195,7 +195,11 @@ export type SubmitInput = {
   email: string;
   src?: RsvpSource | null;
   origin?: string | null;
+  /** Set by the claim flow, which has just sent this address a sign in link.
+   *  The answer is still recorded; only the second email is skipped. */
+  skipConfirmationEmail?: boolean | null;
 };
+
 
 /** The RSVP confirmation. It carries a sign-in link, but it is NOT the sign-in
  *  magic link: it is triggered by answering, not by asking to sign in, so it is
@@ -540,7 +544,20 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
 
   const boardYear = (pl?.board_year as number | null) ?? person.grad_year ?? null;
 
-  if (verdict.level === "soft") {
+  if (input.skipConfirmationEmail === true) {
+    // The claim step already sent this address its sign in link a moment ago.
+    // One message, not two. The answer above is written either way.
+    const { logSend } = await import("./mail.server");
+    await logSend({
+      personId: person.id,
+      kind: "rsvp_confirmation",
+      toEmail: magicLinkEmail,
+      provider: "none",
+      providerMessageId: null,
+      status: "blocked",
+      error: "not sent: the claim step already sent this address a sign in link",
+    });
+  } else if (verdict.level === "soft") {
     // The record is saved. The mail is held back, and the hold is visible to
     // the organizers. The caller cannot tell the difference.
     const { logSend } = await import("./mail.server");
@@ -563,6 +580,7 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
       eventYear,
     });
   }
+
 
   return {
     ok: true,
@@ -590,4 +608,375 @@ export async function submitRsvpServer(input: SubmitInput, ip: string): Promise<
             : "unclaimed",
     },
   };
+}
+
+// --------------------------------------------------------------- claim flow
+//
+// Claiming a profile and answering the annual RSVP are separate acts. Nothing
+// below writes an rsvps row: someone who claims and stops is genuinely
+// unanswered, and the organizers' "no response" count says so.
+
+import type {
+  ClaimPerson,
+  ClaimResult,
+  DivisionOption,
+  MissingPersonInput,
+  MissingPersonResult,
+  RosterCorrectionInput,
+} from "./claim-types";
+
+async function divisionLabel(code: string | null) {
+  if (!code) return null;
+  const { data } = await supabaseAdmin
+    .from("divisions")
+    .select("label")
+    .eq("code", code)
+    .maybeSingle();
+  return (data?.label as string | null) ?? null;
+}
+
+export async function listDivisionsServer(): Promise<DivisionOption[]> {
+  const { data } = await supabaseAdmin
+    .from("divisions")
+    .select("code, label, sort_order, visible")
+    .eq("visible", true)
+    .order("sort_order");
+  return (data ?? []).map((d) => ({ code: d.code as string, label: d.label as string }));
+}
+
+/** The public face of a claimed record: the same facts the board already shows,
+ *  plus the roster fields we ask the person to confirm. Never an email. */
+async function claimPersonView(person: PersonRow): Promise<ClaimPerson> {
+  const { data: pl } = await supabaseAdmin
+    .from("person_board_placement")
+    .select("board_year, board_division")
+    .eq("person_id", person.id)
+    .maybeSingle();
+
+  const boardYear = (pl?.board_year as number | null) ?? person.grad_year ?? null;
+  const division = (pl?.board_division as string | null) ?? person.seed_division ?? null;
+
+  return {
+    id: person.id,
+    first_name: person.first_name,
+    last_name: person.last_name,
+    played_as: person.played_as,
+    board_year: boardYear,
+    team_label: await teamLabel(division, boardYear),
+    years_label: await yearsLabel(person.id, person.grad_year),
+    grad_year: person.grad_year,
+    division,
+    division_label: await divisionLabel(division),
+  };
+}
+
+/** Attaches an address to an existing record and sends the sign in link. No
+ *  attendance answer is asked for, implied, or written. */
+export async function submitClaimServer(
+  input: { personId: string; email: string; src?: RsvpSource | null; origin?: string | null },
+  ip: string,
+): Promise<ClaimResult> {
+  if (!isValidEmail(input.email)) throw new Error("That email doesn't look right.");
+  const email = input.email.trim().toLowerCase();
+  const src: RsvpSource | null = normalizeRsvpSource(input.src);
+
+  const ipHash = hashIp(ip);
+  const verdict = await evaluateRsvpThrottle(ipHash, email);
+  if (verdict.level === "hard") throw new Error("Something went wrong. Try again later.");
+  await Promise.all([
+    recordThrottleEvent("rsvp_ip", ipHash),
+    recordThrottleEvent("rsvp_email", email),
+    recordThrottleEvent("rsvp_global", "all"),
+  ]);
+
+  const { data } = await supabaseAdmin
+    .from("people")
+    .select("id, first_name, last_name, played_as, grad_year, seed_division, deceased, archived")
+    .eq("id", input.personId)
+    .maybeSingle();
+  if (!data || (data as PersonRow).deceased || (data as { archived?: boolean }).archived)
+    throw new Error("Something went wrong. Try again.");
+  const person = data as PersonRow;
+
+  // A record with a verified owner may only be claimed again from one of its
+  // own verified addresses. Nothing is written otherwise, and the refusal must
+  // not disclose which address that is.
+  const { data: verifiedIdentities } = await supabaseAdmin
+    .from("identities")
+    .select("id, email, is_primary, verified_at")
+    .eq("person_id", person.id)
+    .not("verified_at", "is", null)
+    .order("is_primary", { ascending: false });
+
+  const verifiedOwner = (verifiedIdentities ?? [])[0];
+  const ownedByCaller = (verifiedIdentities ?? []).some(
+    (i) => String((i as { email: string }).email).trim().toLowerCase() === email,
+  );
+
+  if (verifiedOwner && !ownedByCaller) {
+    await logRsvpEvent("claim_refused_unverified_email", person.id, {
+      email_domain: email.split("@")[1] ?? null,
+      ip_hash: ipHash,
+    });
+    return { ok: false, outcome: "sign_in_required", person: null };
+  }
+
+  // If this address is already on file for anyone, leave it exactly as it is.
+  const { data: found } = await supabaseAdmin
+    .from("identities")
+    .select("id, person_id")
+    .eq("email", email)
+    .maybeSingle();
+  const existingIdentity = (found as { id: string; person_id: string } | null) ?? null;
+
+  if (!existingIdentity) {
+    const { count } = await supabaseAdmin
+      .from("identities")
+      .select("id", { count: "exact", head: true })
+      .eq("person_id", person.id);
+    const { error } = await supabaseAdmin.from("identities").insert({
+      person_id: person.id,
+      email,
+      provider: "magic",
+      is_primary: (count ?? 0) === 0,
+    });
+    if (error) {
+      await logRsvpEvent("claim_write_failed", person.id, { error: error.message });
+      throw new Error("We could not save that. Nothing was recorded, please try again.");
+    }
+  }
+
+  await supabaseAdmin.from("audit_log").insert({
+    action: "profile_claimed",
+    table_name: "identities",
+    record_id: person.id,
+    after: {
+      src,
+      ip_hash: ipHash,
+      email_domain: email.split("@")[1] ?? null,
+      matched_existing_email: Boolean(existingIdentity),
+      matched_other_person: Boolean(existingIdentity && existingIdentity.person_id !== person.id),
+      ...(verdict.level === "soft" ? { mail_held_by_throttle: true } : {}),
+    },
+  });
+
+  // Mail must never throw: the claim is already recorded.
+  if (verdict.level === "soft") {
+    const { logSend } = await import("./mail.server");
+    await logSend({
+      personId: person.id,
+      kind: "magic_link",
+      toEmail: email,
+      provider: "none",
+      providerMessageId: null,
+      status: "throttled",
+      error: `held back by the ${verdict.reason}`,
+    });
+  } else {
+    try {
+      const { sendMagicLinkEmail } = await import("./mail.server");
+      await sendMagicLinkEmail({
+        to: email,
+        personId: person.id,
+        firstName: person.first_name,
+        status: "claimed",
+        origin: input.origin,
+        kind: "magic_link",
+      });
+    } catch (err) {
+      console.error(`[claim] sign-in link failed: ${String(err)}`);
+    }
+  }
+
+  return { ok: true, outcome: "claimed", person: await claimPersonView(person) };
+}
+
+function boundedYear(value: unknown): number | null {
+  const n = Math.round(Number(value));
+  if (!Number.isFinite(n) || n < 1970 || n > 2100) return null;
+  return n;
+}
+
+/** A name that is not on the board never creates a people row. It becomes a
+ *  pending request carrying everything the person could tell us, so the
+ *  organizers can place them without writing back and forth. No RSVP is
+ *  requested here and none is created on approval. */
+export async function submitMissingPersonServer(
+  input: MissingPersonInput,
+  ip: string,
+): Promise<MissingPersonResult> {
+  const firstName = cleanName(input.firstName);
+  const lastName = cleanName(input.lastName) || null;
+  if (!firstName) throw new Error("Please enter a first name.");
+  if (!isValidEmail(input.email)) throw new Error("That email doesn't look right.");
+  const email = input.email.trim().toLowerCase();
+
+  const ipHash = hashIp(ip);
+  const verdict = await evaluateRsvpThrottle(ipHash, email);
+  if (verdict.level === "hard") throw new Error("Something went wrong. Try again later.");
+  await Promise.all([
+    recordThrottleEvent("rsvp_ip", ipHash),
+    recordThrottleEvent("rsvp_email", email),
+    recordThrottleEvent("rsvp_global", "all"),
+  ]);
+
+  const playedAs = cleanName(input.playedAs) || null;
+  const division = typeof input.division === "string" && input.division.trim()
+    ? input.division.trim().slice(0, 40)
+    : null;
+  const startYear = boundedYear(input.startYear);
+  const endYear = boundedYear(input.endYear);
+  const gradYear = boundedYear(input.gradYear);
+  const note = typeof input.note === "string" ? input.note.replace(/\s+/g, " ").trim().slice(0, 500) : "";
+  const src = normalizeRsvpSource(input.src);
+
+  const { data: preapproved } = await supabaseAdmin
+    .from("preapproved_emails")
+    .select("email")
+    .eq("email", email)
+    .maybeSingle();
+
+  const payload: Record<string, unknown> = {
+    first_name: firstName,
+    last_name: lastName,
+    played_as: playedAs,
+    division,
+    division_unsure: division === null,
+    start_year: startYear,
+    end_year: endYear,
+    years_unsure: Boolean(input.yearsUnsure) || (startYear === null && endYear === null),
+    grad_year: gradYear,
+    email,
+    note: note || null,
+    src,
+    ip_hash: ipHash,
+    source_flow: "missing_person",
+    ...(startYear !== null ? { stint_year: startYear } : {}),
+    ...(preapproved ? { preapproved: true } : {}),
+  };
+
+  const { data: existing } = await supabaseAdmin
+    .from("suggestions")
+    .select("id, payload")
+    .eq("type", "new_person")
+    .eq("status", "pending")
+    .eq("payload->>email", email)
+    .limit(50);
+
+  const key = normalizedName(firstName, lastName);
+  const dupe = (existing ?? []).find((row) => {
+    const p = (row.payload ?? {}) as Record<string, unknown>;
+    return (
+      normalizedName(
+        typeof p.first_name === "string" ? p.first_name : "",
+        typeof p.last_name === "string" ? p.last_name : null,
+      ) === key
+    );
+  });
+
+  if (dupe) {
+    await supabaseAdmin.from("suggestions").update({ payload: payload as never }).eq("id", dupe.id as string);
+  } else {
+    const { error } = await supabaseAdmin
+      .from("suggestions")
+      .insert({ type: "new_person", status: "pending", submitted_by: null, payload: payload as never });
+    if (error) {
+      await logRsvpEvent("missing_person_write_failed", null, { error: error.message });
+      throw new Error("We could not send that to the organizers. Please try again.");
+    }
+  }
+
+  await supabaseAdmin.from("audit_log").insert({
+    action: "missing_person_request",
+    table_name: "suggestions",
+    record_id: null,
+    after: {
+      src,
+      ip_hash: ipHash,
+      email_domain: email.split("@")[1] ?? null,
+      preapproved: Boolean(preapproved),
+      deduplicated: Boolean(dupe),
+      has_division: division !== null,
+      has_years: startYear !== null || endYear !== null,
+      has_grad_year: gradYear !== null,
+    },
+  });
+
+  try {
+    const { notifyAdminsOfPendingSuggestions } = await import("./admin-notify.server");
+    await notifyAdminsOfPendingSuggestions(input.origin);
+  } catch (err) {
+    console.error(`[missing-person] admin notice failed: ${String(err)}`);
+  }
+
+  // The address they typed is their contact record either way. The link
+  // verifies it, so it is already proven by the time an organizer approves.
+  try {
+    const { sendMagicLinkEmail } = await import("./mail.server");
+    await sendMagicLinkEmail({
+      to: email,
+      personId: null,
+      firstName,
+      status: "requested",
+      origin: input.origin,
+      kind: "magic_link",
+    });
+  } catch (err) {
+    console.error(`[missing-person] sign-in link failed: ${String(err)}`);
+  }
+
+  return { ok: true, outcome: "review_requested" };
+}
+
+/** A correction to the roster facts shown during a claim. Filed as an edit for
+ *  review; the record itself is never changed from here. */
+export async function submitRosterCorrectionServer(
+  input: RosterCorrectionInput,
+  ip: string,
+): Promise<{ ok: boolean }> {
+  const { data } = await supabaseAdmin
+    .from("people")
+    .select("id, grad_year, played_as, seed_division, archived, deceased")
+    .eq("id", input.personId)
+    .maybeSingle();
+  if (!data || (data as { archived?: boolean }).archived || (data as { deceased?: boolean }).deceased)
+    throw new Error("Something went wrong. Try again.");
+
+  const fields: Record<string, unknown> = {};
+  const gradYear = boundedYear(input.gradYear);
+  if (gradYear !== null && gradYear !== (data.grad_year as number | null)) fields.grad_year = gradYear;
+  const playedAs = cleanName(input.playedAs) || null;
+  if (playedAs && playedAs !== (data.played_as as string | null)) fields.played_as = playedAs;
+  const division =
+    typeof input.division === "string" && input.division.trim() ? input.division.trim().slice(0, 40) : null;
+  if (division && division !== (data.seed_division as string | null)) fields.seed_division = division;
+
+  const note = typeof input.note === "string" ? input.note.replace(/\s+/g, " ").trim().slice(0, 500) : "";
+  if (Object.keys(fields).length === 0 && !note) return { ok: true };
+
+  const { error } = await supabaseAdmin.from("suggestions").insert({
+    type: "edit",
+    status: "pending",
+    submitted_by: null,
+    payload: {
+      person_id: input.personId,
+      fields,
+      note: note || null,
+      source_flow: "claim_roster_facts",
+      ip_hash: hashIp(ip),
+    } as never,
+  });
+  if (error) {
+    await logRsvpEvent("roster_correction_failed", input.personId, { error: error.message });
+    throw new Error("We could not send that to the organizers. Please try again.");
+  }
+
+  await supabaseAdmin.from("audit_log").insert({
+    action: "claim_roster_correction",
+    table_name: "suggestions",
+    record_id: input.personId,
+    after: { fields: fields as never, has_note: Boolean(note) },
+  });
+
+  return { ok: true };
 }
