@@ -8,6 +8,7 @@ import { SITE_ORIGIN } from "./site-url";
 import { teamLabel } from "./rsvp.server";
 import { loadProfileReviews } from "./profile-review.server";
 import type { ProfileReviewSummary } from "./profile-review";
+import { EVENT_AUDIENCES, EVENT_STATUSES, eventBlockers, eventWarnings } from "./event-model";
 import {
   currentEditionYear,
   firstOctoberWeekend,
