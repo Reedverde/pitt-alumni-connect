@@ -895,7 +895,18 @@ export function buildHotelReminderBody(opts: { name: string }): { text: string; 
   return { text, html };
 }
 
-export const EVENT_RSVP_PROMPT_SUBJECT = "Two more questions about the weekend";
+const COUNT_WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"];
+
+function countWord(n: number): string {
+  return COUNT_WORDS[n] ?? String(n);
+}
+
+/** Subject matches the number of pending events, so it stays correct if the
+ *  prompt event set changes. */
+export function eventRsvpPromptSubject(count: number): string {
+  const noun = count === 1 ? "question" : "questions";
+  return `${countWord(count)} more ${noun} about the weekend`;
+}
 
 /** The event_rsvp_prompt body: only ever sent to people already going, and only
  *  for the events they have not answered yet. Returns null when there is

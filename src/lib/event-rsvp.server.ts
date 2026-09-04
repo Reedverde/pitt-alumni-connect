@@ -21,6 +21,7 @@ export async function loadPromptEvents(): Promise<PromptEvent[]> {
     .from("events")
     .select("id, title, starts_at, location, sort_order")
     .eq("event_year", edition.event_year)
+    .eq("prompt_rsvp", true)
     .order("sort_order", { ascending: true });
 
   return (data ?? []).map((e) => ({
