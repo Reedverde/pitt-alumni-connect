@@ -351,11 +351,11 @@ function WeekendPage() {
 
         <ClosingCta
           title="Are you coming?"
-          body="Claim your name first, then say yes, maybe, or not this year. No password and no account to make."
+          body="Claim your name first, then say yes, maybe, or not this year. No password: we email you a one-time sign in link."
           action={{ kind: "rsvp", label: "RSVP", onOpen: () => setClaimOpen(true) }}
         />
       </main>
-      <ActionRail onRsvp={() => setClaimOpen(true)} />
+      <ActionRail />
       <ClaimDialog
         open={claimOpen}
         target={null}

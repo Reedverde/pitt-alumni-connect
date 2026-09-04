@@ -38,31 +38,21 @@ function DiscordGlyph() {
   );
 }
 
-/** Fixed bottom-left stack of circular actions. When a page can open the claim
- *  dialog itself, the RSVP circle opens it instead of navigating. */
-export function ActionRail({ onRsvp }: { onRsvp?: () => void } = {}) {
-  const { signedIn } = useSessionPerson();
+/**
+ * Fixed bottom-left stack of circular actions, desktop only.
+ *
+ * There is no RSVP circle here any more. The floating RSVP card is the one
+ * persistent answer affordance on every page, and a second round RSVP button
+ * four inches away from it was two front doors to the same room. On a phone
+ * the card is a full width bar along the bottom edge, so this rail is hidden
+ * below md rather than stacked on top of it.
+ */
+export function ActionRail() {
   return (
     <div
-      className="fixed left-4 bottom-4 z-40 flex flex-col gap-3"
+      className="fixed left-4 bottom-4 z-30 hidden flex-col gap-3 md:flex"
       style={{ pointerEvents: "auto" }}
     >
-      {!signedIn && (onRsvp ? (
-        <button
-          type="button"
-          onClick={onRsvp}
-          style={{ ...circle, background: "var(--pitt-royal)", color: "var(--pure-white)", border: "1px solid transparent" }}
-        >
-          RSVP
-        </button>
-      ) : (
-        <Link
-          to="/"
-          style={{ ...circle, background: "var(--pitt-royal)", color: "var(--pure-white)", border: "1px solid transparent" }}
-        >
-          RSVP
-        </Link>
-      ))}
       <button
         type="button"
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
