@@ -180,7 +180,15 @@ function AlumniPage() {
               Kept here so it is written down somewhere that is not a group chat. If a year is wrong
               or missing, tell an organizer and it gets fixed.
             </p>
+            {/* Two founding dates are in circulation and nothing in the project
+                settles it, so the page says so rather than picking one. */}
+            <p className="mt-4" style={{ ...body, color: "var(--sterling)" }}>
+              One open question: the club's own records begin in 1998, and that is the founding year
+              shown above, but the board carries players from 1978 on. Nobody has confirmed which is
+              right. If you were around for the early years, tell an organizer and we will settle it.
+            </p>
           </Measure>
+
         </section>
 
         <section className="mt-14">
