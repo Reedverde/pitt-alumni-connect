@@ -10,7 +10,7 @@ import {
   adminUpdatePerson,
   getAdminPeople,
 } from "@/lib/admin.functions";
-import type { AdminPerson } from "@/lib/admin.server";
+import type { AdminPerson, PeopleFilterKey } from "@/lib/admin.server";
 import { Empty, Num, Section, cellStyle, hairline, headStyle, inputStyle, primaryButton, secondaryButton } from "./ui";
 
 const DIVISIONS = ["MENS_A", "MENS_B", "WOMENS_A", "WOMENS_B"];
