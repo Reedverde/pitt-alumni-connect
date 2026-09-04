@@ -817,38 +817,50 @@ function AnnualCard({
             <p className="label-caps mt-4" style={{ color: "var(--sterling)" }}>
               Events that ask
             </p>
-            <ul className="mt-2 flex flex-col">
+            <p className="mt-2" style={{ fontSize: 13, color: "var(--sterling)" }}>
+              Each answer saves on its own. Leaving one in the middle means you have not chosen
+              yet, and that is not the same as a no.
+              {answer !== "going" && editable
+                ? " Saying yes to any of these also marks you as going for the weekend, and the card above will say so."
+                : ""}
+            </p>
+            <ul className="mt-3 flex flex-col">
               {events.map((row) => (
                 <li
                   key={row.id}
-                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2"
+                  className="py-4"
                   style={{ borderBottom: "1px solid var(--concrete)" }}
                 >
-                  <span style={{ fontSize: 15, color: "var(--steel-ink)" }}>
+                  <p style={{ fontSize: 15, color: "var(--steel-ink)" }}>
                     {row.title}
-                    <span className="label-caps ml-3" style={{ color: "var(--sterling)" }}>
-                      {[eventWhen(row), row.location].filter(Boolean).join(" · ")}
-                    </span>
-                  </span>
-                  <span
-                    className="label-caps"
-                    style={{ color: row.answer === null ? "var(--sterling)" : "var(--steel-ink)" }}
-                  >
-                    {row.answer === "yes"
-                      ? "Yes"
-                      : row.answer === "no"
-                        ? "No"
-                        : "Not answered"}
-                  </span>
+                    {row.is_placeholder ? (
+                      <span className="label-caps ml-3" style={{ color: "var(--sterling)" }}>
+                        Being planned
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className="label-caps mt-0.5" style={{ color: "var(--sterling)" }}>
+                    {[eventWhen(row), row.location].filter(Boolean).join(" · ")}
+                  </p>
+                  <div className="mt-3">
+                    {editable ? (
+                      <EventAnswerRow row={row} onSave={onEventAnswer} />
+                    ) : (
+                      <span className="label-caps" style={{ color: "var(--steel-ink)" }}>
+                        {row.answer === "yes"
+                          ? `Yes${row.party_size > 1 ? ` · ${row.party_size} heads` : ""}`
+                          : row.answer === "no"
+                            ? "No"
+                            : "No choice made"}
+                      </span>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
-            <p className="mt-3" style={{ fontSize: 13, color: "var(--sterling)" }}>
-              Answering each event from here is coming next. For now these follow the questions you
-              were asked by email or when you claimed your name.
-            </p>
           </div>
         )}
+
       </div>
     </NotchedBox>
   );
