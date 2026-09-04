@@ -449,3 +449,32 @@ export const getNavIdentity = createServerFn({ method: "GET" })
       rsvpStatus: ((rsvpRes.data?.status as RsvpStatus | undefined) ?? null),
     };
   });
+
+/**
+ * A member offers a way to reach an alum who has no email on file. Nothing is
+ * applied automatically: it lands in the admin review queue as a contact tip.
+ * The tip is write-only from the board; no existing address is ever returned.
+ */
+export const suggestContactTip = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: { personId: string; contactValue: string; contextNote: string }) => input,
+  )
+  .handler(async ({ data, context }) => {
+    const contact = data.contactValue.trim();
+    if (contact.length < 3) throw new Error("Please enter an email or phone number.");
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId) throw new Error("Forbidden");
+    const { error } = await context.supabase.from("suggestions").insert({
+      submitted_by: personId,
+      type: "contact_tip",
+      status: "pending",
+      payload: {
+        person_id: data.personId,
+        contact_value: contact.slice(0, 200),
+        context_note: data.contextNote.trim().slice(0, 200) || null,
+      },
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
