@@ -60,13 +60,45 @@ export function NewsPanel() {
   if (!data || !data.isAdmin) return <Empty>Not permitted.</Empty>;
 
   const pending = data.pending.filter((p) => p.status !== "consumed");
+  const waiting = pending.filter((p) => p.status === "pending");
 
   return (
     <>
-      <Section eyebrow="Pending updates" title="Waiting for the next digest">
+      {waiting.length > 0 ? (
+        <div
+          className="mb-4 flex flex-wrap items-center justify-between gap-3 p-4"
+          style={{ border: "2px solid var(--pitt-royal)", background: "var(--pure-white)" }}
+        >
+          <div>
+            <p style={mono}>Unpublished changes</p>
+            <p style={{ fontWeight: 700, color: "var(--sabah-black)" }}>
+              {waiting.length} public {waiting.length === 1 ? "change is" : "changes are"} waiting to
+              be announced.
+            </p>
+            <p style={{ fontSize: 13, color: "var(--sterling)" }}>
+              People looking at the Schedule cannot tell what moved until this goes out.
+            </p>
+          </div>
+          <button
+            type="button"
+            style={primaryButton}
+            onClick={async () => {
+              const result = await publishDigest({});
+              setNote(result.reason);
+              setDigestPreview(null);
+              refresh();
+            }}
+          >
+            Publish now
+          </button>
+        </div>
+      ) : null}
+
+      <Section eyebrow="Pending updates" title="Changes waiting to be announced">
         {pending.length === 0 ? (
-          <Empty>Nothing pending. The digest will publish nothing tonight.</Empty>
+          <Empty>Nothing pending. No public plans have changed since the last update.</Empty>
         ) : (
+
           <div className="flex flex-col gap-3">
             {pending.map((p) => (
               <PendingRow
