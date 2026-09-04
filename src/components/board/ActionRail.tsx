@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 import { DISCORD_INVITE_URL } from "@/lib/site-url";
 
 const circle = {
@@ -46,10 +48,29 @@ function DiscordGlyph() {
  * below md rather than stacked on top of it.
  */
 export function ActionRail() {
+  // At the foot of the page the rail sat on top of the footer links and made
+  // them unclickable. Once the footer is in view the rail steps aside; the
+  // links it duplicates are right there anyway.
+  const [overFooter, setOverFooter] = useState(false);
+  useEffect(() => {
+    const footer = document.querySelector("footer");
+    if (!footer || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([entry]) => setOverFooter(!!entry?.isIntersecting), {
+      rootMargin: "0px 0px -8px 0px",
+    });
+    io.observe(footer);
+    return () => io.disconnect();
+  }, []);
+
   return (
     <div
       className="fixed left-4 bottom-4 z-30 hidden flex-col gap-3 md:flex"
-      style={{ pointerEvents: "auto" }}
+      style={{
+        pointerEvents: overFooter ? "none" : "auto",
+        opacity: overFooter ? 0 : 1,
+        visibility: overFooter ? "hidden" : "visible",
+        transition: "opacity 180ms ease",
+      }}
     >
       <button
         type="button"
