@@ -644,9 +644,22 @@ export function ClaimDialog({
                     </>
                   ) : (
                     <>
-                      <button type="button" style={primaryButton} onClick={() => setStep("rsvp")}>
+                      <button
+                        type="button"
+                        style={primaryButton}
+                        onClick={() => {
+                          // Records an explicit review. Never blocks the flow:
+                          // the claim itself is already saved.
+                          if (claimed)
+                            void runConfirmFacts({
+                              data: { personId: claimed.id, email },
+                            }).catch(() => undefined);
+                          setStep("rsvp");
+                        }}
+                      >
                         Looks right
                       </button>
+
                       <button type="button" style={quietLink} onClick={() => setCorrecting(true)}>
                         Something is off
                       </button>
