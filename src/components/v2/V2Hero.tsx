@@ -109,11 +109,11 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
           </div>
         </div>
 
-        <div className="relative md:col-span-5">
+        <div className="relative mt-10 pt-12 md:col-span-5 md:mt-0 md:pt-24">
           {/* A royal field on the same 45 degree angle, continuing the crop's edge. */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -right-6 -top-8 hidden md:block"
+            className="pointer-events-none absolute -right-6 top-4 hidden md:block md:top-8"
             style={{
               width: "62%",
               height: "58%",
@@ -131,6 +131,16 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
               className="relative"
             />
           <ChamferPhoto
+              src={small.src}
+              alt={small.alt}
+              ratio="4 / 5"
+              corners={["bl", "tr"]}
+              notch={36}
+              outline="var(--sabah-black)"
+              outlineWidth={6}
+              className="absolute -top-2 right-[-12px] w-[36%] md:right-[-28px] md:top-4 md:w-[44%]"
+            />
+          <ChamferPhoto
               src={portrait.src}
               alt={portrait.alt}
               ratio="3 / 4"
@@ -140,15 +150,16 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
               outlineWidth={6}
               className="relative mt-4 w-1/2 md:absolute md:-bottom-16 md:-left-20 md:mt-0 md:w-[58%]"
             />
+          {/* The seal bridges the black field and the wide frame, roughly half
+              on the photograph and half off its top edge. */}
+          <img
+            src={firstTwoWeeksSeal.url}
+            alt="First two weeks of October, every year"
+            className="pointer-events-none absolute left-3 top-[6px] select-none md:left-8 md:top-[38px]"
+            style={{ width: "clamp(72px, 9vw, 132px)", height: "auto" }}
+            loading="eager"
+          />
         </div>
-
-        <img
-          src={firstTwoWeeksSeal.url}
-          alt="First two weeks of October, every year"
-          className="pointer-events-none absolute right-4 top-4 select-none md:right-6 md:top-6"
-          style={{ width: "clamp(72px, 9vw, 132px)", height: "auto" }}
-          loading="eager"
-        />
       </div>
     </section>
   );
