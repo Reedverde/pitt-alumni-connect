@@ -13,6 +13,8 @@ type ChamferPhotoProps = {
   notch?: number;
   /** Only the hero photograph loads eagerly. */
   eager?: boolean;
+  /** Optional object-position for deliberate crops, e.g. "center 55%". */
+  position?: string;
   outline?: string;
   outlineWidth?: number;
   className?: string;
@@ -33,6 +35,7 @@ export function ChamferPhoto({
   corners = ["tl", "br"],
   notch = 64,
   eager = false,
+  position,
   outline,
   outlineWidth = 2,
   className,
@@ -61,6 +64,7 @@ export function ChamferPhoto({
             width: "100%",
             height: "100%",
             objectFit: "cover",
+            objectPosition: position,
           }}
         />
       </NotchedBox>

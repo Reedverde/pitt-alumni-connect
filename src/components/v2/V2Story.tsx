@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ChamferPhoto } from "@/components/v2/ChamferPhoto";
-import { ACTION, ALUMNI_WEEKEND } from "@/components/v2/curated-photos";
+import { ALUMNI_WEEKEND } from "@/components/v2/curated-photos";
 import nationalsCelebration from "@/assets/hero-nationals-celebration.jpg.asset.json";
 import firstNationals2005 from "@/assets/pitt-first-nationals-team-2005.jpg.asset.json";
+import clemsonBye from "@/assets/hero-clemson-on-our-bye.jpg.asset.json";
 
 const BONE = "#F6F3ED";
 
@@ -64,9 +65,6 @@ const DAYS = [
 /** Everything on /v2 between the hero and the claim board. The board itself is
  *  untouched: this block only sets up the story and the way into it. */
 export function V2Story() {
-  const transition = ACTION.sky;
-
-
   return (
     <>
       {/* THEME: the emotional centre of the page. */}
@@ -276,11 +274,12 @@ export function V2Story() {
             </div>
             <div className="md:col-span-7">
               <ChamferPhoto
-                src={transition.src}
-                alt={transition.alt}
+                src={clemsonBye.url}
+                alt="Pitt players in blue and gold hoodies lying together on the grass during the Clemson bye week, a disc resting among them"
                 ratio="21 / 9"
                 corners={["tl", "tr", "br", "bl"]}
                 notch={40}
+                position="center 55%"
               />
             </div>
           </div>

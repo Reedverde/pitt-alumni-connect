@@ -634,3 +634,6 @@ Verified at 1440 and 390 wide: no overflow introduced by /v2 (the only overflow 
 3. Three Days photographs now share one ratio (`4 / 3`) and one restrained radius (12px rounded corners, no chamfers) with aligned tops; day copy and schedule links untouched. Equal ratio and rounding verified at 1280 and 390.
 4. Sank the decorative royal-dark chamfer field from `-bottom-24` to `-bottom-44` so it no longer overlaps the closing paragraph.
 Typecheck and build clean; / and the claim flow untouched; not published.
+
+## /v2 transition photo swap (2026-09-04)
+`/` unchanged. The wide photo beside the "Next" lead-in in `V2Story.tsx` is now the user-supplied `hero-clemson-on-our-bye.jpg` (players in blue hoodies and gold pants on the grass with the disc), replacing the ACTION.sky throwing frame. `ChamferPhoto` gained an optional `position` prop (object-position) and the slot uses `center 55%` so the smiling faces, hoodies, gold pants, and disc survive the 21/9 crop. Original colour, same four-corner chamfer treatment, no new image-only block. Huddle hero, centered nav, 2005 composition, Three Days, and the shared board untouched. Verified at 1280 and 390; typecheck clean. Not published.
