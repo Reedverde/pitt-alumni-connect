@@ -109,6 +109,8 @@ export type AdminPerson = PersonRow & {
   party_size: number | null;
   /** False when neither a stint nor a grad year can place them on the board. */
   placed: boolean;
+  /** One of their addresses hard bounced, complained, or is suppressed. */
+  contact_flagged: boolean;
 };
 
 
@@ -126,6 +128,8 @@ type Context = {
   /** Admin only. Never joined into a public view or a member facing payload. */
   emails: Map<string, AdminEmail[]>;
   eventAnswers: Map<string, AdminPerson["event_answers"]>;
+  /** Addresses we must not mail again: suppressed, hard bounced, complained. */
+  badEmails: Set<string>;
 };
 
 
@@ -187,8 +191,30 @@ async function loadContext(): Promise<Context> {
     emails.set(pid, list);
   }
   const { loadEventAnswersByPerson } = await import("./event-rsvp.server");
-  const eventAnswers = await loadEventAnswersByPerson();
-  return { placement, stints, rsvp, party, history, verified, hasIdentity, emails, eventAnswers };
+  const [eventAnswers, supRes, sendRes] = await Promise.all([
+    loadEventAnswersByPerson(),
+    supabaseAdmin.from("suppressions").select("email").limit(2000),
+    supabaseAdmin.from("sends").select("to_email, bounced, bounce_type, complained").limit(20000),
+  ]);
+  const badEmails = new Set<string>();
+  for (const row of supRes.data ?? []) badEmails.add(String(row.email).toLowerCase());
+  for (const row of sendRes.data ?? []) {
+    const address = row.to_email ? String(row.to_email).toLowerCase() : null;
+    if (!address) continue;
+    if (row.complained || (row.bounced && row.bounce_type === "hard")) badEmails.add(address);
+  }
+  return {
+    placement,
+    stints,
+    rsvp,
+    party,
+    history,
+    verified,
+    hasIdentity,
+    emails,
+    eventAnswers,
+    badEmails,
+  };
 
 }
 
@@ -214,6 +240,9 @@ function decorate(person: PersonRow, ctx: Context, label: string | null): AdminP
     event_answers: ctx.eventAnswers.get(person.id) ?? [],
     rsvp_history: ctx.history.get(person.id) ?? [],
     party_size: ctx.party.get(person.id) ?? null,
+    contact_flagged: (ctx.emails.get(person.id) ?? []).some((e) =>
+      ctx.badEmails.has(e.email.toLowerCase()),
+    ),
     placed: boardYear !== null && boardYear !== undefined,
 
     board_year: boardYear,
@@ -1932,17 +1961,7 @@ export async function overview(
   const promptEvents = await loadPromptEvents();
   const promptIds = new Set(promptEvents.map((e) => e.id));
 
-  const [supRes, sendRes] = await Promise.all([
-    supabaseAdmin.from("suppressions").select("email").limit(2000),
-    supabaseAdmin.from("sends").select("to_email, bounced, bounce_type, complained").limit(20000),
-  ]);
-  const badAddresses = new Set<string>();
-  for (const row of supRes.data ?? []) badAddresses.add(String(row.email).toLowerCase());
-  for (const row of sendRes.data ?? []) {
-    const email = row.to_email ? String(row.to_email).toLowerCase() : null;
-    if (!email) continue;
-    if (row.complained || (row.bounced && row.bounce_type === "hard")) badAddresses.add(email);
-  }
+  const badAddresses = ctx.badEmails;
 
   let eligible = 0;
   let going = 0;
