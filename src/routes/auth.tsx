@@ -13,6 +13,7 @@ import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import pittUltimateShield from "@/assets/pitt-ultimate-shield.png.asset.json";
 import { isStructurallyValidEmail } from "@/lib/email-typos";
 import {
+import { PageShell } from "@/components/layout/PageShell";
   EmailSuggestion,
   FieldLabel,
   Notice,
@@ -119,7 +120,7 @@ function AuthPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-[520px] px-5 py-16">
+    <PageShell width="column">
       <div className="flex flex-col items-center">
         <img
           src={pittUltimateShield.url}
@@ -181,6 +182,6 @@ function AuthPage() {
           </div>
         </form>
       )}
-    </main>
+    </PageShell>
   );
 }

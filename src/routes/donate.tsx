@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { PageShell } from "@/components/layout/PageShell";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import {
   FOUNDATION_DONATE_URL,
@@ -101,7 +102,7 @@ function DonateCard({
  *  attending and this page is not about attending. */
 function DonatePage() {
   return (
-    <main className="mx-auto w-full max-w-[1320px] px-5 py-12">
+    <PageShell>
       <SlashEyebrow>Support the program</SlashEyebrow>
       <h1 className="display-48 mt-3" style={{ color: "var(--sabah-black)" }}>
         DONATE
@@ -136,6 +137,6 @@ function DonatePage() {
           cta="Give with Venmo"
         />
       </div>
-    </main>
+    </PageShell>
   );
 }
