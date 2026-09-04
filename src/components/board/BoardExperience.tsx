@@ -595,19 +595,24 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
             ) : (
               <EmptyPrompt
                 copy={
-                  searching
-                    ? `No names match "${searchQuery.trim()}". Try a last name, or add yourself.`
-                    : flatEmptyCopy(phraseStatuses)
+                  searching && structuredFilters
+                    ? `No names match "${searchQuery.trim()}" under the current filters. They may still be on the board.`
+                    : searching
+                      ? `No names match "${searchQuery.trim()}". Try a last name, or add yourself.`
+                      : flatEmptyCopy(phraseStatuses)
                 }
                 action={
-                  searching
-                    ? {
-                        label: "I'm not on here, add me",
-                        onClick: () => openClaim(undefined, searchQuery.trim()),
-                      }
-                    : undefined
+                  searching && structuredFilters
+                    ? { label: "Search all names", onClick: searchWholeBoard }
+                    : searching
+                      ? {
+                          label: "I'm not on here, add me",
+                          onClick: () => openClaim(undefined, searchQuery.trim()),
+                        }
+                      : undefined
                 }
               />
+
             )}
           </div>
         ) : (
