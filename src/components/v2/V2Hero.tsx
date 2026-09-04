@@ -48,7 +48,29 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
         }}
       />
 
+      {/* Atmospheric script word layer, the quiet ground the composition sits
+          on. Decorative only, so it is hidden from assistive tech, and it is
+          kept faint enough that the headline never loses contrast. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute left-[6%] top-[72%] select-none md:left-[24%] md:top-[36%]"
+        style={{
+          zIndex: 5,
+          transform: "rotate(-6deg)",
+          fontFamily: '"Great Vibes", cursive',
+          fontSize: "clamp(56px, 9vw, 168px)",
+          lineHeight: 0.8,
+          whiteSpace: "nowrap",
+          textAlign: "center",
+          color: "var(--pure-white)",
+          opacity: 0.16,
+        }}
+      >
+        En Sabah Nur
+      </span>
+
       <div className="relative mx-auto grid w-full max-w-[1480px] grid-cols-1 items-center gap-10 px-5 pt-12 pb-16 md:grid-cols-12 md:gap-6 md:pt-20 md:pb-24 md:pl-10 md:pr-0">
+
         <div className="md:col-span-5">
           <p className="flex items-center" style={{ color: "var(--pure-white)" }}>
             <span

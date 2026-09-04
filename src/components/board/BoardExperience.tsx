@@ -46,7 +46,10 @@ export type HeroRenderArgs = {
 type BoardExperienceProps = {
   renderHero: (args: HeroRenderArgs) => ReactNode;
   story?: ReactNode;
+  /** A route may substitute its own navigation. Defaults to the site nav. */
+  renderNav?: (args: { onClaim: () => void }) => ReactNode;
 };
+
 
 /** A year ending in 00 shows all four digits: "00" reads as a placeholder. */
 function sealLabel(year: number) {
@@ -131,7 +134,7 @@ function flatEmptyCopy(statuses: string[]) {
   return "Nobody has answered yet. Be the first.";
 }
 
-export function BoardExperience({ renderHero, story }: BoardExperienceProps) {
+export function BoardExperience({ renderHero, story, renderNav }: BoardExperienceProps) {
   const { data } = useSuspenseQuery(boardQuery);
   const queryClient = useQueryClient();
   const filters = useMemo(
@@ -379,7 +382,10 @@ export function BoardExperience({ renderHero, story }: BoardExperienceProps) {
   return (
     <ChipSessionContext.Provider value={session.signedIn}>
     <div style={{ background: "var(--field-white)" }} className="board-chrome min-h-screen">
-      <SiteNav onClaim={() => openClaim()} />
+      {renderNav
+        ? renderNav({ onClaim: () => openClaim() })
+        : <SiteNav onClaim={() => openClaim()} />}
+
       {renderHero({ season, clock, countdownLive, onClaim: () => openClaim() })}
 
       {story}
