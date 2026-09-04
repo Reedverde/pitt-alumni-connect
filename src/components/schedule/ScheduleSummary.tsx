@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { audienceLabel } from "@/lib/event-model";
 import { Link } from "@tanstack/react-router";
 
 import { Seal } from "@/components/board/Seal";
@@ -95,6 +96,17 @@ function EventTile({
       >
         {event.title}
       </h4>
+        {(event.status === "cancelled" || event.status === "changed" || event.audience !== "everyone") && (
+          <p className="mt-2 label-caps" style={{ color: event.status === "cancelled" ? "var(--pitt-royal)" : "var(--sterling)" }}>
+            {event.status === "cancelled"
+                ? "Cancelled"
+                : event.status === "changed"
+                  ? "Changed"
+                  : null}
+            {event.status === "cancelled" || event.status === "changed" ? " · " : ""}
+            {event.audience !== "everyone" ? audienceLabel(event.audience, event.division) : ""}
+          </p>
+        )}
       {event.location && (
         <p className="mt-2" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
           {event.location}
@@ -105,7 +117,9 @@ function EventTile({
           {event.notes}
         </p>
       )}
-      <EventCardAnswer eventId={event.id} eventTitle={event.title} />
+      {event.status !== "cancelled" && (
+        <EventCardAnswer eventId={event.id} eventTitle={event.title} />
+      )}
     </NotchedBox>
   );
 }
