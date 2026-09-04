@@ -25,6 +25,17 @@ export const SHELTER_CAPACITY = 24;
 
 export const CURRENT_SEASON = new Date().getFullYear();
 
+/** The roster season the database itself uses for "current player": the year in
+ *  Eastern time, matching the board_people view. Classification never guesses
+ *  from a graduation year. */
+export function rosterSeasonYear(): number {
+  return Number(
+    new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric" }).format(
+      new Date(),
+    ),
+  );
+}
+
 export type Actor = { personId: string | null };
 
 /** Returns the acting admin's person_id, or null when the caller is not an
@@ -122,6 +133,8 @@ export type AdminPerson = PersonRow & {
   email_verified: boolean;
   /** When they last read their own permanent facts and said something. */
   profile_review: ProfileReviewSummary;
+  /** On a roster this season. Current players are not counted as alumni. */
+  is_current_player: boolean;
 };
 
 
@@ -145,6 +158,9 @@ type Context = {
   reachable: Set<string>;
   /** Latest explicit profile review per person. Absent means never reviewed. */
   reviews: Map<string, ProfileReviewSummary>;
+  /** On a roster this season as a player or captain. The same rule board_people
+   *  uses, so alumni and current players never split two different ways. */
+  currentPlayers: Set<string>;
 };
 
 
@@ -152,7 +168,7 @@ async function loadContext(): Promise<Context> {
   const currentYear = (await loadCurrentEdition()).event_year;
   const [placeRes, stintRes, rsvpRes, identRes] = await Promise.all([
     supabaseAdmin.from("person_board_placement").select("person_id, board_year, board_division"),
-    supabaseAdmin.from("stints").select("person_id"),
+    supabaseAdmin.from("stints").select("person_id, role, year"),
     supabaseAdmin
       .from("rsvps")
       .select("person_id, event_year, status, party_size")
@@ -170,8 +186,15 @@ async function loadContext(): Promise<Context> {
       board_division: row.board_division as string | null,
     });
   const stints = new Map<string, number>();
-  for (const row of stintRes.data ?? [])
-    stints.set(row.person_id as string, (stints.get(row.person_id as string) ?? 0) + 1);
+  const currentPlayers = new Set<string>();
+  const season = rosterSeasonYear();
+  for (const row of stintRes.data ?? []) {
+    const pid = row.person_id as string;
+    stints.set(pid, (stints.get(pid) ?? 0) + 1);
+    const role = String((row as { role?: string }).role ?? "");
+    const year = (row as { year?: number | null }).year;
+    if ((role === "player" || role === "captain") && Number(year) === season) currentPlayers.add(pid);
+  }
   const rsvp = new Map<string, string>();
   const party = new Map<string, number>();
   const history = new Map<string, AdminRsvpHistoryRow[]>();
@@ -240,6 +263,7 @@ async function loadContext(): Promise<Context> {
     eventAnswers,
     badEmails,
     reachable,
+    currentPlayers,
     reviews: await loadProfileReviews(),
   };
 
@@ -274,6 +298,7 @@ function decorate(person: PersonRow, ctx: Context, label: string | null): AdminP
     email_on_file: (ctx.emails.get(person.id) ?? []).length > 0,
     email_verified: (ctx.emails.get(person.id) ?? []).some((e) => e.verified),
     profile_review: ctx.reviews.get(person.id) ?? { state: "never", lastReviewedAt: null },
+    is_current_player: ctx.currentPlayers.has(person.id),
     placed: boardYear !== null && boardYear !== undefined,
 
     board_year: boardYear,
@@ -2006,6 +2031,8 @@ export async function rsvpSources(): Promise<SourceCount[]> {
  *  never drift apart. */
 export type PeopleFilterKey =
   | "going"
+  | "going_alumni"
+  | "going_current"
   | "maybe"
   | "not_this_year"
   | "no_response"
