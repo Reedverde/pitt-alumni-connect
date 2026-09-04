@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveMyPersonId } from "./account-resolve";
 import { normalizePartySize, type RsvpStatus } from "./rsvp-types";
+import type { ProfileReviewSummary } from "./profile-review";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -54,6 +55,9 @@ export type MyProfile = {
   events: MyEventAnswer[];
   history: MyYearAnswer[];
   divisions: { code: string; label: string }[];
+  /** When the person last read their permanent facts and said something about
+   *  them. Never inferred from a login or an address on file. */
+  review: ProfileReviewSummary;
 };
 
 
@@ -179,7 +183,11 @@ export const getMyProfile = createServerFn({ method: "GET" })
         events: [],
         history: [],
         divisions,
+        review: { state: "never", lastReviewedAt: null },
       };
+
+    const { loadProfileReview } = await import("./profile-review.server");
+    const review = await loadProfileReview(personId);
 
     const { data: mine } = await supabase
       .from("identities")
@@ -291,8 +299,36 @@ export const getMyProfile = createServerFn({ method: "GET" })
           party_size: Number(r.party_size ?? 1),
         })),
       divisions,
-
+      review,
     };
+  });
+
+/** The person pressed "This is right" on their own page. The only other way a
+ *  review is ever written is the same press inside the claim flow. */
+export const confirmMyProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ ok: boolean }> => {
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId) return { ok: false };
+    const { recordProfileReview } = await import("./profile-review.server");
+    await recordProfileReview({ personId, outcome: "confirmed", source: "me_page" });
+    return { ok: true };
+  });
+
+/** A correction from the person's own page. Filed for the organizers exactly
+ *  like the claim flow one, and recorded as reviewed but not confirmed. */
+export const correctMyProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { note: string }) => ({ note: String(input?.note ?? "") }))
+  .handler(async ({ context, data }): Promise<{ ok: boolean }> => {
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId || !data.note.trim()) return { ok: false };
+    const { submitRosterCorrectionServer } = await import("./rsvp.server");
+    await submitRosterCorrectionServer(
+      { personId, note: data.note, source: "me_profile_correction" },
+      "authenticated",
+    );
+    return { ok: true };
   });
 
 export const updateMyProfile = createServerFn({ method: "POST" })

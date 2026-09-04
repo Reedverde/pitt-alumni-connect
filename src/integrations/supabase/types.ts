@@ -1322,6 +1322,76 @@ export type Database = {
           },
         ]
       }
+      profile_reviews: {
+        Row: {
+          created_at: string
+          id: string
+          outcome: string
+          person_id: string
+          source: string
+          suggestion_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          outcome: string
+          person_id: string
+          source?: string
+          suggestion_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          outcome?: string
+          person_id?: string
+          source?: string
+          suggestion_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_reviews_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_reviews_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_reviews_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_reviews_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "profile_reviews_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "profile_reviews_suggestion_id_fkey"
+            columns: ["suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "suggestions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rsvps: {
         Row: {
           event_year: number

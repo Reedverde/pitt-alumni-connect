@@ -11,6 +11,11 @@ import {
   getAdminPeople,
 } from "@/lib/admin.functions";
 import type { AdminPerson, PeopleFilterKey } from "@/lib/admin.server";
+import {
+  PROFILE_REVIEW_LABELS,
+  emailStateLabel,
+  formatReviewDate,
+} from "@/lib/profile-review";
 import { Empty, Num, Section, cellStyle, hairline, headStyle, inputStyle, primaryButton, secondaryButton } from "./ui";
 
 const DIVISIONS = ["MENS_A", "MENS_B", "WOMENS_A", "WOMENS_B"];
@@ -233,7 +238,7 @@ function EditRow({ person, onSaved }: { person: AdminPerson; onSaved: () => void
 
   return (
     <tr>
-      <td colSpan={10} style={{ ...cellStyle, background: "var(--concrete)" }}>
+      <td colSpan={12} style={{ ...cellStyle, background: "var(--concrete)" }}>
         <div className="grid gap-3 sm:grid-cols-3">
           {field("first_name", "First name")}
           {field("last_name", "Last name")}
@@ -406,11 +411,13 @@ function EmailCell({ emails }: { emails: AdminPerson["emails"] }) {
 
 type SortKey =
   | "name" | "played_as" | "grad_year" | "board_year" | "board_division" | "team_label"
-  | "email" | "stint_count" | "state" | "is_anchor" | "needs_review" | "show_on_board" | "deceased" | "member_no";
+  | "email" | "email_state" | "profile_review" | "stint_count" | "state" | "is_anchor" | "needs_review" | "show_on_board" | "deceased" | "member_no";
 
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "name", label: "Name" },
   { key: "email", label: "Email" },
+  { key: "email_state", label: "Contact" },
+  { key: "profile_review", label: "Profile review" },
   { key: "played_as", label: "Played as" },
   { key: "grad_year", label: "Grad" },
   { key: "board_year", label: "Board yr" },
@@ -437,6 +444,8 @@ function sortValue(p: AdminPerson, key: SortKey): string | number {
     case "name": return fullName(p).toLowerCase();
     case "played_as": return (p.played_as ?? "").toLowerCase();
     case "email": return (p.emails[0]?.email ?? "").toLowerCase();
+    case "email_state": return p.email_verified ? 2 : p.email_on_file ? 1 : 0;
+    case "profile_review": return p.profile_review.lastReviewedAt ?? "";
     case "grad_year": return p.grad_year ?? -1;
     case "board_year": return p.board_year ?? -1;
     case "board_division": return p.board_division ?? "";
@@ -487,6 +496,11 @@ export const PRESET_LABELS: Record<PeopleFilterKey, string> = {
   needs_review: "Flagged needs review",
   unplaced: "Cannot be placed",
   bad_contact: "Bounced or suppressed",
+  email_on_file: "Address on file",
+  email_verified: "Verified inbox",
+  profile_confirmed: "Profile confirmed by them",
+  profile_correction_pending: "Correction pending",
+  profile_unreviewed: "Never reviewed their profile",
 };
 
 function matchesPreset(
@@ -530,6 +544,19 @@ function matchesPreset(
       return !person.placed && !person.deceased;
     case "bad_contact":
       return person.contact_flagged;
+    // Contact and review are three different facts, so they are three
+    // different views: an address on file, a proven inbox, and the person
+    // actually reading their own record.
+    case "email_on_file":
+      return person.email_on_file;
+    case "email_verified":
+      return person.email_verified;
+    case "profile_confirmed":
+      return person.profile_review.state === "confirmed";
+    case "profile_correction_pending":
+      return person.profile_review.state === "correction_pending";
+    case "profile_unreviewed":
+      return !person.deceased && person.profile_review.state === "never";
     default:
       return true;
   }
@@ -753,6 +780,15 @@ export function PeopleTable({
                       </button>
                     </td>
                     <td style={cell}><EmailCell emails={person.emails} /></td>
+                    <td style={{ ...cell, color: "var(--sterling)" }}>
+                      {emailStateLabel({ onFile: person.email_on_file, verified: person.email_verified })}
+                    </td>
+                    <td style={{ ...cell, color: "var(--sterling)" }}>
+                      {PROFILE_REVIEW_LABELS[person.profile_review.state]}
+                      {person.profile_review.lastReviewedAt
+                        ? ` · ${formatReviewDate(person.profile_review.lastReviewedAt)}`
+                        : ""}
+                    </td>
                     <td style={{ ...cell, color: "var(--sterling)" }}>{person.played_as ?? "—"}</td>
                     <td style={cell}><Num>{person.grad_year ?? "—"}</Num></td>
                     <td style={cell}><Num>{person.board_year ?? "—"}</Num></td>

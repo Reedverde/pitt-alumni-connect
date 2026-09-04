@@ -8,6 +8,8 @@ import {
   addMeAsPerson,
   amIPreapproved,
   claimPersonAsMe,
+  confirmMyProfile,
+  correctMyProfile,
   getMyProfile,
   getPendingVerifications,
   removeMyEmail,
@@ -28,6 +30,11 @@ import { searchPeople } from "@/lib/rsvp.functions";
 import { personDisplayName as matchName, type PersonMatch } from "@/lib/rsvp-types";
 import { STATUS_LABELS, personDisplayName, type RsvpStatus } from "@/lib/rsvp-types";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
+import {
+  emailStateLabel,
+  profileReviewSentence,
+  type ProfileReviewSummary,
+} from "@/lib/profile-review";
 import { isStructurallyValidEmail } from "@/lib/email-typos";
 import {
   EmailSuggestion,
@@ -89,6 +96,73 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       </h2>
       {children}
     </section>
+  );
+}
+
+/** Three states, never blurred: nobody has confirmed this, you confirmed it on
+ *  a date, or you sent a correction that is still waiting. An address on file
+ *  and a proven inbox live above; neither counts as a review. */
+function ProfileReviewCard({
+  review,
+  onConfirm,
+  onCorrect,
+}: {
+  review: ProfileReviewSummary;
+  onConfirm: () => void | Promise<void>;
+  onCorrect: (note: string) => void | Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const pending = review.state === "correction_pending";
+
+  return (
+    <Section title="Is this still right?">
+      <p style={{ fontSize: 15, color: "var(--steel-ink)" }}>{profileReviewSentence(review)}</p>
+      {!open ? (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button type="button" style={primaryButton} onClick={() => void onConfirm()}>
+            {review.state === "confirmed" ? "Confirm again" : "This is right"}
+          </button>
+          <button type="button" style={secondaryButton} onClick={() => setOpen(true)}>
+            Something is off
+          </button>
+          {pending && (
+            <span className="label-caps" style={{ color: "var(--sterling)" }}>
+              Correction waiting
+            </span>
+          )}
+        </div>
+      ) : (
+        <div className="mt-4">
+          <FieldLabel htmlFor="profile-correction">What should it say?</FieldLabel>
+          <textarea
+            id="profile-correction"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={3}
+            style={{ ...fieldStyle, minHeight: 84 }}
+            placeholder="Tell the organizers what to change"
+          />
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              style={primaryButton}
+              disabled={!note.trim()}
+              onClick={() => {
+                void onCorrect(note.trim());
+                setNote("");
+                setOpen(false);
+              }}
+            >
+              Send correction
+            </button>
+            <button type="button" style={secondaryButton} onClick={() => setOpen(false)}>
+              Never mind
+            </button>
+          </div>
+        </div>
+      )}
+    </Section>
   );
 }
 
@@ -308,6 +382,8 @@ function MePage() {
   const navigate = useNavigate();
   const loadProfile = useServerFn(getMyProfile);
   const saveProfile = useServerFn(updateMyProfile);
+  const confirmProfile = useServerFn(confirmMyProfile);
+  const correctProfile = useServerFn(correctMyProfile);
   const addEmail = useServerFn(addMyEmail);
   const dropEmail = useServerFn(removeMyEmail);
   const makePrimary = useServerFn(setPrimaryEmail);
@@ -468,6 +544,17 @@ function MePage() {
         </p>
       </div>
 
+      <ProfileReviewCard
+        review={profile.review}
+        onConfirm={() => run(() => confirmProfile({}), "Thanks. Marked as confirmed by you.")}
+        onCorrect={(note) =>
+          run(
+            () => correctProfile({ data: { note } }),
+            "Sent to the organizers. It stays unconfirmed until they apply it.",
+          )
+        }
+      />
+
       <Section title="Name and city">
         <ProfileForm
           person={person}
@@ -500,8 +587,21 @@ function MePage() {
                 {row.email}
               </label>
               <span className="flex items-center gap-3">
-                <span className="label-caps" style={{ color: "var(--sterling)" }}>
-                  {row.is_primary ? "Primary" : row.verified ? "Verified" : "Unverified"}
+                {row.is_primary && (
+                  <span className="label-caps" style={{ color: "var(--sterling)" }}>
+                    Primary
+                  </span>
+                )}
+                <span
+                  className="label-caps"
+                  style={{ color: row.verified ? "var(--pitt-royal)" : "var(--sterling)" }}
+                  title={
+                    row.verified
+                      ? "A sign in link sent here was opened."
+                      : "This address is on the record. Nobody has proved they can read it."
+                  }
+                >
+                  {emailStateLabel({ onFile: true, verified: row.verified })}
                 </span>
                 {!row.is_primary && (
                   <button

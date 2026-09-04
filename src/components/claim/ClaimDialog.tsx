@@ -7,6 +7,7 @@ import {
   listDivisions,
   searchPeople,
   submitRosterCorrection,
+  confirmRosterFacts,
   submitRsvp,
 } from "@/lib/rsvp.functions";
 import { PartySizeStepper } from "./PartySizeStepper";
@@ -96,6 +97,7 @@ export function ClaimDialog({
   const runSearch = useServerFn(searchPeople);
   const runClaim = useServerFn(claimProfile);
   const runCorrection = useServerFn(submitRosterCorrection);
+  const runConfirmFacts = useServerFn(confirmRosterFacts);
   const runSubmit = useServerFn(submitRsvp);
   const { data: divisions } = useQuery({
     queryKey: ["divisions"],
@@ -251,8 +253,10 @@ export function ClaimDialog({
           playedAs: fixPlayedAs.trim() || null,
           division: fixDivision || null,
           note: fixNote.trim() || null,
+          source: "claim_roster_facts",
         },
       });
+
       setBusy(false);
       setCorrecting(false);
       setStep("rsvp");
@@ -642,9 +646,22 @@ export function ClaimDialog({
                     </>
                   ) : (
                     <>
-                      <button type="button" style={primaryButton} onClick={() => setStep("rsvp")}>
+                      <button
+                        type="button"
+                        style={primaryButton}
+                        onClick={() => {
+                          // Records an explicit review. Never blocks the flow:
+                          // the claim itself is already saved.
+                          if (claimed)
+                            void runConfirmFacts({
+                              data: { personId: claimed.id, email },
+                            }).catch(() => undefined);
+                          setStep("rsvp");
+                        }}
+                      >
                         Looks right
                       </button>
+
                       <button type="button" style={quietLink} onClick={() => setCorrecting(true)}>
                         Something is off
                       </button>
