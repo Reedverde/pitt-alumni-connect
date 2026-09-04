@@ -6,6 +6,27 @@ import { normalizePartySize, type RsvpStatus } from "./rsvp-types";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
+/** One row of the annual card's event list. `answer` is null when the person
+ *  has genuinely not answered: an unanswered event is never collapsed into a
+ *  no. Phase 5 turns these rows into a three position control. */
+export type MyEventAnswer = {
+  id: string;
+  title: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  time_tbd: boolean;
+  location: string | null;
+  is_placeholder: boolean;
+  answer: "yes" | "no" | null;
+};
+
+/** A past year, read only. */
+export type MyYearAnswer = {
+  event_year: number;
+  status: RsvpStatus;
+  party_size: number;
+};
+
 export type MyProfile = {
   person: {
     id: string;
@@ -24,7 +45,14 @@ export type MyProfile = {
   rsvpPartySize: number;
   edition: { event_year: number; title: string; starts_on: string; ends_on: string } | null;
   attended: number[];
+  /** Phase 1 deadline rule: the actual end of the weekend, no grace period. */
+  rsvpEditable: boolean;
+  rsvpEditableUntil: string | null;
+  events: MyEventAnswer[];
+  history: MyYearAnswer[];
+  divisions: { code: string; label: string }[];
 };
+
 
 export const finalizeLogin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
