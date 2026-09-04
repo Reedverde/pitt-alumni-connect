@@ -337,8 +337,12 @@ function MePage() {
     if (next.person) setPending(await loadPending({ data: { personId: next.person.id } }));
   };
 
+  // Read once and remembered: the flag is one-time, and a double-invoked
+  // mount must not consume it and then conclude it was never there.
+  const confirmedRef = useRef<boolean | null>(null);
   useEffect(() => {
-    setJustConfirmed(consumeSignInConfirmed());
+    if (confirmedRef.current === null) confirmedRef.current = consumeSignInConfirmed();
+    if (confirmedRef.current) setJustConfirmed(true);
   }, []);
 
   // The profile arrives asynchronously, so the handoff waits for the data
