@@ -12,6 +12,7 @@ import { useEditionEyebrow } from "@/lib/useEdition";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import pittUltimateShield from "@/assets/pitt-ultimate-shield.png.asset.json";
 import { isStructurallyValidEmail } from "@/lib/email-typos";
+import { SITE_ORIGIN } from "@/lib/site-url";
 import { PageShell } from "@/components/layout/PageShell";
 import {
   EmailSuggestion,
@@ -38,7 +39,9 @@ export const Route = createFileRoute("/auth")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: `${SITE_ORIGIN}/auth` },
     ],
+    links: [{ rel: "canonical", href: `${SITE_ORIGIN}/auth` }],
   }),
   component: AuthPage,
 });

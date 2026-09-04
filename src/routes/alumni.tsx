@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 
+import { SITE_ORIGIN } from "@/lib/site-url";
 import { PageShell } from "@/components/layout/PageShell";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimDialog } from "@/components/claim/ClaimDialog";
@@ -25,7 +26,9 @@ export const Route = createFileRoute("/alumni")({
       },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: `${SITE_ORIGIN}/alumni` },
     ],
+    links: [{ rel: "canonical", href: `${SITE_ORIGIN}/alumni` }],
   }),
   component: AlumniPage,
 });

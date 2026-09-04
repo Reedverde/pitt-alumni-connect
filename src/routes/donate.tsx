@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { SITE_ORIGIN } from "@/lib/site-url";
 import { PageShell } from "@/components/layout/PageShell";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import {
@@ -25,7 +26,9 @@ export const Route = createFileRoute("/donate")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: `${SITE_ORIGIN}/donate` },
     ],
+    links: [{ rel: "canonical", href: `${SITE_ORIGIN}/donate` }],
   }),
   component: DonatePage,
 });

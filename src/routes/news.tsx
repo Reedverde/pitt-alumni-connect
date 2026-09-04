@@ -41,6 +41,7 @@ export const Route = createFileRoute("/news")({
       { name: "twitter:card", content: "summary" },
     ],
     links: [
+      { rel: "canonical", href: `${SITE_ORIGIN}/news` },
       {
         rel: "alternate",
         type: "application/rss+xml",
