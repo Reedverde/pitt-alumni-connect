@@ -165,57 +165,35 @@ function AlumniPage() {
           </Measure>
         </section>
 
-        <section className="mt-12">
-          <Measure>
-            <SlashEyebrow>Friday</SlashEyebrow>
-            <h2 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
-              Friday is always a social night.
-            </h2>
-            <p className="mt-4" style={body}>
-              <strong style={{ fontWeight: 700, color: "var(--sabah-black)" }}>Friday.</strong> A
-              crawl through Oakland and the Pitt away game on a screen.
-            </p>
-            <p className="mt-4" style={body}>
-              <strong style={{ fontWeight: 700, color: "var(--sabah-black)" }}>Saturday.</strong>{" "}
-              The cookout, with the field and the playground right there.
-            </p>
-            <p className="mt-4" style={body}>
-              <strong style={{ fontWeight: 700, color: "var(--sabah-black)" }}>Sunday.</strong>{" "}
-              Currents versus alumni. Play if you want to, watch if you don't. We just want you
-              there.
-            </p>
-          </Measure>
-          <PhotoSlot
-            className="mt-8 md:max-w-[720px]"
-            label="Back at Nationals, 2026"
-            slotKey="why_return_2026"
-            index="04"
-            ratio="4 / 3"
-          />
-        </section>
-
+        {/* The weekend itinerary lives on Schedule, which is the one place
+            logistics are ever edited. This page stays evergreen. */}
         <section className="mt-12">
           <Measure>
             <SlashEyebrow>The record</SlashEyebrow>
+            <h2 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
+              What the program has done.
+            </h2>
           </Measure>
           <RecordStrip />
+          <Measure className="mt-6">
+            <p style={body}>
+              Kept here so it is written down somewhere that is not a group chat. If a year is wrong
+              or missing, tell an organizer and it gets fixed.
+            </p>
+          </Measure>
         </section>
 
         <section className="mt-14">
           <Measure>
-            <SlashEyebrow>The board</SlashEyebrow>
-          </Measure>
-          <h2 className="display-xl mt-4" style={{ maxWidth: "100%" }}>
-            FIND IT
-          </h2>
-          <Measure className="mt-6">
-            <p style={body}>
-              Everyone who ever played is on the board, by the year they finished.
-            </p>
+            <SlashEyebrow>Where to go next</SlashEyebrow>
+            <h2 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
+              Two places from here.
+            </h2>
             <p className="mt-4" style={body}>
-              Yours is grey until you say you are coming.
+              The board has everyone who ever played, by the year they finished. Schedule has the
+              dates, times and places for this year, and it is the page that gets corrected first.
             </p>
-            <div className="mt-8">
+            <div className="mt-8 flex flex-wrap items-center gap-5">
               {signedIn ? (
                 <Link to="/me" style={{ ...primaryButton, display: "inline-block", textDecoration: "none" }}>
                   YOUR RECORD
@@ -225,17 +203,17 @@ function AlumniPage() {
                   FIND YOUR NAME
                 </button>
               )}
+              <Link
+                to="/schedule"
+                className="label-caps"
+                style={{ color: "var(--pitt-royal)", textDecoration: "none" }}
+              >
+                This year&rsquo;s schedule
+              </Link>
             </div>
           </Measure>
         </section>
-
-        <ClosingCta
-          title="Find your name"
-          body="Every player from 1978 on is on the board. Find yours and claim it, then tell us about October if you know."
-          action={{ kind: "rsvp", label: "Find your name", onOpen: () => setClaimOpen(true) }}
-        />
       </main>
-      <ActionRail onRsvp={() => setClaimOpen(true)} />
       <ClaimDialog
         open={claimOpen}
         target={null}
@@ -245,7 +223,7 @@ function AlumniPage() {
           void navigate({ to: "/", hash: personId ? `person-${personId}` : undefined });
         }}
       />
-      <SiteFooter />
-    </div>
+    </PageShell>
   );
 }
+
