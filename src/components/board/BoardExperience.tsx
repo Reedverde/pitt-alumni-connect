@@ -349,7 +349,7 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
     ).length;
 
   const byYearThenName = (a: BoardPerson, b: BoardPerson) =>
-    b.board_year - a.board_year ||
+    (newestFirst ? b.board_year - a.board_year : a.board_year - b.board_year) ||
     `${a.last_name ?? a.first_name} ${a.first_name}`
       .toLowerCase()
       .localeCompare(`${b.last_name ?? b.first_name} ${b.first_name}`.toLowerCase());
@@ -375,6 +375,17 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
   // Only-fuzzy results must never be presented as if they were exact.
   const onlyFuzzy = searching && ranked.length > 0 && ranked.every((r) => r.tier === TIER_FUZZY);
 
+  // One live line under the controls, so the board never leaves a reader
+  // wondering what the dropdowns just did.
+  const visibleCount = flatMode
+    ? flatPeople.length
+    : people.filter((p) => !isHidden(p)).length;
+  const resultLabel = searching
+    ? `${flatPeople.length} matching "${searchQuery.trim()}"`
+    : filtered
+      ? `${visibleCount} ${statusPhrase(phraseStatuses)}`
+      : `${visibleCount} names on the board`;
+
   // Unclaimed and no-contact lists are long, so they render in five-year
   // chunks instead of one flat run. Search results stay flat and ranked.
   const chunkByFiveYears =
@@ -393,8 +404,9 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
         }
         return [...buckets.entries()]
           .map(([start, list]) => ({ start, people: list }))
-          .sort((a, b) => b.start - a.start);
+          .sort((a, b) => (newestFirst ? b.start - a.start : a.start - b.start));
       })();
+
 
   return (
     <ChipSessionContext.Provider value={session.signedIn}>
