@@ -36,34 +36,27 @@ const linkButton = {
   textDecoration: "none",
 };
 
+/** The three weekend photographs: one shared ratio, one shared radius, so the
+ *  row scans as a set instead of three separate cuts. */
+const DAY_RATIO = "4 / 3";
+const DAY_RADIUS = 12;
+
 const DAYS = [
   {
     day: "Friday",
     photo: ALUMNI_WEEKEND.friday,
-    ratio: "4 / 3",
-    corners: ["tl", "br"] as const,
-    notch: 56,
-    offset: "md:mt-0",
     summary:
       "Social night. City Kitchen, Pitt at Virginia Tech on the screen, then wherever the night takes us.",
   },
   {
     day: "Saturday",
     photo: ALUMNI_WEEKEND.saturday,
-    ratio: "1 / 1",
-    corners: ["tr", "bl"] as const,
-    notch: 72,
-    offset: "md:-mt-16",
     summary:
       "The big one. Family BBQ at Schenley Overlook, then Pitt women's soccer that evening.",
   },
   {
     day: "Sunday",
     photo: ALUMNI_WEEKEND.sunday,
-    ratio: "16 / 10",
-    corners: ["tl", "br"] as const,
-    notch: 48,
-    offset: "md:mt-10",
     summary: "Currents vs alumni at the Bubble. Play if you want to, watch if you don't.",
   },
 ];
