@@ -19,6 +19,7 @@ export type SequenceOutcome = {
 
 export type CronTickResult = {
   ok: boolean;
+  reason?: string;
   runDate: string;
   eventDate: string;
   considered: number;
@@ -42,11 +43,27 @@ export function easternToday(now: Date = new Date()): string {
   }).format(now);
 }
 
-async function setOutboundMode(mode: "all" | "transactional_only") {
+/** The arming switch. The drip runs only while this reads exactly
+ *  "drip_enabled", a value only a human sets. Anything else, including an
+ *  unreadable row, means no sends at all. */
+const ARMED_MODE = "drip_enabled";
+
+async function readOutboundMode(): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from("app_settings")
+    .select("value")
+    .eq("key", "outbound_email_mode")
+    .maybeSingle();
+  const value = (data as { value?: string } | null)?.value;
+  return typeof value === "string" ? value : null;
+}
+
+async function setOutboundMode(mode: string) {
   await supabaseAdmin
     .from("app_settings")
     .upsert({ key: "outbound_email_mode", value: mode } as never, { onConflict: "key" });
 }
+
 
 async function recordAttempt(o: SequenceOutcome & { runDate: string }) {
   await supabaseAdmin.from("audit_log").insert({
@@ -68,13 +85,27 @@ async function recordAttempt(o: SequenceOutcome & { runDate: string }) {
   });
 }
 
-/** One daily tick. Every active sequence whose target date has arrived runs,
- *  one at a time, with the outbound switch open only for the length of that
- *  single dispatch. The switch is forced closed again no matter what. */
+/** One daily tick. Nothing happens unless outbound_email_mode reads
+ *  "drip_enabled". When it does, every active sequence whose target date has
+ *  arrived runs one at a time, with the send choke point opened only for the
+ *  length of that single dispatch and forced back to the armed value after. */
 export async function runDripCronTick(): Promise<CronTickResult> {
   const runDate = easternToday();
   const edition = await loadCurrentEdition();
   const eventDate = edition.starts_on;
+
+  const mode = await readOutboundMode();
+  if (mode !== ARMED_MODE) {
+    return {
+      ok: false,
+      reason: `outbound_email_mode is "${mode ?? "unset"}", not "${ARMED_MODE}"; no sends`,
+      runDate,
+      eventDate,
+      considered: 0,
+      eligible: 0,
+      outcomes: [],
+    };
+  }
 
   const { data: rows } = await supabaseAdmin
     .from("sequences")
@@ -117,7 +148,7 @@ export async function runDripCronTick(): Promise<CronTickResult> {
       } catch (err) {
         outcome.error = err instanceof Error ? err.message : String(err);
       } finally {
-        await setOutboundMode("transactional_only");
+        await setOutboundMode(ARMED_MODE);
       }
 
       outcomes.push(outcome);
@@ -128,8 +159,9 @@ export async function runDripCronTick(): Promise<CronTickResult> {
       }
     }
   } finally {
-    await setOutboundMode("transactional_only");
+    await setOutboundMode(ARMED_MODE);
   }
+
 
   return {
     ok: true,

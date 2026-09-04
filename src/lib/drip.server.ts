@@ -62,7 +62,7 @@ type SequenceRow = {
   active: boolean;
 };
 
-const RECENT_SEND_DAYS = 7;
+const RECENT_SEND_DAYS = 10;
 const SEND_INTERVAL_MS = 500;
 
 async function loadSequence(key: string): Promise<SequenceRow | null> {
@@ -83,15 +83,16 @@ export async function resolveAudience(sequenceKey: string): Promise<Recipient[]>
   const states = seq.audience_states ?? [];
   const edition = await loadCurrentEdition();
 
-  const [peopleRes, identRes, rsvpRes, supRes] = await Promise.all([
+  const [peopleRes, identRes, rsvpRes, supRes, historyRes] = await Promise.all([
     supabaseAdmin
       .from("people")
-      .select("id, first_name, last_name, deceased, archived, is_anchor")
+      .select("id, first_name, last_name, deceased, archived, is_anchor, show_on_board")
       .eq("deceased", false)
       .eq("archived", false),
     supabaseAdmin.from("identities").select("person_id, email, is_primary, verified_at"),
     supabaseAdmin.from("rsvps").select("person_id, status").eq("event_year", edition.event_year),
     supabaseAdmin.from("suppressions").select("email"),
+    supabaseAdmin.from("sends").select("person_id, bounced, bounce_type, complained"),
   ]);
 
   const primaryEmail = new Map<string, string>();
@@ -109,6 +110,14 @@ export async function resolveAudience(sequenceKey: string): Promise<Recipient[]>
   const suppressed = new Set<string>();
   for (const row of supRes.data ?? []) suppressed.add(String(row.email ?? "").trim().toLowerCase());
 
+  // A hard bounce or a complaint on any past send retires the person for good.
+  const burned = new Set<string>();
+  for (const row of historyRes.data ?? []) {
+    const pid = row.person_id as string | null;
+    if (!pid) continue;
+    if (row.complained || (row.bounced && row.bounce_type === "hard")) burned.add(pid);
+  }
+
   const out: Recipient[] = [];
   for (const person of (peopleRes.data ?? []) as {
     id: string;
@@ -117,8 +126,11 @@ export async function resolveAudience(sequenceKey: string): Promise<Recipient[]>
     deceased: boolean;
     archived: boolean;
     is_anchor: boolean;
+    show_on_board: boolean;
   }[]) {
     if (person.deceased || person.archived) continue;
+    if (!person.show_on_board) continue;
+    if (burned.has(person.id)) continue;
     if (seq.anchors_only && !person.is_anchor) continue;
     const state = personState({ status: rsvpStatus.get(person.id), verified: verified.has(person.id) });
     if (!states.includes(state)) continue;
@@ -135,6 +147,7 @@ export async function resolveAudience(sequenceKey: string): Promise<Recipient[]>
   }
   return out;
 }
+
 
 type Built = { subject: string; text: string; html: string } | null;
 
