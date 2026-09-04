@@ -71,7 +71,7 @@ export function V2Story() {
     <>
       {/* THEME: the emotional centre of the page. */}
       <section style={{ background: BONE }} className="relative overflow-hidden">
-        <div className="relative z-10 mx-auto w-full max-w-[1320px] px-5 pt-16 pb-20 md:pt-24 md:pb-28">
+        <div className="mx-auto w-full max-w-[1320px] px-5 pt-16 pb-20 md:pt-24 md:pb-28">
           <div className="grid grid-cols-1 items-end gap-10 md:grid-cols-12">
             <div className="md:col-span-7">
               <SlashEyebrow>This year</SlashEyebrow>
@@ -151,7 +151,7 @@ export function V2Story() {
         {/* A navy field cut on the same angle, carrying the eye into the weekend. */}
         <div
           aria-hidden="true"
-          className="absolute -bottom-24 -left-16 hidden md:block"
+          className="absolute -bottom-44 -left-16 hidden md:block"
           style={{
             width: 420,
             height: 220,
