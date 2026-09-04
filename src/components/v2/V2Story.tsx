@@ -102,8 +102,8 @@ export function V2Story() {
             </div>
             <div className="md:col-span-5">
               <ChamferPhoto
-                src={climb.src}
-                alt={climb.alt}
+                src={nationalsCelebration.url}
+                alt="Pitt players erupting in celebration on the field after qualifying for Nationals"
                 ratio="5 / 4"
                 corners={["tr", "bl"]}
                 notch={68}
@@ -115,8 +115,8 @@ export function V2Story() {
             {/* Portrait crop, deliberately dropped below the text baseline. */}
             <div className="md:col-span-4 md:pt-16">
               <ChamferPhoto
-                src={roots.src}
-                alt={roots.alt}
+                src={clemsonBye.url}
+                alt="Pitt players in team hoodies lying together on the grass between games"
                 ratio="3 / 4"
                 corners={["tl", "br"]}
                 notch={52}
@@ -147,6 +147,41 @@ export function V2Story() {
               </div>
             </div>
           </div>
+
+          {/* ARCHIVE: one specific, captioned historical moment. */}
+          <div className="mt-16 grid grid-cols-1 items-end gap-8 md:mt-24 md:grid-cols-12">
+            <div className="md:col-span-7">
+              <figure className="m-0">
+                <ChamferPhoto
+                  src={firstNationals2005.url}
+                  alt="The 2005 Pitt squad, the first Pitt team to reach Nationals, posed together on the field"
+                  ratio="3 / 2"
+                  corners={["bl", "tr"]}
+                  notch={60}
+                />
+                <figcaption
+                  className="mt-4"
+                  style={{
+                    fontFamily: '"Space Mono", monospace',
+                    fontSize: 13,
+                    letterSpacing: "0.02em",
+                    color: "var(--steel-ink)",
+                  }}
+                >
+                  The first Pitt team to reach Nationals &middot; 2005
+                </figcaption>
+              </figure>
+            </div>
+            <div className="md:col-span-5 md:pb-6">
+              <SlashEyebrow>Where it started</SlashEyebrow>
+              <p className="mt-4 max-w-[460px]" style={body}>
+                Every season since has been measured against the one where a Pitt team first showed
+                up at Nationals. The names on the board below start well before that photograph and
+                keep going after it.
+              </p>
+            </div>
+          </div>
+
         </div>
 
         {/* A navy field cut on the same angle, carrying the eye into the weekend. */}
