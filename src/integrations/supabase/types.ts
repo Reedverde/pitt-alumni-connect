@@ -1384,25 +1384,37 @@ export type Database = {
           active: boolean
           anchors_only: boolean
           audience_states: string[]
+          cancelled_at: string | null
+          dispatched_at: string | null
           id: string
           key: string
           offset_days: number
+          one_time: boolean
+          scheduled_at: string | null
         }
         Insert: {
           active?: boolean
           anchors_only?: boolean
           audience_states: string[]
+          cancelled_at?: string | null
+          dispatched_at?: string | null
           id?: string
           key: string
           offset_days: number
+          one_time?: boolean
+          scheduled_at?: string | null
         }
         Update: {
           active?: boolean
           anchors_only?: boolean
           audience_states?: string[]
+          cancelled_at?: string | null
+          dispatched_at?: string | null
           id?: string
           key?: string
           offset_days?: number
+          one_time?: boolean
+          scheduled_at?: string | null
         }
         Relationships: []
       }

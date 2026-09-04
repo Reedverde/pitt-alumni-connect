@@ -1631,3 +1631,71 @@ async function fallbackOtp(to: string) {
   }
   return res.ok;
 }
+/** ---------------------------------------------------------------------------
+ *  rsvp_confirm_2026_09_04: a single authorized one-time campaign.
+ *  Goes only to people carrying no master answer for the current edition, so
+ *  the copy asks for a first answer and never assumes one exists. The link is
+ *  the recipient's own signed RSVP link, not a generic board URL.
+ *  ------------------------------------------------------------------------ */
+
+export const RSVP_CONFIRM_SUBJECT = "Can you confirm your 2026 RSVP?";
+const RSVP_CONFIRM_PREHEADER =
+  "Your response also helps us confirm we\u2019re reaching the right person.";
+
+export function buildRsvpConfirmBody(opts: {
+  firstName: string;
+  link: string;
+}): { text: string; html: string } | null {
+  if (!opts.link) return null;
+
+  const lines = [
+    "Alumni Weekend is October 2\u20134 in Pittsburgh, and we\u2019re trying to get a clear picture of who might be there.",
+    "Please take a minute to choose where you stand today:",
+    "Going. Maybe. Not this year.",
+    "Even if you can\u2019t make it, responding confirms that we\u2019ve reached the right person and helps us keep the Pitt Ultimate alumni network connected. You can review or update your contact information on the same page.",
+    "Your RSVP can be changed anytime through the end of Alumni Weekend. You\u2019ll also be able to choose the individual events that work for you.",
+  ];
+  const closing = "We came back this year. Now we want to bring everybody back together.";
+
+  const text = [
+    `Hey ${opts.firstName},`,
+    "",
+    lines[0],
+    "",
+    lines[1],
+    "",
+    lines[2],
+    "",
+    "CONFIRM MY INFO + RSVP",
+    opts.link,
+    "",
+    lines[3],
+    "",
+    lines[4],
+    "",
+    closing,
+    "",
+    "\u2014Pitt Club Ultimate",
+  ].join("\n");
+
+  const html = emailShell(
+    [
+      emailParagraph(`Hey ${opts.firstName},`),
+      emailParagraph(lines[0]),
+      emailParagraph(lines[1]),
+      emailParagraph(lines[2]),
+      emailButton(opts.link, "Confirm my info + RSVP"),
+      emailPlainUrl(opts.link),
+      emailParagraph(lines[3]),
+      emailParagraph(lines[4]),
+      emailParagraph(closing),
+      emailFooter([
+        "\u2014Pitt Club Ultimate",
+        "You are receiving this because you have a record on the alumni board.",
+      ]),
+    ].join("\n"),
+    RSVP_CONFIRM_PREHEADER,
+  );
+
+  return { text, html };
+}

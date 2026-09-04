@@ -25,6 +25,7 @@ import { PhotosPanel } from "@/components/admin/PhotosPanel";
 import { RsvpBreakdownPanel, SendsPanel, SourcesPanel } from "@/components/admin/SendsPanel";
 import { MailPanel } from "@/components/admin/MailPanel";
 import { DripDispatchPanel } from "@/components/admin/DripDispatchPanel";
+import { ScheduledCampaignPanel } from "@/components/admin/ScheduledCampaignPanel";
 import { AuthAttemptsPanel } from "@/components/admin/AuthAttemptsPanel";
 import { NewsPanel } from "@/components/admin/NewsPanel";
 import { Section } from "@/components/admin/ui";
@@ -228,6 +229,7 @@ function AdminInner() {
       {active === "mail" ? (
         <>
           <MailPanel />
+          <ScheduledCampaignPanel />
           <DripDispatchPanel />
         </>
       ) : null}

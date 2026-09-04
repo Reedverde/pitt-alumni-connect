@@ -394,3 +394,23 @@ export const getAuthAttempts = createServerFn({ method: "GET" })
     if (!actor) return [];
     return mod.recentAuthAttempts();
   });
+
+/** One-time scheduled campaigns: read the schedule, or stop it before it runs. */
+export const adminScheduledCampaigns = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return [];
+    return mod.listScheduledCampaignsForAdmin();
+  });
+
+export const adminCancelScheduledCampaign = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { key: string }) => input)
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return { ok: false };
+    return mod.cancelScheduledCampaignForAdmin(actor, data.key);
+  });
