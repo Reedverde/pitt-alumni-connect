@@ -954,18 +954,27 @@ export async function submitRosterCorrectionServer(
   const note = typeof input.note === "string" ? input.note.replace(/\s+/g, " ").trim().slice(0, 500) : "";
   if (Object.keys(fields).length === 0 && !note) return { ok: true };
 
-  const { error } = await supabaseAdmin.from("suggestions").insert({
-    type: "edit",
-    status: "pending",
-    submitted_by: null,
-    payload: {
-      person_id: input.personId,
-      fields,
-      note: note || null,
-      source_flow: "claim_roster_facts",
-      ip_hash: hashIp(ip),
-    } as never,
-  });
+  const sourceFlow =
+    typeof input.source === "string" && input.source.trim()
+      ? input.source.trim().slice(0, 40)
+      : "claim_roster_facts";
+
+  const { data: inserted, error } = await supabaseAdmin
+    .from("suggestions")
+    .insert({
+      type: "edit",
+      status: "pending",
+      submitted_by: null,
+      payload: {
+        person_id: input.personId,
+        fields,
+        note: note || null,
+        source_flow: sourceFlow,
+        ip_hash: hashIp(ip),
+      } as never,
+    })
+    .select("id")
+    .maybeSingle();
   if (error) {
     await logRsvpEvent("roster_correction_failed", input.personId, { error: error.message });
     throw new Error("We could not send that to the organizers. Please try again.");
@@ -978,5 +987,40 @@ export async function submitRosterCorrectionServer(
     after: { fields: fields as never, has_note: Boolean(note) },
   });
 
+  // A correction means they read their facts: reviewed, but explicitly not
+  // confirmed until an organizer applies it.
+  const { recordProfileReview } = await import("./profile-review.server");
+  await recordProfileReview({
+    personId: input.personId,
+    outcome: "correction_pending",
+    source: sourceFlow,
+    suggestionId: (inserted?.id as string | undefined) ?? null,
+  });
+
   return { ok: true };
 }
+
+/** The person pressed "Looks right" after seeing their permanent roster facts
+ *  in the claim flow. Only accepted when the address they just claimed with is
+ *  actually on that record: a review is an act by the person, not a POST. */
+export async function confirmRosterFactsServer(input: {
+  personId: string;
+  email: string;
+}): Promise<{ ok: boolean }> {
+  const email = String(input.email ?? "").trim().toLowerCase();
+  const personId = String(input.personId ?? "");
+  if (!personId || !email) return { ok: false };
+
+  const { data: identity } = await supabaseAdmin
+    .from("identities")
+    .select("id")
+    .eq("person_id", personId)
+    .eq("email", email)
+    .maybeSingle();
+  if (!identity) return { ok: false };
+
+  const { recordProfileReview } = await import("./profile-review.server");
+  await recordProfileReview({ personId, outcome: "confirmed", source: "claim_roster_facts" });
+  return { ok: true };
+}
+
