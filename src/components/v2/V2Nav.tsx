@@ -192,9 +192,6 @@ export function V2Nav() {
           <span className="hidden min-w-0 items-center gap-6 md:flex md:gap-8">
             <Identity />
           </span>
-          {/* Keeps the flex row balanced next to the hamburger on small
-              screens without rendering any member data twice. */}
-          <span className="md:hidden" aria-hidden="true" />
         </div>
       </div>
     </nav>
