@@ -83,6 +83,34 @@ function scheduleLink(item: NewsItem) {
   return path;
 }
 
+/**
+ * Bulletin bodies are plain text written by organizers and by the roundup
+ * generator, and they carry bare addresses like "See everyone on the board at
+ * https://…". Rendered as text those are unreachable by keyboard and invisible
+ * to a screen reader as links. Only our own origin is ever turned into a link,
+ * so a pasted third party address stays inert text.
+ */
+function Linkify({ text }: { text: string }) {
+  const parts = text.split(new RegExp(`(${SITE_ORIGIN.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}[^\\s]*)`, "g"));
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.startsWith(SITE_ORIGIN) ? (
+          <a
+            key={i}
+            href={part.slice(SITE_ORIGIN.length) || "/"}
+            style={{ color: "var(--pitt-royal)", fontWeight: 600 }}
+          >
+            {part.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
+  );
+}
+
 function Bulletin({ item, quiet = false }: { item: NewsItem; quiet?: boolean }) {
   const link = scheduleLink(item);
   return (
