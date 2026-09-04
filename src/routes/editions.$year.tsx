@@ -37,14 +37,8 @@ export const Route = createFileRoute("/editions/$year")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  errorComponent: () => (
-    <main className="mx-auto max-w-[560px] px-5 py-24">
-      <h1 className="display-30">That weekend isn't here</h1>
-      <p className="mt-3" style={{ fontSize: 16, color: "var(--sterling)" }}>
-        Try the current schedule instead.
-      </p>
-    </main>
-  ),
+  errorComponent: EditionUnavailable,
+  notFoundComponent: EditionUnavailable,
   component: EditionArchivePage,
 });
 
