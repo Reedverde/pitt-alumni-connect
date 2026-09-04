@@ -251,8 +251,10 @@ export function ClaimDialog({
           playedAs: fixPlayedAs.trim() || null,
           division: fixDivision || null,
           note: fixNote.trim() || null,
+          source: "claim_roster_facts",
         },
       });
+
       setBusy(false);
       setCorrecting(false);
       setStep("rsvp");
