@@ -1876,7 +1876,151 @@ export async function rsvpSources(): Promise<SourceCount[]> {
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
+/** Filters the People table understands. Every overview tile that points at a
+ *  person list names one of these, so a number and the list behind it can
+ *  never drift apart. */
+export type PeopleFilterKey =
+  | "going"
+  | "maybe"
+  | "not_this_year"
+  | "no_response"
+  | "claimed"
+  | "no_contact"
+  | "missing_event_answers"
+  | "needs_review"
+  | "unplaced"
+  | "bad_contact";
+
+export type OverviewTile = {
+  key: string;
+  label: string;
+  value: number;
+  hint: string;
+  /** Where the number opens. A people filter, or another organizer tab. */
+  tab: "people" | "review" | "duplicates" | "sends" | "mail";
+  filter?: PeopleFilterKey;
+};
+
+export type AdminOverview = {
+  eventYear: number;
+  eligible: number;
+  heads: number;
+  tiles: OverviewTile[];
+};
+
+/** One place to open. Every figure here is computed from the same rows the
+ *  People table shows, so a tile and its list always agree. */
+export async function overview(
+  queue: QueueItem[],
+  duplicates: DuplicatePair[],
+): Promise<AdminOverview> {
+  const eventYear = (await loadCurrentEdition()).event_year;
+  const ctx = await loadContext();
+  const { data: peopleRows } = await supabaseAdmin
+    .from("people")
+    .select("id, deceased, archived, show_on_board, grad_year")
+    .limit(3000);
+  const people = (peopleRows ?? []) as {
+    id: string;
+    deceased: boolean;
+    archived: boolean;
+    show_on_board: boolean;
+    grad_year: number | null;
+  }[];
+
+  const { loadPromptEvents } = await import("./event-rsvp.server");
+  const promptEvents = await loadPromptEvents();
+  const promptIds = new Set(promptEvents.map((e) => e.id));
+
+  const [supRes, sendRes] = await Promise.all([
+    supabaseAdmin.from("suppressions").select("email").limit(2000),
+    supabaseAdmin.from("sends").select("to_email, bounced, bounce_type, complained").limit(20000),
+  ]);
+  const badAddresses = new Set<string>();
+  for (const row of supRes.data ?? []) badAddresses.add(String(row.email).toLowerCase());
+  for (const row of sendRes.data ?? []) {
+    const email = row.to_email ? String(row.to_email).toLowerCase() : null;
+    if (!email) continue;
+    if (row.complained || (row.bounced && row.bounce_type === "hard")) badAddresses.add(email);
+  }
+
+  let eligible = 0;
+  let going = 0;
+  let heads = 0;
+  let maybe = 0;
+  let notThisYear = 0;
+  let noResponse = 0;
+  let claimed = 0;
+  let noContact = 0;
+  let missingEventAnswers = 0;
+  let unplaced = 0;
+  let badContact = 0;
+
+  for (const person of people) {
+    if (person.archived) continue;
+    const live = !person.deceased && person.show_on_board;
+    if (live) eligible++;
+    const status = ctx.rsvp.get(person.id) ?? null;
+    if (live) {
+      if (status === "going") {
+        going++;
+        heads += ctx.party.get(person.id) ?? 1;
+      } else if (status === "maybe") maybe++;
+      else if (status === "not_this_year") notThisYear++;
+      else noResponse++;
+    }
+    if (ctx.verified.has(person.id)) claimed++;
+    const emails = ctx.emails.get(person.id) ?? [];
+    if (!person.deceased && emails.length === 0) noContact++;
+    if (emails.some((e) => badAddresses.has(e.email.toLowerCase()))) badContact++;
+    const placedYear = ctx.placement.get(person.id)?.board_year ?? person.grad_year;
+    if (!person.deceased && !person.archived && (placedYear === null || placedYear === undefined))
+      unplaced++;
+    if (status === "going" && promptIds.size > 0) {
+      const answered = new Set(
+        (ctx.eventAnswers.get(person.id) ?? [])
+          .filter((a) => promptIds.has(a.event_id))
+          .map((a) => a.event_id),
+      );
+      if (answered.size < promptIds.size) missingEventAnswers++;
+    }
+  }
+
+  const needsReview = people.filter((p) => !p.archived).length
+    ? (
+        await supabaseAdmin
+          .from("people")
+          .select("id", { count: "exact", head: true })
+          .eq("needs_review", true)
+          .eq("archived", false)
+      ).count ?? 0
+    : 0;
+
+  const newPeople = queue.filter((q) => q.type === "new_person" && q.status === "pending").length;
+  const otherQueue = queue.filter((q) => q.type !== "new_person" && q.status === "pending").length;
+
+  const tiles: OverviewTile[] = [
+    { key: "going", label: "Going", value: going, hint: "Answered yes for this edition.", tab: "people", filter: "going" },
+    { key: "heads", label: "Expected heads", value: heads, hint: "Party sizes of everyone going.", tab: "people", filter: "going" },
+    { key: "maybe", label: "Maybe", value: maybe, hint: "Still deciding.", tab: "people", filter: "maybe" },
+    { key: "not_this_year", label: "Not this year", value: notThisYear, hint: "Answered, but not coming.", tab: "people", filter: "not_this_year" },
+    { key: "no_response", label: "No response", value: noResponse, hint: "Never answered. Silence is not a no.", tab: "people", filter: "no_response" },
+    { key: "claimed", label: "Claimed profiles", value: claimed, hint: "Verified an address and claimed a record.", tab: "people", filter: "claimed" },
+    { key: "no_contact", label: "No contact on file", value: noContact, hint: "Nobody can be reached at all.", tab: "people", filter: "no_contact" },
+    { key: "missing_event_answers", label: "Going, events unanswered", value: missingEventAnswers, hint: "Coming, but has not answered every event that asks.", tab: "people", filter: "missing_event_answers" },
+    { key: "new_person", label: "New person reviews", value: newPeople, hint: "Someone asked to be added.", tab: "review" },
+    { key: "queue", label: "Other pending reviews", value: otherQueue, hint: "Edits, tips and memorial notes.", tab: "review" },
+    { key: "duplicates", label: "Possible duplicates", value: duplicates.length, hint: "Pairs waiting on a merge or a keep separate ruling.", tab: "duplicates" },
+    { key: "unplaced", label: "Cannot be placed", value: unplaced, hint: "No stint and no grad year, so no board year.", tab: "people", filter: "unplaced" },
+    { key: "needs_review", label: "Flagged records", value: needsReview, hint: "Marked needs review by an organizer.", tab: "people", filter: "needs_review" },
+    { key: "bad_contact", label: "Bounced or suppressed", value: badContact, hint: "Their address hard bounced, complained, or is suppressed.", tab: "people", filter: "bad_contact" },
+  ];
+
+  return { eventYear, eligible, heads, tiles };
+}
+
 export type AdminDashboard = {
+
   isAdmin: true;
   queue: QueueItem[];
   teamNames: TeamNameRow[];
