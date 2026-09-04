@@ -498,7 +498,6 @@ function DockEventRow({
 /** No status, no name, no private anything: an invitation into the usual
  *  sign in and claim flow. */
 function SignedOutDock() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div
       className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-3 md:inset-x-auto md:right-6 md:bottom-6 md:left-auto md:justify-end md:px-0 md:pb-0"
@@ -507,7 +506,7 @@ function SignedOutDock() {
       <div className="pointer-events-auto w-full max-w-[340px]">
         <Shell notch={22}>
           <a
-            href={`/auth?next=${encodeURIComponent(pathname)}`}
+            href="/auth"
             className="flex w-full items-center gap-4"
             style={{ minHeight: 64, padding: "12px 16px 12px 18px", textDecoration: "none" }}
           >

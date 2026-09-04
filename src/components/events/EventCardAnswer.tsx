@@ -74,6 +74,7 @@ export function EventCardAnswer({ eventId, eventTitle }: { eventId: string; even
         } else {
           setNote(null);
           await queryClient.invalidateQueries({ queryKey: ["my-event-answers", personId] });
+          await queryClient.invalidateQueries({ queryKey: ["rsvp-dock"] });
         }
       } catch {
         setNote("That did not save. Try again in a moment.");
@@ -134,6 +135,7 @@ export function EventCardAnswer({ eventId, eventTitle }: { eventId: string; even
     try {
       await setWeekend({ data: { personId: personId as string, status: "going" } });
       await queryClient.invalidateQueries({ queryKey: ["nav-identity"] });
+      await queryClient.invalidateQueries({ queryKey: ["rsvp-dock"] });
     } catch {
       setNote("We could not update your weekend answer. Nothing changed.");
       setLocal(saved ? saved.status : "unanswered");
