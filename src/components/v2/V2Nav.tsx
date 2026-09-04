@@ -69,6 +69,7 @@ function AdminLink() {
   return (
     <Link
       to="/admin"
+      search={{ tab: undefined, view: undefined }}
       style={item}
       activeProps={{ style: { ...item, ...active } }}
       activeOptions={{ exact: false }}
