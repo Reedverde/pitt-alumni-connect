@@ -817,3 +817,12 @@ Email, read only
 - Last successful campaign: `drip:t_minus_45`, 339 recipients, 2026-09-03.
 - 0 suppressions, 0 bounced or suppressed people.
 - Next active sequence is `t_minus_21` to the 35 reachable maybes.
+
+## Cross-site QA pass (mobile and desktop)
+- News bulletin bodies now render our own addresses as real links (`Linkify` in `src/routes/news.tsx`); outside addresses stay inert text.
+- Roundup wording says "people", not "alumni": current players answer too.
+- 404 rebuilt in `__root.tsx`: brand type, one `main#main`, Find your name plus Schedule actions, bottom padding clear of the floating RSVP card.
+- Footer links are 44px tap targets; footer bottom padding clears the RSVP card on phone and desktop.
+- `ActionRail` hides while the footer is in view so it cannot sit on top of footer links.
+- Schedule Directions and Get tickets links are 44px tall.
+- Verified: no horizontal overflow, exactly one `main`, exactly one RSVP affordance per page, no console errors on `/`, `/schedule`, `/news`, `/alumni`, `/donate`, `/auth`, 404.
