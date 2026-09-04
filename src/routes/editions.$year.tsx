@@ -1,9 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
 
 import { getSchedule, type ScheduleEvent } from "@/lib/schedule.functions";
 import { SiteNav } from "@/components/SiteNav";
+import { PageShell } from "@/components/layout/PageShell";
+import { primaryButton } from "@/components/claim/ui";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
@@ -137,5 +139,36 @@ function EditionArchivePage() {
       </main>
       <SiteFooter />
     </div>
+  );
+}
+
+/**
+ * A weekend with no published record is a normal state, not a failure. The
+ * reader gets a written explanation and two ways onward instead of an error.
+ */
+function EditionUnavailable() {
+  return (
+    <PageShell width="column">
+      <SlashEyebrow>Alumni Weekend</SlashEyebrow>
+      <h1 className="display-48 mt-3" style={{ color: "var(--sabah-black)" }}>
+        NOT PUBLISHED YET
+      </h1>
+      <p className="mt-4" style={{ fontSize: 16, color: "var(--steel-ink)", lineHeight: 1.6 }}>
+        There is no published record for this weekend. It may not have happened yet, or the schedule
+        may still be going up.
+      </p>
+      <div className="mt-8 flex flex-wrap gap-4">
+        <Link to="/schedule" style={{ ...primaryButton, display: "inline-block", textDecoration: "none" }}>
+          THIS YEAR&rsquo;S WEEKEND
+        </Link>
+        <Link
+          to="/"
+          className="label-caps"
+          style={{ color: "var(--pitt-royal)", textDecoration: "none", alignSelf: "center" }}
+        >
+          Back to the board
+        </Link>
+      </div>
+    </PageShell>
   );
 }
