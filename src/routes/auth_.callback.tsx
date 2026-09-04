@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { supabase } from "@/integrations/supabase/client";
 import { finalizeLogin } from "@/lib/account.functions";
-import { clearAuthReturnTo, readAuthReturnTo } from "@/lib/event-intent";
+import { clearAuthReturnTo, markSignInConfirmed, readAuthReturnTo } from "@/lib/event-intent";
 
 import { inspectSignInToken } from "@/lib/signin-token.functions";
 import { getNavIdentity } from "@/lib/account.functions";
@@ -77,14 +77,17 @@ function CallbackPage() {
       /* linking is best effort; /me resolves the session either way */
     }
     // Back to the page they started on, when there was one, so a tap made
-    // before signing in can be applied without a second tap.
+    // before signing in can be applied without a second tap. That explicit
+    // intent always wins over the general "now answer for this year" handoff.
     const back = readAuthReturnTo();
     clearAuthReturnTo();
     if (back) {
       window.location.assign(back);
       return;
     }
+    markSignInConfirmed();
     await navigate({ to: "/me" });
+
   }, [navigate, runFinalize, tokenHash, type]);
 
 

@@ -374,11 +374,29 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
   const visibleCount = flatMode
     ? flatPeople.length
     : people.filter((p) => !isHidden(p)).length;
+  // Program, Status and Era narrow a name search, so the summary has to say so:
+  // "0 matching Jim" alone would read as "there are no Jims anywhere".
+  const structuredFilters = divisionFilter !== null || statusFilter !== null || eraFilter !== null;
+  const scopeWords = [
+    divisionFilter ? filters.find((f) => f.code === divisionFilter)?.label ?? null : null,
+    statusFilter ? STATUS_FILTERS.find((s) => s.code === statusFilter)?.label ?? null : null,
+    eraFilter ? eras.find((e) => e.key === eraFilter)?.label ?? null : null,
+  ].filter(Boolean) as string[];
+  const scopeSuffix = scopeWords.length > 0 ? ` within ${scopeWords.join(" · ")}` : "";
   const resultLabel = searching
-    ? `${flatPeople.length} matching "${searchQuery.trim()}"`
+    ? `${flatPeople.length} matching "${searchQuery.trim()}"${scopeSuffix}`
     : filtered
       ? `${visibleCount} ${statusPhrase(phraseStatuses)}`
       : `${visibleCount} names on the board`;
+
+  // Clearing the structured filters while keeping what they typed: the whole
+  // point is to widen the same search, not to start it again.
+  const searchWholeBoard = () => {
+    setDivisionFilter(null);
+    setStatusFilter(null);
+    setEraFilter(null);
+  };
+
 
   // Unclaimed and no-contact lists are long, so they render in five-year
   // chunks instead of one flat run. Search results stay flat and ranked.
@@ -577,19 +595,24 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
             ) : (
               <EmptyPrompt
                 copy={
-                  searching
-                    ? `No names match "${searchQuery.trim()}". Try a last name, or add yourself.`
-                    : flatEmptyCopy(phraseStatuses)
+                  searching && structuredFilters
+                    ? `No names match "${searchQuery.trim()}" under the current filters. They may still be on the board.`
+                    : searching
+                      ? `No names match "${searchQuery.trim()}". Try a last name, or add yourself.`
+                      : flatEmptyCopy(phraseStatuses)
                 }
                 action={
-                  searching
-                    ? {
-                        label: "I'm not on here, add me",
-                        onClick: () => openClaim(undefined, searchQuery.trim()),
-                      }
-                    : undefined
+                  searching && structuredFilters
+                    ? { label: "Search all names", onClick: searchWholeBoard }
+                    : searching
+                      ? {
+                          label: "I'm not on here, add me",
+                          onClick: () => openClaim(undefined, searchQuery.trim()),
+                        }
+                      : undefined
                 }
               />
+
             )}
           </div>
         ) : (

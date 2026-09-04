@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -40,6 +40,7 @@ import {
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { NotchedBox } from "@/components/media/NotchedBox";
+import { consumeSignInConfirmed } from "@/lib/event-intent";
 
 /** The attendance page is a normal page of the site: header, content, footer.
  *  Signing out must never be the only way off it. */
@@ -323,12 +324,46 @@ function MePage() {
   const [pending, setPending] = useState<Awaited<ReturnType<typeof getPendingVerifications>>>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Set once, on arrival from an email sign-in link that carried no more
+  // specific unfinished action. It survives the identity-attach step, so a
+  // brand new record still lands on the question straight afterwards.
+  const [justConfirmed, setJustConfirmed] = useState(false);
+  const rsvpHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const handedOff = useRef(false);
 
   const refresh = async () => {
     const next = await loadProfile();
     setProfile(next);
     if (next.person) setPending(await loadPending({ data: { personId: next.person.id } }));
   };
+
+  // Read once and remembered: the flag is one-time, and a double-invoked
+  // mount must not consume it and then conclude it was never there.
+  const confirmedRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (confirmedRef.current === null) confirmedRef.current = consumeSignInConfirmed();
+    if (confirmedRef.current) setJustConfirmed(true);
+  }, []);
+
+  // The profile arrives asynchronously, so the handoff waits for the data
+  // rather than for a hash. Anyone who has already answered is left alone.
+  const needsAnswer = Boolean(
+    profile?.person && !profile.rsvp && profile.rsvpEditable,
+  );
+  useEffect(() => {
+    if (!justConfirmed || handedOff.current || !profile) return;
+    if (!profile.person) return;
+    if (!needsAnswer) {
+      setJustConfirmed(false);
+      return;
+    }
+    const node = rsvpHeadingRef.current;
+    if (!node) return;
+    handedOff.current = true;
+    node.scrollIntoView({ block: "start", behavior: "smooth" });
+    node.focus({ preventScroll: true });
+
+  }, [justConfirmed, needsAnswer, profile]);
 
   useEffect(() => {
     void refresh().catch(() => setError("Couldn't load your record."));
@@ -571,9 +606,19 @@ function MePage() {
 
       {/* ---------------------------------------------------- annual card */}
       <div id="annual" className="mt-14" style={{ scrollMarginTop: 90 }}>
-        <h2 className="display-30" style={{ fontSize: 26, color: "var(--sabah-black)" }}>
+        <h2
+          ref={rsvpHeadingRef}
+          tabIndex={-1}
+          className="display-30 outline-none"
+          style={{ fontSize: 26, color: "var(--sabah-black)" }}
+        >
           {annualTitle}
         </h2>
+        {justConfirmed && needsAnswer && (
+          <p className="mt-2" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
+            You&apos;re confirmed. One quick question: are you coming?
+          </p>
+        )}
         <p className="mt-2" style={{ fontSize: 15, color: "var(--steel-ink)" }}>
           One card for one weekend. A new one appears when the organizers roll the edition forward,
           and this one becomes history.
@@ -587,8 +632,9 @@ function MePage() {
         editable={profile.rsvpEditable}
         editableUntil={profile.rsvpEditableUntil}
         events={profile.events}
-        onAnswer={(s) =>
-          run(
+        onAnswer={(s) => {
+          setJustConfirmed(false);
+          return run(
             () =>
               putRsvp({
                 data: {
@@ -597,8 +643,8 @@ function MePage() {
                 },
               }),
             "Answer saved.",
-          )
-        }
+          );
+        }}
         onEventAnswer={async (eventId, state, size) => {
           const result = await putEventAnswer({
             data: { eventId, state, partySize: size },
