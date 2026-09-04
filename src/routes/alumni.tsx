@@ -91,7 +91,7 @@ function AlumniPage() {
   const [claimOpen, setClaimOpen] = useState(false);
   return (
     <PageShell bare>
-      <main className="mx-auto w-full max-w-[1080px] px-5 pb-24">
+      <main id="main" className="mx-auto w-full max-w-[1080px] px-5 pb-24">
         <header className="pt-10 md:pt-14">
           <Measure>
             <SlashEyebrow>Always</SlashEyebrow>

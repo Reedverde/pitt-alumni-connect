@@ -154,7 +154,7 @@ function CallbackPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-[520px] px-5 py-16">
+    <main id="main" className="mx-auto w-full max-w-[520px] px-5 py-16">
       <div className="flex flex-col items-center">
         <Lockup />
         <p

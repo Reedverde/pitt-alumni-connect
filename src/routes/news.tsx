@@ -147,7 +147,7 @@ function NewsPage() {
 
   return (
     <PageShell bare>
-      <main className="mx-auto w-full max-w-[860px] px-5 pb-20">
+      <main id="main" className="mx-auto w-full max-w-[860px] px-5 pb-20">
         <header className="pt-10 pb-6 md:pt-14">
           <SlashEyebrow>Alumni Weekend · What changed</SlashEyebrow>
           <h1 className="display-64 mt-3" style={{ color: "var(--sabah-black)" }}>

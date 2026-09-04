@@ -349,7 +349,7 @@ function MePage() {
   if (!profile) {
     return (
       <Chrome>
-        <main className="mx-auto w-full max-w-[720px] flex-1 px-5 py-16">
+        <main id="main" className="mx-auto w-full max-w-[720px] flex-1 px-5 py-16">
           <p style={{ color: "var(--sterling)" }}>{error ?? "Loading your record…"}</p>
         </main>
       </Chrome>
@@ -361,7 +361,7 @@ function MePage() {
   if (!person) {
     return (
       <Chrome>
-        <main className="mx-auto w-full max-w-[720px] flex-1 px-5 py-16">
+        <main id="main" className="mx-auto w-full max-w-[720px] flex-1 px-5 py-16">
           <NoRecordPanel onDone={() => void refresh()} />
         </main>
       </Chrome>
@@ -382,7 +382,7 @@ function MePage() {
 
   return (
     <Chrome>
-    <main className="mx-auto w-full max-w-[720px] flex-1 px-5 py-12">
+    <main id="main" className="mx-auto w-full max-w-[720px] flex-1 px-5 py-12">
       <SlashEyebrow>Your record</SlashEyebrow>
       <h1 className="display-30 mt-3" style={{ color: "var(--sabah-black)" }}>
         {personDisplayName(person).toUpperCase()}

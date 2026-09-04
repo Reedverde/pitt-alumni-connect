@@ -63,7 +63,7 @@ export const Route = createFileRoute("/rsvp")({
 function Stranded() {
   const navigate = useNavigate();
   return (
-    <main className="mx-auto w-full max-w-[520px] px-5 py-16">
+    <main id="main" className="mx-auto w-full max-w-[520px] px-5 py-16">
       <Lockup />
       <h1 className="display-30 mt-8" style={{ color: "var(--sabah-black)" }}>
         THAT LINK HAS RUN OUT
@@ -123,7 +123,7 @@ function RsvpLinkPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-[520px] px-5 py-16">
+    <main id="main" className="mx-auto w-full max-w-[520px] px-5 py-16">
       <Lockup />
       <p
         className="mt-2"

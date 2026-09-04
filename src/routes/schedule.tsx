@@ -60,7 +60,7 @@ export const Route = createFileRoute("/schedule")({
     links: [{ rel: "canonical", href: `${SITE_ORIGIN}/schedule` }],
   }),
   errorComponent: () => (
-    <main className="mx-auto max-w-[560px] px-5 py-24">
+    <main id="main" className="mx-auto max-w-[560px] px-5 py-24">
       <h1 className="display-30">The schedule didn't load</h1>
       <p className="mt-3" style={{ fontSize: 16, color: "var(--sterling)" }}>
         Refresh the page and it should come back.
@@ -68,7 +68,7 @@ export const Route = createFileRoute("/schedule")({
     </main>
   ),
   notFoundComponent: () => (
-    <main className="mx-auto max-w-[560px] px-5 py-24">
+    <main id="main" className="mx-auto max-w-[560px] px-5 py-24">
       <h1 className="display-30">Page not found</h1>
     </main>
   ),
@@ -204,7 +204,7 @@ function WeekendPage() {
   return (
     <PageShell bare>
 
-      <main className="mx-auto w-full max-w-[1080px] px-5 pb-24">
+      <main id="main" className="mx-auto w-full max-w-[1080px] px-5 pb-24">
         <header className="pt-10 pb-6 md:pt-14">
           <SlashEyebrow>{editionEyebrow(edition)}</SlashEyebrow>
           <h1 className="display-64 mt-3" style={{ color: "var(--sabah-black)" }}>
@@ -430,7 +430,7 @@ function OffSeason({
   const expected = nextOctoberYear();
   return (
     <PageShell bare>
-      <main className="mx-auto w-full max-w-[1080px] px-5 pb-24">
+      <main id="main" className="mx-auto w-full max-w-[1080px] px-5 pb-24">
         <header className="pt-10 pb-6 md:pt-14">
           <SlashEyebrow>Alumni Weekend · Between years</SlashEyebrow>
           <h1 className="display-64 mt-3" style={{ color: "var(--sabah-black)" }}>

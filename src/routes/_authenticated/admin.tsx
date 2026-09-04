@@ -69,7 +69,7 @@ type TabKey = (typeof TABS)[number]["key"];
 
 function NotFound() {
   return (
-    <main className="mx-auto max-w-[560px] px-5 py-24">
+    <main id="main" className="mx-auto max-w-[560px] px-5 py-24">
       <h1 className="display-30" style={{ color: "var(--sabah-black)" }}>
         Page not found
       </h1>
@@ -117,7 +117,7 @@ function AdminInner() {
 
   if (isLoading)
     return (
-      <main className="mx-auto max-w-[1180px] px-5 py-16">
+      <main id="main" className="mx-auto max-w-[1180px] px-5 py-16">
         <p style={{ fontSize: 13, color: "var(--sterling)" }}>Pulling the latest numbers…</p>
       </main>
     );
@@ -130,7 +130,7 @@ function AdminInner() {
   };
 
   return (
-    <main className="mx-auto max-w-[1180px] px-5 py-12">
+    <main id="main" className="mx-auto max-w-[1180px] px-5 py-12">
       <header className="mb-8">
         <h1 className="display-48" style={{ color: "var(--sabah-black)" }}>
           Organizer tools

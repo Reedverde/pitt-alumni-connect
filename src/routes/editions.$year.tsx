@@ -66,7 +66,7 @@ function EditionArchivePage() {
 
   return (
     <PageShell bare>
-      <main className="mx-auto w-full max-w-[1080px] px-5 pb-24">
+      <main id="main" className="mx-auto w-full max-w-[1080px] px-5 pb-24">
         <header className="pt-10 pb-6 md:pt-14">
           <SlashEyebrow>{editionEyebrow(edition)}</SlashEyebrow>
           <h1 className="display-48 mt-3" style={{ color: "var(--sabah-black)" }}>
