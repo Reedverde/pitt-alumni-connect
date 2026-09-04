@@ -16,7 +16,6 @@ import {
   saveStint,
   setMyEventAnswer,
   setMyRsvp,
-  setMyPartySize,
   setPrimaryEmail,
   suggestNewPerson,
   updateMyProfile,
@@ -24,7 +23,6 @@ import {
   type MyEventAnswer,
   type MyProfile,
 } from "@/lib/account.functions";
-import { PartySizeStepper } from "@/components/claim/PartySizeStepper";
 import { EventAnswerToggle, type TriState } from "@/components/events/EventAnswerToggle";
 import { searchPeople } from "@/lib/rsvp.functions";
 import { personDisplayName as matchName, type PersonMatch } from "@/lib/rsvp-types";
@@ -315,7 +313,6 @@ function MePage() {
   const putStint = useServerFn(saveStint);
   const dropStint = useServerFn(removeStint);
   const putRsvp = useServerFn(setMyRsvp);
-  const putPartySize = useServerFn(setMyPartySize);
   const putEventAnswer = useServerFn(setMyEventAnswer);
   const loadPending = useServerFn(getPendingVerifications);
   const vouch = useServerFn(vouchForPerson);
@@ -587,7 +584,6 @@ function MePage() {
         title={annualTitle}
         edition={profile.edition}
         answer={profile.rsvp}
-        partySize={profile.rsvpPartySize}
         editable={profile.rsvpEditable}
         editableUntil={profile.rsvpEditableUntil}
         events={profile.events}
@@ -598,14 +594,10 @@ function MePage() {
                 data: {
                   personId: person.id,
                   status: s,
-                  partySize: s === "going" ? profile.rsvpPartySize : 1,
                 },
               }),
             "Answer saved.",
           )
-        }
-        onPartySize={(next) =>
-          run(() => putPartySize({ data: { partySize: next } }), "Party size updated.")
         }
         onEventAnswer={async (eventId, state, size) => {
           const result = await putEventAnswer({
@@ -750,23 +742,19 @@ function AnnualCard({
   title,
   edition,
   answer,
-  partySize,
   editable,
   editableUntil,
   events,
   onAnswer,
-  onPartySize,
   onEventAnswer,
 }: {
   title: string;
   edition: MyProfile["edition"];
   answer: RsvpStatus | null;
-  partySize: number;
   editable: boolean;
   editableUntil: string | null;
   events: MyEventAnswer[];
   onAnswer: (status: RsvpStatus) => void;
-  onPartySize: (next: number) => void;
   onEventAnswer: (
     eventId: string,
     state: TriState,
