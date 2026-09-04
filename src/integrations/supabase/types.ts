@@ -407,6 +407,48 @@ export type Database = {
         }
         Relationships: []
       }
+      event_changes: {
+        Row: {
+          actor_person_id: string | null
+          after: Json | null
+          before: Json | null
+          changed_fields: string[]
+          created_at: string
+          event_id: string | null
+          event_year: number | null
+          id: number
+          newsworthy: boolean
+          op: string
+          source: string | null
+        }
+        Insert: {
+          actor_person_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          changed_fields?: string[]
+          created_at?: string
+          event_id?: string | null
+          event_year?: number | null
+          id?: never
+          newsworthy?: boolean
+          op: string
+          source?: string | null
+        }
+        Update: {
+          actor_person_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          changed_fields?: string[]
+          created_at?: string
+          event_id?: string | null
+          event_year?: number | null
+          id?: never
+          newsworthy?: boolean
+          op?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
       event_rsvps: {
         Row: {
           created_at: string
@@ -485,6 +527,13 @@ export type Database = {
       }
       events: {
         Row: {
+          admin_key: string | null
+          admin_name: string | null
+          ask_party_size: boolean
+          audience: string
+          capacity: number | null
+          created_at: string
+          critical_mass: number | null
           day_number: number | null
           division: string | null
           ends_at: string | null
@@ -494,15 +543,26 @@ export type Database = {
           location: string | null
           map_url: string | null
           notes: string | null
+          organizer_notes: string | null
           prompt_rsvp: boolean
           published: boolean
           sort_order: number
           starts_at: string | null
+          status: string
           ticket_url: string | null
           time_tbd: boolean
+          timezone: string
           title: string
+          updated_at: string
         }
         Insert: {
+          admin_key?: string | null
+          admin_name?: string | null
+          ask_party_size?: boolean
+          audience?: string
+          capacity?: number | null
+          created_at?: string
+          critical_mass?: number | null
           day_number?: number | null
           division?: string | null
           ends_at?: string | null
@@ -512,15 +572,26 @@ export type Database = {
           location?: string | null
           map_url?: string | null
           notes?: string | null
+          organizer_notes?: string | null
           prompt_rsvp?: boolean
           published?: boolean
           sort_order?: number
           starts_at?: string | null
+          status?: string
           ticket_url?: string | null
           time_tbd?: boolean
+          timezone?: string
           title: string
+          updated_at?: string
         }
         Update: {
+          admin_key?: string | null
+          admin_name?: string | null
+          ask_party_size?: boolean
+          audience?: string
+          capacity?: number | null
+          created_at?: string
+          critical_mass?: number | null
           day_number?: number | null
           division?: string | null
           ends_at?: string | null
@@ -530,13 +601,17 @@ export type Database = {
           location?: string | null
           map_url?: string | null
           notes?: string | null
+          organizer_notes?: string | null
           prompt_rsvp?: boolean
           published?: boolean
           sort_order?: number
           starts_at?: string | null
+          status?: string
           ticket_url?: string | null
           time_tbd?: boolean
+          timezone?: string
           title?: string
+          updated_at?: string
         }
         Relationships: [
           {

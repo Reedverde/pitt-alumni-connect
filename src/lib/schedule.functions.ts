@@ -17,6 +17,11 @@ export type ScheduleEvent = {
   map_url: string | null;
   /** Optional ticket link for the event. */
   ticket_url: string | null;
+  /** Planning state: tentative, confirmed, changed, cancelled. */
+  status: string;
+  /** Who the event is for. Labels live in event-model.ts. */
+  audience: string;
+  timezone: string;
 };
 
 export type ScheduleData = {

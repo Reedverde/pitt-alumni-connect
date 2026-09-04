@@ -1,3 +1,4 @@
+import { audienceLabel } from "@/lib/event-model";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useState, type CSSProperties } from "react";
@@ -533,6 +534,17 @@ function EventTile({
       <h3 className="mt-2" style={{ fontFamily: '"Archivo", sans-serif', fontWeight: 800, fontSize: 22, letterSpacing: "-0.025em", color: "var(--sabah-black)" }}>
         {event.title}
       </h3>
+      {(event.status === "cancelled" || event.status === "changed" || event.audience !== "everyone") && (
+        <p className="mt-2 label-caps" style={{ color: event.status === "cancelled" ? "var(--pitt-royal)" : "var(--sterling)" }}>
+          {event.status === "cancelled"
+            ? "Cancelled"
+            : event.status === "changed"
+              ? "Changed"
+              : null}
+          {event.status === "cancelled" || event.status === "changed" ? " · " : ""}
+          {event.audience !== "everyone" ? audienceLabel(event.audience, event.division) : ""}
+        </p>
+      )}
       {event.location && (
         <p className="mt-2" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
           {event.location}
@@ -553,14 +565,16 @@ function EventTile({
           {event.notes}
         </p>
       )}
-      {!event.time_tbd && event.starts_at && (
+      {!event.time_tbd && event.starts_at && event.status !== "cancelled" && (
         <div className="mt-4">
           <a href={`/api/public/event.ics?year=${eventYear}&id=${event.id}`} style={ghostButton}>
             Add to calendar
           </a>
         </div>
       )}
-      <EventCardAnswer eventId={event.id} eventTitle={event.title} />
+      {event.status !== "cancelled" && (
+        <EventCardAnswer eventId={event.id} eventTitle={event.title} />
+      )}
     </NotchedBox>
   );
 }

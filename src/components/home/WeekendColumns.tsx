@@ -20,18 +20,18 @@ const DAYS: Array<{ day: string; corners: NotchCorner[]; summary: string }> = [
     day: "FRIDAY",
     corners: ["tl"],
     summary:
-      "Social night. City Kitchen, Pitt at Virginia Tech on the screen, then wherever the night takes us.",
+      "Social night. One bar, one game on the screen, then wherever the night takes us. Schedule has the details.",
   },
   {
     day: "SATURDAY",
     corners: ["br"],
     summary:
-      "The big one. Family BBQ at Schenley Overlook, then Pitt women's soccer that evening.",
+      "The big one. A family cookout in the afternoon, then a Pitt game that evening.",
   },
   {
     day: "SUNDAY",
     corners: ["tl"],
-    summary: "Currents vs alumni at the Bubble. Play if you want to, watch if you don't.",
+    summary: "Currents against alumni. Play if you want to, watch if you don't.",
   },
 ];
 

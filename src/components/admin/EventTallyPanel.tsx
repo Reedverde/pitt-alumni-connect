@@ -1,4 +1,5 @@
 import type { EventHeadcountRow, PeopleFilterKey } from "@/lib/admin.server";
+import { audienceLabel, statusLabel } from "@/lib/event-model";
 import { Num, Section, cellStyle, hairline, headStyle } from "./ui";
 
 export type EventTallyTarget = {
@@ -72,6 +73,9 @@ export function EventTallyPanel({
                 >
                   Expected heads
                 </th>
+                <th style={{ ...headStyle, textAlign: "right", color: "var(--sterling)" }}>
+                  Target and capacity
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -82,6 +86,9 @@ export function EventTallyPanel({
                     <span className="block" style={{ fontSize: 12, color: "var(--sterling)" }}>
                       {when(row)}
                       {row.location ? ` · ${row.location}` : ""}
+                    </span>
+                    <span className="block" style={{ fontSize: 11, color: "var(--sterling)" }}>
+                      {statusLabel(row.status)} · {audienceLabel(row.audience, row.division)}
                     </span>
                   </td>
                   <Tally
@@ -111,6 +118,31 @@ export function EventTallyPanel({
                     </span>
                     <span className="block" style={{ fontSize: 11, color: "var(--sterling)" }}>
                       heads
+                    </span>
+                  </td>
+                  <td style={{ ...cellStyle, textAlign: "right" }}>
+                    {row.criticalMass ? (
+                      <span
+                        className="block"
+                        style={{
+                          fontFamily: '"Space Mono", ui-monospace, monospace',
+                          fontSize: 13,
+                          color:
+                            row.heads >= row.criticalMass ? "var(--pitt-royal)" : "var(--sterling)",
+                        }}
+                      >
+                        {row.heads} of {row.criticalMass}
+                        {row.heads >= row.criticalMass ? " · target met" : " to go ahead"}
+                      </span>
+                    ) : (
+                      <span className="block" style={{ fontSize: 11, color: "var(--sterling)" }}>
+                        No target
+                      </span>
+                    )}
+                    <span className="block" style={{ fontSize: 11, color: "var(--sterling)" }}>
+                      {row.capacity
+                        ? `${Math.max(row.capacity - row.heads, 0)} of ${row.capacity} places left`
+                        : "No capacity limit"}
                     </span>
                   </td>
                 </tr>

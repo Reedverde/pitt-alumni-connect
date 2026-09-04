@@ -286,16 +286,7 @@ export const adminSetEditionCurrent = createServerFn({ method: "POST" })
 export const adminAddEditionEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (input: {
-      event_year: number;
-      title: string;
-      day_number: number;
-      division: string | null;
-      location: string | null;
-      notes: string | null;
-      time_tbd: boolean;
-      starts_at: string | null;
-    }) => input,
+    (input: import("./admin.server").EditionEventInput & { event_year: number }) => input,
   )
   .handler(async ({ data, context }) => {
     const mod = await import("./admin.server");
@@ -327,21 +318,12 @@ export const adminDeleteEditionEvent = createServerFn({ method: "POST" })
 export const adminUpdateEditionEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (input: {
-      id: string;
-      title?: string;
-      day_number?: number;
-      division?: string | null;
-      location?: string | null;
-      notes?: string | null;
-      time_tbd?: boolean;
-      starts_at?: string | null;
-    }) => input,
+    (input: import("./admin.server").EditionEventInput & { id: string }) => input,
   )
   .handler(async ({ data, context }) => {
     const mod = await import("./admin.server");
     const actor = await mod.adminActor(context.supabase);
-    if (!actor) return { ok: false, queuedNews: false };
+    if (!actor) return { ok: false, queuedNews: false, warnings: [] as string[] };
     return mod.updateEditionEvent(actor, data);
   });
 
