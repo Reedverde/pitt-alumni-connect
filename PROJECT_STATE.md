@@ -684,3 +684,14 @@ Contact tips. `suggestions.payload` for `contact_tip` now carries `contact_type`
 Verified. 2026 totals unchanged at 63 going, 35 maybe, 32 not this year. People 479, stints 1040, `board_people` 455, `board_coaches` 11, `roster_stints` 152 equals `current_players` 152. Anon has no execute on either reporting function or the deadline helpers. Board returns 200 and renders the same markup. Build clean. Linter is at 15 findings, all pre-existing categories (three RLS enabled without policy, four security definer board views, one public extension, seven signed-in-callable definer functions that are all self-gated by `is_admin()` or `current_person_id()`).
 
 Homepage swap (2026-09-04). The former /v2 editorial homepage is now the primary homepage at "/"; /v2 remains live as a noindex alias rendering the same components (V2Nav, V2Hero, V2Story, shared BoardExperience). The caption "The first Pitt team to reach Nationals · 2005" was removed from V2Story; the 2005 photograph and story copy are untouched. The previous homepage route is preserved at src/legacy/homepage-v1.tsx.bak for rollback pending the site audit. "/" carries the indexable head metadata plus a canonical link to https://alumni.pittultimate.org/; /v2 keeps robots noindex so there is no duplicate indexing. Verified on desktop and mobile: both routes return 200 with no redirect, caption absent, navigation and imagery intact.
+
+## Site audit implementation, phases A to C plus first D/E items
+
+- One chrome everywhere. `SiteNav` now renders the centred editorial masthead and nothing else; the older left aligned wordmark bar is retired. The duplicate Home and Board tabs collapsed into a single Home pointing at `/`, and Give already sits in the bar. `SiteFooter` now appears on alumni, schedule, editions, donate, auth and admin as well as the pages that already had it. Footer "Board" renamed to "Home".
+- New `src/components/layout/PageShell.tsx` owns header, footer, page measure and vertical rhythm. Widths: `wide` 1320px editorial, `column` 560px for single decision pages. `bare` wraps chrome only. Adopted by donate, auth, admin and the unpublished edition page.
+- One shape language. `NotchedBox` now draws its silhouette through `chamferPath`, so every older notched element inherits softened vertices. No razor sharp diagonal points remain.
+- Original photo colour everywhere. The blue duotone was removed from `PhotoSlot`, `YearPhoto` and `SidelineLoop`.
+- No blank photo placeholders. `PhotoSlot` renders nothing when no photograph is assigned, instead of a dashed grey plane with a caption.
+- Unpublished weekends are a normal page, not an error. `getSchedule` returns null rather than throwing, and `/editions/$year` renders a written explanation with two ways onward. `/editions/2025` now returns 200.
+
+Still open from the audit: phase D language and primitive consolidation, phase F editorial pass on alumni, donate and editions, phase G `/me` rebuild.
