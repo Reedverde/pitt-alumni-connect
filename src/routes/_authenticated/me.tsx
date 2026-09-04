@@ -366,6 +366,13 @@ function MePage() {
     );
   }
 
+  const divisions = profile.divisions.length > 0 ? profile.divisions : DIVISIONS;
+  const divisionLabel = (code: string) =>
+    divisions.find((d) => d.code === code)?.label ?? code;
+  const editionYear = profile.edition?.event_year ?? CURRENT_YEAR;
+  const annualTitle = `${editionYear} Alumni Weekend RSVP`;
+  const answerLabel = profile.rsvp ? STATUS_LABELS[profile.rsvp as RsvpStatus] : "No response";
+
   return (
     <Chrome>
     <main className="mx-auto w-full max-w-[720px] flex-1 px-5 py-12">
@@ -382,71 +389,42 @@ function MePage() {
           See your chip on the board
         </Link>
       </p>
+
+      {/* The annual answer is reachable in one click, so nobody has to scroll
+          past every permanent field to change their mind about October. */}
+      <p
+        className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1"
+        style={{ fontSize: 14, color: "var(--steel-ink)" }}
+      >
+        <span className="label-caps" style={{ color: "var(--sterling)" }}>
+          {editionYear}
+        </span>
+        <span style={{ fontFamily: '"Space Mono", monospace' }}>{answerLabel.toUpperCase()}</span>
+        <a href="#annual" style={{ fontSize: 13, color: "var(--pitt-royal)" }}>
+          {profile.rsvpEditable ? (profile.rsvp ? "Change it" : "Answer now") : "See the card"}
+        </a>
+      </p>
+
       {status && (
         <p role="status" className="mt-3" style={{ fontSize: 13, color: "var(--steel-ink)" }}>
           {status}
         </p>
       )}
       {error && (
-        <p className="mt-3" style={{ fontSize: 13, color: "var(--pitt-royal)" }}>
+        <p role="alert" className="mt-3" style={{ fontSize: 13, color: "var(--pitt-royal)" }}>
           {error}
         </p>
       )}
 
-      <Section title={profile.edition?.title ?? "Alumni Weekend"}>
-        {/* The answer is stated in words, not carried by the filled button
-            alone. Never gold: gold means attending on a board chip. */}
-        {profile.rsvp === null ? (
-          <p className="mb-3" style={{ fontSize: 15, color: "var(--steel-ink)" }}>
-            Are you coming in October?
-          </p>
-        ) : (
-          <p
-            className="label-caps mb-3"
-            style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}
-          >
-            Your answer: {STATUS_LABELS[profile.rsvp as RsvpStatus].toUpperCase()}
-          </p>
-        )}
-        <div className="grid gap-2 md:grid-cols-3">
-          {(["going", "maybe", "not_this_year"] as RsvpStatus[]).map((s) => (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={profile.rsvp === s}
-              style={{ ...(profile.rsvp === s ? primaryButton : secondaryButton), width: "100%" }}
-              onClick={() =>
-                run(
-                  () =>
-                    putRsvp({
-                      data: {
-                        personId: person.id,
-                        status: s,
-                        partySize: s === "going" ? profile.rsvpPartySize : 1,
-                      },
-                    }),
-                  "Answer saved.",
-                )
-              }
-            >
-              {STATUS_LABELS[s]}
-            </button>
-          ))}
-        </div>
-        {profile.rsvp === "going" && (
-          <PartySizeStepper
-            value={profile.rsvpPartySize}
-            onChange={(next) =>
-              run(() => putPartySize({ data: { partySize: next } }), "Party size updated.")
-            }
-          />
-        )}
-        {profile.attended.length > 0 && (
-          <p className="mt-3" style={{ fontSize: 13, color: "var(--sterling)" }}>
-            You came in {profile.attended.join(", ")}.
-          </p>
-        )}
-      </Section>
+      {/* ------------------------------------------------ permanent record */}
+      <div className="mt-10">
+        <h2 className="display-30" style={{ fontSize: 26, color: "var(--sabah-black)" }}>
+          My alumni profile
+        </h2>
+        <p className="mt-2" style={{ fontSize: 15, color: "var(--steel-ink)" }}>
+          This part is permanent. It stays true whatever you decide about any one weekend.
+        </p>
+      </div>
 
       <Section title="Name and city">
         <ProfileForm
@@ -481,7 +459,7 @@ function MePage() {
               </label>
               <span className="flex items-center gap-3">
                 <span className="label-caps" style={{ color: "var(--sterling)" }}>
-                  {row.verified ? "Verified" : "Unverified"}
+                  {row.is_primary ? "Primary" : row.verified ? "Verified" : "Unverified"}
                 </span>
                 {!row.is_primary && (
                   <button
@@ -502,9 +480,10 @@ function MePage() {
             run(() => addEmail({ data: { personId: person.id, email: value } }), "Address added.")
           }
         />
+        <Notice>Your address is never shown on the board.</Notice>
       </Section>
 
-      <Section title="Years you played">
+      <Section title="Program and years you played">
         <ul className="flex flex-col gap-2">
           {profile.stints.map((s) => {
             const locked = s.year === CURRENT_YEAR;
@@ -515,7 +494,7 @@ function MePage() {
                 style={{ border: "1px solid var(--chalk)", borderRadius: 7, padding: "11px 13px" }}
               >
                 <span style={{ fontSize: 15, color: "var(--steel-ink)" }}>
-                  {DIVISIONS.find((d) => d.code === s.division)?.label ?? s.division}{" "}
+                  {divisionLabel(s.division)}{" "}
                   <span style={{ fontFamily: '"Space Mono", monospace' }}>
                     {s.year ?? "year unknown"}
                   </span>
@@ -542,8 +521,15 @@ function MePage() {
               </li>
             );
           })}
+          {profile.stints.length === 0 && (
+            <li style={{ fontSize: 15, color: "var(--sterling)" }}>
+              No seasons on file yet. Add the years you played and the board places you by your last
+              one.
+            </li>
+          )}
         </ul>
         <AddStintForm
+          divisions={divisions}
           onAdd={(division, year) =>
             run(
               () => putStint({ data: { personId: person.id, division, role: "player", year } }),
@@ -575,6 +561,66 @@ function MePage() {
           }
         />
       </Section>
+
+      {/* ---------------------------------------------------- annual card */}
+      <div id="annual" className="mt-14" style={{ scrollMarginTop: 90 }}>
+        <h2 className="display-30" style={{ fontSize: 26, color: "var(--sabah-black)" }}>
+          {annualTitle}
+        </h2>
+        <p className="mt-2" style={{ fontSize: 15, color: "var(--steel-ink)" }}>
+          One card for one weekend. A new one appears when the organizers roll the edition forward,
+          and this one becomes history.
+        </p>
+      </div>
+
+      <AnnualCard
+        title={annualTitle}
+        edition={profile.edition}
+        answer={profile.rsvp}
+        partySize={profile.rsvpPartySize}
+        editable={profile.rsvpEditable}
+        editableUntil={profile.rsvpEditableUntil}
+        events={profile.events}
+        onAnswer={(s) =>
+          run(
+            () =>
+              putRsvp({
+                data: {
+                  personId: person.id,
+                  status: s,
+                  partySize: s === "going" ? profile.rsvpPartySize : 1,
+                },
+              }),
+            "Answer saved.",
+          )
+        }
+        onPartySize={(next) =>
+          run(() => putPartySize({ data: { partySize: next } }), "Party size updated.")
+        }
+      />
+
+      {profile.history.length > 0 && (
+        <Section title="Earlier years">
+          <ul className="flex flex-col">
+            {profile.history.map((row) => (
+              <li
+                key={row.event_year}
+                className="flex flex-wrap items-baseline justify-between gap-3 py-2"
+                style={{ borderBottom: "1px solid var(--concrete)" }}
+              >
+                <span style={{ fontFamily: '"Space Mono", monospace', color: "var(--steel-ink)" }}>
+                  {row.event_year}
+                </span>
+                <span className="label-caps" style={{ color: "var(--sterling)" }}>
+                  {STATUS_LABELS[row.status]}
+                  {row.status === "going" && row.party_size > 1 ? ` · ${row.party_size} heads` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <Notice>Past answers are part of the record and are not editable.</Notice>
+        </Section>
+      )}
 
       {pending.length > 0 && (
         <Section title="Do you know them?">
@@ -615,6 +661,7 @@ function MePage() {
 
       <Section title="Suggest a name we're missing">
         <SuggestForm
+          divisions={divisions}
           onSubmit={(values) =>
             run(
               () => suggest({ data: { submittedBy: person.id, ...values } }),
@@ -653,6 +700,153 @@ function MePage() {
     </Chrome>
   );
 }
+
+function formatDeadline(iso: string | null) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function eventWhen(row: MyEventAnswer) {
+  if (row.time_tbd || !row.starts_at) return "Time to come";
+  const d = new Date(row.starts_at);
+  if (Number.isNaN(d.getTime())) return "Time to come";
+  return d.toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/** One weekend, one card. The overall answer sits at the top of it, the events
+ *  underneath. An event nobody answered says so plainly: Phase 5 replaces the
+ *  read only chip with the three position control, and neither one may turn
+ *  silence into a no. */
+function AnnualCard({
+  title,
+  edition,
+  answer,
+  partySize,
+  editable,
+  editableUntil,
+  events,
+  onAnswer,
+  onPartySize,
+}: {
+  title: string;
+  edition: MyProfile["edition"];
+  answer: RsvpStatus | null;
+  partySize: number;
+  editable: boolean;
+  editableUntil: string | null;
+  events: MyEventAnswer[];
+  onAnswer: (status: RsvpStatus) => void;
+  onPartySize: (next: number) => void;
+}) {
+  const closed = formatDeadline(editableUntil);
+
+  return (
+    <NotchedBox
+      corners={["tl"]}
+      notch={28}
+      stroke="var(--chalk)"
+      fill="var(--pure-white)"
+      className="mt-6"
+      style={{ padding: 4 }}
+    >
+      <div className="px-5 pb-6 pt-2 md:px-7">
+        <h3 className="label-caps" style={{ color: "var(--sterling)" }}>
+          {edition?.title ?? title}
+        </h3>
+
+        {/* The answer is stated in words, not carried by the filled button
+            alone. Never gold: gold means attending on a board chip. */}
+        <p
+          className="mt-3"
+          style={{ fontFamily: '"Space Mono", monospace', fontSize: 15, color: "var(--steel-ink)" }}
+        >
+          {answer
+            ? `Your answer: ${STATUS_LABELS[answer].toUpperCase()}`
+            : "NO RESPONSE YET"}
+          {answer === "going" && partySize > 1 ? ` · ${partySize} HEADS` : ""}
+        </p>
+
+        {editable ? (
+          <>
+            <div className="mt-4 grid gap-2 md:grid-cols-3">
+              {(["going", "maybe", "not_this_year"] as RsvpStatus[]).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  aria-pressed={answer === s}
+                  style={{ ...(answer === s ? primaryButton : secondaryButton), width: "100%" }}
+                  onClick={() => onAnswer(s)}
+                >
+                  {STATUS_LABELS[s]}
+                </button>
+              ))}
+            </div>
+            {answer === "going" && <PartySizeStepper value={partySize} onChange={onPartySize} />}
+          </>
+        ) : (
+          <p className="mt-4" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
+            {closed
+              ? `That weekend ended on ${closed}, so this card is now read only.`
+              : "That weekend has ended, so this card is now read only."}{" "}
+            Nothing is lost: your answer stays part of your record, and the next edition gets its own
+            card.
+          </p>
+        )}
+
+        {events.length > 0 && (
+          <div className="mt-6" style={{ borderTop: "1px solid var(--concrete)" }}>
+            <p className="label-caps mt-4" style={{ color: "var(--sterling)" }}>
+              Events that ask
+            </p>
+            <ul className="mt-2 flex flex-col">
+              {events.map((row) => (
+                <li
+                  key={row.id}
+                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2"
+                  style={{ borderBottom: "1px solid var(--concrete)" }}
+                >
+                  <span style={{ fontSize: 15, color: "var(--steel-ink)" }}>
+                    {row.title}
+                    <span className="label-caps ml-3" style={{ color: "var(--sterling)" }}>
+                      {[eventWhen(row), row.location].filter(Boolean).join(" · ")}
+                    </span>
+                  </span>
+                  <span
+                    className="label-caps"
+                    style={{ color: row.answer === null ? "var(--sterling)" : "var(--steel-ink)" }}
+                  >
+                    {row.answer === "yes"
+                      ? "Yes"
+                      : row.answer === "no"
+                        ? "No"
+                        : "Not answered"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3" style={{ fontSize: 13, color: "var(--sterling)" }}>
+              Answering each event from here is coming next. For now these follow the questions you
+              were asked by email or when you claimed your name.
+            </p>
+          </div>
+        )}
+      </div>
+    </NotchedBox>
+  );
+}
+
 
 function ProfileForm({
   person,
