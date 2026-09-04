@@ -400,6 +400,27 @@ function BoardPage() {
   // Only-fuzzy results must never be presented as if they were exact.
   const onlyFuzzy = searching && ranked.length > 0 && ranked.every((r) => r.tier === TIER_FUZZY);
 
+  // Unclaimed and no-contact lists are long, so they render in five-year
+  // chunks instead of one flat run. Search results stay flat and ranked.
+  const chunkByFiveYears =
+    flatMode &&
+    !searching &&
+    (statusFilter === "unclaimed" || statusFilter === "no_contact");
+  const yearChunks: { start: number; people: BoardPerson[] }[] = !chunkByFiveYears
+    ? []
+    : (() => {
+        const buckets = new Map<number, BoardPerson[]>();
+        for (const person of flatPeople) {
+          const start = Math.floor(person.board_year / 5) * 5;
+          const bucket = buckets.get(start) ?? [];
+          bucket.push(person);
+          buckets.set(start, bucket);
+        }
+        return [...buckets.entries()]
+          .map(([start, list]) => ({ start, people: list }))
+          .sort((a, b) => b.start - a.start);
+      })();
+
   return (
     <ChipSessionContext.Provider value={session.signedIn}>
     <div style={{ background: "var(--field-white)" }} className="board-chrome min-h-screen">
@@ -570,16 +591,48 @@ function BoardPage() {
                 : `${flatPeople.length} ${statusPhrase(phraseStatuses)}`}
             </p>
             {flatPeople.length > 0 ? (
-              <div className="mt-4 flex flex-wrap content-start items-start gap-2">
-                {flatPeople.map((person) => (
-                  <NameChip
-                    key={person.id}
-                    person={person}
-                    dimmed={isDimmed(person)}
-                    onClick={openChip}
-                  />
-                ))}
-              </div>
+              chunkByFiveYears ? (
+                <div className="mt-4">
+                  {yearChunks.map((chunk) => (
+                    <div key={chunk.start} className="mt-6 first:mt-0">
+                      <p
+                        className="label-caps"
+                        style={{
+                          fontFamily: '"Space Mono", monospace',
+                          color: "var(--sabah-black)",
+                        }}
+                      >
+                        {chunk.start}–{chunk.start + 4}
+                        <span style={{ color: "var(--sterling)" }}>
+                          {" "}
+                          · {chunk.people.length}
+                        </span>
+                      </p>
+                      <div className="mt-3 flex flex-wrap content-start items-start gap-2">
+                        {chunk.people.map((person) => (
+                          <NameChip
+                            key={person.id}
+                            person={person}
+                            dimmed={isDimmed(person)}
+                            onClick={openChip}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-4 flex flex-wrap content-start items-start gap-2">
+                  {flatPeople.map((person) => (
+                    <NameChip
+                      key={person.id}
+                      person={person}
+                      dimmed={isDimmed(person)}
+                      onClick={openChip}
+                    />
+                  ))}
+                </div>
+              )
             ) : (
               <EmptyPrompt
                 copy={
