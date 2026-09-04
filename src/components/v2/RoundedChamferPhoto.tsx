@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 
 import { notchPoints, NOTCH_ALL, type NotchCorner } from "@/components/media/notch";
 
@@ -49,8 +49,15 @@ type RoundedChamferPhotoProps = {
   radius?: number;
   corners?: NotchCorner[];
   position?: string;
+  /** Custom silhouette, in fractions of the box, when a plain chamfer is not enough. */
+  points?: Pt[];
+  eager?: boolean;
   className?: string;
+  style?: CSSProperties;
 };
+
+/** Consistent radius scale so every cut photograph reads as one system. */
+export const CHAMFER_RADIUS = { hero: 22, wide: 16, portrait: 14, small: 12 } as const;
 
 /**
  * A photograph with bold angled chamfers whose vertices are rounded. Plain
@@ -65,7 +72,10 @@ export function RoundedChamferPhoto({
   radius = 16,
   corners = NOTCH_ALL,
   position,
+  points,
+  eager = false,
   className,
+  style,
 }: RoundedChamferPhotoProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -83,11 +93,16 @@ export function RoundedChamferPhoto({
 
   const path =
     size.w > 0 && size.h > 0
-      ? roundedPolygonPath(notchPoints(size.w, size.h, notch, corners), radius)
+      ? roundedPolygonPath(
+          points
+            ? points.map(([fx, fy]) => [fx * size.w, fy * size.h] as Pt)
+            : notchPoints(size.w, size.h, notch, corners),
+          radius,
+        )
       : "";
 
   return (
-    <figure className={className} style={{ margin: 0 }}>
+    <figure className={className} style={{ margin: 0, ...style }}>
       <div ref={ref} style={{ position: "relative", width: "100%", aspectRatio: ratio }}>
         {path && (
           <svg aria-hidden="true" width={0} height={0} style={{ position: "absolute" }}>
@@ -101,7 +116,8 @@ export function RoundedChamferPhoto({
         <img
           src={src}
           alt={alt}
-          loading="lazy"
+          loading={eager ? "eager" : "lazy"}
+          fetchPriority={eager ? "high" : undefined}
           decoding="async"
           style={{
             position: "absolute",
