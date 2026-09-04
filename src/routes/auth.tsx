@@ -12,8 +12,8 @@ import { useEditionEyebrow } from "@/lib/useEdition";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import pittUltimateShield from "@/assets/pitt-ultimate-shield.png.asset.json";
 import { isStructurallyValidEmail } from "@/lib/email-typos";
-import {
 import { PageShell } from "@/components/layout/PageShell";
+import {
   EmailSuggestion,
   FieldLabel,
   Notice,
