@@ -46,12 +46,11 @@ export function SiteFooter() {
           <Link to="/donate" hash="endowment" className="label-caps" style={giveLink}>
             Endowment
           </Link>
-          <Link to="/donate" hash="paypal" className="label-caps" style={giveLink}>
-            PayPal
+          {/* PayPal and Venmo now share one card on Give, so one link goes there. */}
+          <Link to="/donate" hash="direct" className="label-caps" style={giveLink}>
+            PayPal or Venmo
           </Link>
-          <Link to="/donate" hash="venmo" className="label-caps" style={giveLink}>
-            Venmo
-          </Link>
+
           <a
             href={DISCORD_INVITE_URL}
             target="_blank"
