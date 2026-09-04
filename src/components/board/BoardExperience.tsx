@@ -65,30 +65,25 @@ function pickPhoto(photos: Record<string, BoardPhoto>, years: number[]) {
   return null;
 }
 
-const DIVISION_CHIP_LABELS: Record<string, string> = {
-  MENS_A: "Sabah",
-  MENS_B: "BITT / Pressure",
-  WOMENS_A: "Danger",
-  WOMENS_B: "Danger B",
-};
-
-/** Five states. "Not this year" is never publicly listable, and unclaimed is
- *  the board's background rather than a status. */
+/** Every status the Status dropdown can be set to. Attendance ("this year")
+ *  and profile status live in separate groups and never blend. */
 const STATUS_FILTERS = [
-  { code: "going", label: "Going" },
+  { code: "going", label: "Coming" },
   { code: "maybe", label: "Maybe" },
-  { code: "claimed", label: "Claimed" },
-  { code: "unclaimed", label: "Unclaimed" },
-  { code: "no_contact", label: "No contact info" },
+  { code: "claimed", label: "Claimed their name" },
+  { code: "unclaimed", label: "Not claimed yet" },
+  { code: "no_contact", label: "No way to reach them" },
+  { code: "memorial", label: "In memoriam" },
 ] as const;
 
-/** The one sentence that sits under the filter chips while a filter is on. */
+/** The one sentence that sits under the controls while a filter is on. */
 const STATUS_BLURBS: Record<string, string> = {
   going: "Said they are attending 2026 Alumni Weekend.",
   maybe: "You should encourage your teammates to come. Reach out to them today.",
   claimed: "Verified their contact information.",
   unclaimed: "Haven't checked in or verified their contact info.",
   no_contact: "Have contact info for them? Please let us know by clicking their name.",
+  memorial: "Teammates we have lost. Remembered here, never counted as an answer.",
 };
 
 /** Copy for a row where nothing matches the toggles that are on. It reads as
@@ -97,6 +92,7 @@ function emptyCopy(label: string, statuses: string[]) {
   const only = statuses.length === 1 ? statuses[0] : null;
   if (only === "going") return `Nobody has said yes from ${label} yet. Be the first.`;
   if (only === "maybe") return `Nobody from ${label} is on the fence yet. Be the first.`;
+  if (only === "memorial") return `Nobody from ${label} is remembered here.`;
   if (statuses.length === 2 && statuses.includes("going") && statuses.includes("maybe"))
     return `Nobody from ${label} has answered yet. Be the first.`;
   if (statuses.length === 0) return `Turn a filter back on to see ${label}.`;
@@ -104,12 +100,14 @@ function emptyCopy(label: string, statuses: string[]) {
 }
 
 const STATUS_WORDS: Record<string, string> = {
-  going: "going",
+  going: "coming",
   maybe: "maybe",
   claimed: "claimed",
-  unclaimed: "unclaimed",
-  no_contact: "with no contact info",
+  unclaimed: "not claimed yet",
+  no_contact: "with no way to reach them",
+  memorial: "remembered here",
 };
+
 
 /** "going", "claimed or going", and so on, in a fixed reading order. */
 function statusPhrase(statuses: string[]) {
