@@ -2897,3 +2897,58 @@ export async function saveNewsSettings(
   const { loadSettings } = await import("./news.server");
   return loadSettings();
 }
+
+/** ---------------------------------------------------------------------------
+ *  One-time scheduled campaigns. Read and cancel only: nothing here sends.
+ *  ------------------------------------------------------------------------ */
+
+export type ScheduledCampaignRow = {
+  key: string;
+  scheduledAt: string | null;
+  dispatchedAt: string | null;
+  cancelledAt: string | null;
+  active: boolean;
+  eligible: number;
+  skips: { already_sent: number; recent_send: number; no_body: number } | null;
+  subject: string | null;
+};
+
+export async function listScheduledCampaignsForAdmin(): Promise<ScheduledCampaignRow[]> {
+  const { listScheduledCampaigns } = await import("./scheduled-campaign.server");
+  const { dispatchSequence } = await import("./drip.server");
+  const rows = await listScheduledCampaigns();
+  const out: ScheduledCampaignRow[] = [];
+  for (const row of rows) {
+    let eligible = 0;
+    let skips: ScheduledCampaignRow["skips"] = null;
+    let subject: string | null = null;
+    if (!row.dispatched_at && !row.cancelled_at) {
+      const preview = await dispatchSequence({ sequenceKey: row.key, dryRun: true });
+      eligible = preview.wouldSend.length;
+      skips = {
+        already_sent: preview.skips.already_sent,
+        recent_send: preview.skips.recent_send,
+        no_body: preview.skips.no_body,
+      };
+      subject = preview.sample?.subject ?? null;
+    }
+    out.push({
+      key: row.key,
+      scheduledAt: row.scheduled_at,
+      dispatchedAt: row.dispatched_at,
+      cancelledAt: row.cancelled_at,
+      active: row.active,
+      eligible,
+      skips,
+      subject,
+    });
+  }
+  return out;
+}
+
+export async function cancelScheduledCampaignForAdmin(actor: string | null, key: string) {
+  const { cancelScheduledCampaign } = await import("./scheduled-campaign.server");
+  const ok = await cancelScheduledCampaign(key);
+  await audit(actor, "scheduled_campaign_cancel", "sequences", null, null, { key, ok });
+  return { ok };
+}

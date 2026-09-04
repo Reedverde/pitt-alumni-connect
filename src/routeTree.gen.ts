@@ -34,6 +34,7 @@ import { Route as ApiPublicResendWebhookRouteImport } from './routes/api/public/
 import { Route as ApiPublicUnsubscribeRouteImport } from './routes/api/public/unsubscribe'
 import { Route as ApiPublicHooksDripCronTickRouteImport } from './routes/api/public/hooks/drip-cron-tick'
 import { Route as ApiPublicHooksNewsCronRouteImport } from './routes/api/public/hooks/news-cron'
+import { Route as ApiPublicHooksScheduledCampaignTickRouteImport } from './routes/api/public/hooks/scheduled-campaign-tick'
 import { Route as ApiPublicPhotoSplatRouteImport } from './routes/api/public/photo/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -161,6 +162,12 @@ const ApiPublicHooksNewsCronRoute = ApiPublicHooksNewsCronRouteImport.update({
   path: '/api/public/hooks/news-cron',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksScheduledCampaignTickRoute =
+  ApiPublicHooksScheduledCampaignTickRouteImport.update({
+    id: '/api/public/hooks/scheduled-campaign-tick',
+    path: '/api/public/hooks/scheduled-campaign-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPhotoSplatRoute = ApiPublicPhotoSplatRouteImport.update({
   id: '/api/public/photo/$',
   path: '/api/public/photo/$',
@@ -192,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
   '/api/public/hooks/drip-cron-tick': typeof ApiPublicHooksDripCronTickRoute
   '/api/public/hooks/news-cron': typeof ApiPublicHooksNewsCronRoute
+  '/api/public/hooks/scheduled-campaign-tick': typeof ApiPublicHooksScheduledCampaignTickRoute
   '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
 export interface FileRoutesByTo {
@@ -219,6 +227,7 @@ export interface FileRoutesByTo {
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
   '/api/public/hooks/drip-cron-tick': typeof ApiPublicHooksDripCronTickRoute
   '/api/public/hooks/news-cron': typeof ApiPublicHooksNewsCronRoute
+  '/api/public/hooks/scheduled-campaign-tick': typeof ApiPublicHooksScheduledCampaignTickRoute
   '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
 export interface FileRoutesById {
@@ -248,6 +257,7 @@ export interface FileRoutesById {
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
   '/api/public/hooks/drip-cron-tick': typeof ApiPublicHooksDripCronTickRoute
   '/api/public/hooks/news-cron': typeof ApiPublicHooksNewsCronRoute
+  '/api/public/hooks/scheduled-campaign-tick': typeof ApiPublicHooksScheduledCampaignTickRoute
   '/api/public/photo/$': typeof ApiPublicPhotoSplatRoute
 }
 export interface FileRouteTypes {
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/api/public/unsubscribe'
     | '/api/public/hooks/drip-cron-tick'
     | '/api/public/hooks/news-cron'
+    | '/api/public/hooks/scheduled-campaign-tick'
     | '/api/public/photo/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/api/public/unsubscribe'
     | '/api/public/hooks/drip-cron-tick'
     | '/api/public/hooks/news-cron'
+    | '/api/public/hooks/scheduled-campaign-tick'
     | '/api/public/photo/$'
   id:
     | '__root__'
@@ -332,6 +344,7 @@ export interface FileRouteTypes {
     | '/api/public/unsubscribe'
     | '/api/public/hooks/drip-cron-tick'
     | '/api/public/hooks/news-cron'
+    | '/api/public/hooks/scheduled-campaign-tick'
     | '/api/public/photo/$'
   fileRoutesById: FileRoutesById
 }
@@ -359,6 +372,7 @@ export interface RootRouteChildren {
   ApiPublicUnsubscribeRoute: typeof ApiPublicUnsubscribeRoute
   ApiPublicHooksDripCronTickRoute: typeof ApiPublicHooksDripCronTickRoute
   ApiPublicHooksNewsCronRoute: typeof ApiPublicHooksNewsCronRoute
+  ApiPublicHooksScheduledCampaignTickRoute: typeof ApiPublicHooksScheduledCampaignTickRoute
   ApiPublicPhotoSplatRoute: typeof ApiPublicPhotoSplatRoute
 }
 
@@ -539,6 +553,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksNewsCronRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/scheduled-campaign-tick': {
+      id: '/api/public/hooks/scheduled-campaign-tick'
+      path: '/api/public/hooks/scheduled-campaign-tick'
+      fullPath: '/api/public/hooks/scheduled-campaign-tick'
+      preLoaderRoute: typeof ApiPublicHooksScheduledCampaignTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/photo/$': {
       id: '/api/public/photo/$'
       path: '/api/public/photo/$'
@@ -586,6 +607,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicUnsubscribeRoute: ApiPublicUnsubscribeRoute,
   ApiPublicHooksDripCronTickRoute: ApiPublicHooksDripCronTickRoute,
   ApiPublicHooksNewsCronRoute: ApiPublicHooksNewsCronRoute,
+  ApiPublicHooksScheduledCampaignTickRoute:
+    ApiPublicHooksScheduledCampaignTickRoute,
   ApiPublicPhotoSplatRoute: ApiPublicPhotoSplatRoute,
 }
 export const routeTree = rootRouteImport

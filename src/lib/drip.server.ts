@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { loadCurrentEdition } from "./editions.server";
 import { editionDateRange } from "./edition-format";
 import { partySizeLink } from "./party-token.server";
+import { rsvpAnswerLinks } from "./rsvp-token.server";
 import {
   DISCORD_INVITE_SUBJECT,
   eventRsvpPromptSubject,
@@ -22,11 +23,13 @@ import {
   buildTMinus2Body,
   buildTMinus45Body,
   buildTMinus7Body,
+  buildRsvpConfirmBody,
   buildTPlus3Body,
   loadCohortGoing,
   loadScheduleLines,
   sendPlainEmail,
   tMinus28Subject,
+  RSVP_CONFIRM_SUBJECT,
 } from "./mail.server";
 import { loadEventAnswersByPerson, loadPromptEvents } from "./event-rsvp.server";
 
@@ -162,6 +165,7 @@ const BUILDER_KEYS = new Set([
   "t_plus_3",
   "discord_invite",
   "event_rsvp_prompt",
+  "rsvp_confirm_2026_09_04",
 ]);
 
 type Shared = {
@@ -194,7 +198,7 @@ async function loadPendingEvents(): Promise<Map<string, string[]>> {
 
 async function buildFor(
   key: string,
-  person: { id: string; name: string },
+  person: { id: string; name: string; firstName: string },
   shared: Shared,
 ): Promise<Built> {
   const name = person.name;
@@ -217,6 +221,17 @@ async function buildFor(
       const body = buildEventRsvpPromptBody({ name, pending });
       if (!body) return null;
       return { subject: eventRsvpPromptSubject(pending.length), ...body };
+    }
+    case "rsvp_confirm_2026_09_04": {
+      // The recipient's own signed link, never a generic page. No link, no send.
+      const links = await rsvpAnswerLinks(person.id);
+      if (!links) return null;
+      const body = buildRsvpConfirmBody({
+        firstName: person.firstName,
+        link: `${links.going}&src=email`,
+      });
+      if (!body) return null;
+      return { subject: RSVP_CONFIRM_SUBJECT, ...body };
     }
     case "t_minus_7":
       return { subject: T_MINUS_7_SUBJECT, ...buildTMinus7Body({ name }) };
@@ -351,7 +366,7 @@ export async function dispatchSequence(opts: {
       continue;
     }
     const name = [r.firstName, r.lastName].filter(Boolean).join(" ");
-    const built = await buildFor(key, { id: r.personId, name }, shared);
+    const built = await buildFor(key, { id: r.personId, name, firstName: r.firstName }, shared);
     if (!built) {
       skips.no_body++;
       continue;
