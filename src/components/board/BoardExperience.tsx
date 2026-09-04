@@ -324,14 +324,18 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
     return (person.divisions ?? []).includes(divisionFilter);
   };
 
+  // Program, era and status compose. Attendance ("this year") and profile
+  // status are read through the two separated helpers, never off the blended
+  // state word, so the two ideas can never drift apart in the UI.
   const isHidden = (person: BoardPerson) => {
     if (!matchesDivision(person)) return true;
+    if (typeof person.board_year === "number" && !inEra(person.board_year)) return true;
     if (!filtered) return false;
-    if (statusFilter === "no_contact")
-      return !(person.state === "unclaimed" && person.has_contact === false);
-    // Filtering by status means a list of people, not the wall.
-    return !effStatuses.includes(person.state);
+    if (statusFilter === "going" || statusFilter === "maybe")
+      return attendanceOf(person) !== statusFilter;
+    return profileStatusOf(person) !== statusFilter;
   };
+
 
   // A row is "empty" when nothing that could carry a status does, under the
   // toggles that are on.
