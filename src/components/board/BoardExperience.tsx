@@ -151,10 +151,13 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
   const [divisionFilter, setDivisionFilter] = useState<string | null>(null);
   // Single-select: null means "everyone", the normal year-row board.
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  // Search is its own constraint: it composes with the two filters above.
+  // Single-select era band: null means every year.
+  const [eraFilter, setEraFilter] = useState<string | null>(null);
+  // Search is its own constraint: it composes with the filters above.
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [newestFirst, setNewestFirst] = useState(true);
+
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
   const [claimPrefill, setClaimPrefill] = useState("");
