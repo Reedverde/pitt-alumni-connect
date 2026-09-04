@@ -1768,6 +1768,12 @@ export type EventHeadcountRow = {
   heads: number;
   /** Everyone the tallies were drawn from. Same for every event. */
   denominator: number;
+  /** Canonical planning fields, so the tally never contradicts the record. */
+  status: string;
+  audience: string;
+  division: string | null;
+  criticalMass: number | null;
+  capacity: number | null;
 };
 
 /** Per event answers for every published event of the current edition that
@@ -1779,7 +1785,9 @@ export async function eventHeadcounts(): Promise<EventHeadcountRow[]> {
 
   const { data: eventRows } = await supabaseAdmin
     .from("events")
-    .select("id, title, starts_at, time_tbd, location, day_number, sort_order")
+    .select(
+      "id, title, starts_at, time_tbd, location, day_number, sort_order, status, audience, division, critical_mass, capacity",
+    )
     .eq("event_year", eventYear)
     .eq("published", true)
     .eq("prompt_rsvp", true)
@@ -1792,6 +1800,11 @@ export async function eventHeadcounts(): Promise<EventHeadcountRow[]> {
     time_tbd: boolean;
     location: string | null;
     day_number: number | null;
+    status: string | null;
+    audience: string | null;
+    division: string | null;
+    critical_mass: number | null;
+    capacity: number | null;
   }[];
 
   const [peopleRes, goingRes, answerRes] = await Promise.all([
@@ -1849,6 +1862,11 @@ export async function eventHeadcounts(): Promise<EventHeadcountRow[]> {
       timeTbd: Boolean(event.time_tbd),
       location: event.location,
       dayNumber: event.day_number,
+      status: event.status ?? "tentative",
+      audience: event.audience ?? "everyone",
+      division: event.division ?? null,
+      criticalMass: event.critical_mass ?? null,
+      capacity: event.capacity ?? null,
       yes: bucket.yes.size,
       no: bucket.no.size,
       unanswered,
