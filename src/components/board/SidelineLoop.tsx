@@ -50,7 +50,6 @@ export function SidelineLoop() {
           className="h-full w-full object-cover"
           style={{
             opacity: 0.14,
-            filter: "grayscale(1) contrast(0.9) sepia(0.25) hue-rotate(185deg) saturate(2.2)",
           }}
         />
       )}

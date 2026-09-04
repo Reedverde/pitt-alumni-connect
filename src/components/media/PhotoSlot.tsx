@@ -22,7 +22,7 @@ type PhotoSlotProps = {
   alt?: string;
   /** The one slot above the fold. Everything else lazy loads. */
   eager?: boolean;
-  /** Skip the duotone treatment and show the photograph in full colour. */
+  /** Retained for compatibility. Every photograph is full colour now. */
   fullColor?: boolean;
   /** Outline colour drawn on top of the photograph, e.g. "var(--pure-white)". */
   outline?: string;
@@ -34,7 +34,9 @@ type PhotoSlotProps = {
   className?: string;
 };
 
-const DUOTONE = "grayscale(1) contrast(0.95) sepia(0.3) hue-rotate(185deg) saturate(2.4)";
+/** Photographs render in their own colours. Kept as an empty string so the
+ *  fullColor prop stays a no op for callers that still pass it. */
+const DUOTONE = undefined;
 
 const labelStyle: CSSProperties = {
   fontFamily: '"Space Grotesk", sans-serif',
