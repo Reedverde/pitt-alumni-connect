@@ -224,7 +224,7 @@ export function EventHeadcountPanel({ rows }: { rows: EventHeadcountRow[] }) {
   const anyAnswers = rows.some((row) => row.yes + row.no > 0);
 
   return (
-    <Section eyebrow="Per event" title="BBQ and Alumni Game">
+    <Section eyebrow="Per event" title="Every event of the weekend">
       {rows.length === 0 ? (
         <Empty>No tracked events on the current edition yet.</Empty>
       ) : !anyAnswers ? (
