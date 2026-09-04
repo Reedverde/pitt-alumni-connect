@@ -487,14 +487,17 @@ export const PRESET_LABELS: Record<PeopleFilterKey, string> = {
 };
 
 function matchesPreset(person: AdminPerson, preset: PeopleFilterKey, promptEventCount: number) {
+  // The attendance views count only people who can actually answer, which is
+  // what the overview tiles count too.
+  const canAnswer = !person.deceased && person.show_on_board;
   switch (preset) {
     case "going":
     case "maybe":
     case "not_this_year":
-      return person.state === preset;
+      return canAnswer && person.state === preset;
     case "no_response":
       // Silence, not a no. Memorial records are never chased.
-      return person.state === "unclaimed" || person.state === "claimed";
+      return canAnswer && (person.state === "unclaimed" || person.state === "claimed");
     case "claimed":
       return person.emails.some((e) => e.verified);
     case "no_contact":
