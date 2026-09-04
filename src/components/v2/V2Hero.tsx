@@ -53,12 +53,12 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
           kept faint enough that the headline never loses contrast. */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute left-[6%] top-[72%] select-none md:left-[34%] md:top-[34%]"
+        className="pointer-events-none absolute left-[6%] top-[72%] select-none md:left-[24%] md:top-[36%]"
         style={{
           zIndex: 5,
           transform: "rotate(-6deg)",
           fontFamily: '"Great Vibes", cursive',
-          fontSize: "clamp(56px, 11vw, 190px)",
+          fontSize: "clamp(56px, 9vw, 168px)",
           lineHeight: 0.8,
           whiteSpace: "nowrap",
           textAlign: "center",
