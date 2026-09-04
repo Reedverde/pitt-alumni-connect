@@ -127,7 +127,7 @@ function AlumniPage() {
         <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-12">
           <PhotoSlot
             className="md:col-span-4"
-            label="Founding, 1998"
+            label="Earliest documented roster, 1978"
             slotKey="why_founding_1998"
             index="01"
             ratio="3 / 4"
@@ -144,6 +144,7 @@ function AlumniPage() {
             index="03"
             ratio="21 / 9"
             slotKey="why_statement_card"
+            caption="Every graduating class adds to it. Nobody comes off."
           >
             THE ROSTER JUST GETS LONGER
           </StatementCard>
@@ -184,13 +185,8 @@ function AlumniPage() {
               Kept here so it is written down somewhere that is not a group chat. If a year is wrong
               or missing, tell an organizer and it gets fixed.
             </p>
-            {/* Two founding dates are in circulation and nothing in the project
-                settles it, so the page says so rather than picking one. */}
-            <p className="mt-4" style={{ ...body, color: "var(--sterling)" }}>
-              One open question: the club's own records begin in 1998, and that is the founding year
-              shown above, but the board carries players from 1978 on. Nobody has confirmed which is
-              right. If you were around for the early years, tell an organizer and we will settle it.
-            </p>
+            {/* No founding year is claimed. 1978 is stated only as the earliest
+                roster the board can evidence, which is a fact the data supports. */}
           </Measure>
 
         </section>
