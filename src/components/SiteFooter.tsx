@@ -10,7 +10,10 @@ export function SiteFooter() {
 
   return (
     <footer style={{ borderTop: "1px solid var(--chalk)", background: "var(--pure-white)" }}>
-      <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-5 py-10 md:flex-row md:items-center md:justify-between">
+      {/* The floating RSVP card is pinned to the bottom of the viewport, full
+          width on phones. Without this the last row of footer links sat
+          underneath it and could not be tapped. */}
+      <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-5 pt-10 pb-32 md:flex-row md:items-center md:justify-between md:pb-10">
         <div className="flex items-center gap-4">
           <img
             src={pittUltimateShield.url}

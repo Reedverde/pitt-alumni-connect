@@ -787,3 +787,33 @@ since the person is not signed in yet).
 - Board name chips truncate instead of pushing the page sideways on phones. This also fixed the long standing mobile overflow on / and /rsvp.
 - Verified every public, member and admin route at 1280 and 390 wide: no horizontal overflow, one main, no console errors.
 - Deferred: /qr stays print focused and outside the shared shell by design; legacy homepage rollback file kept until final sign off.
+
+## Pre-publication QC pass, 2026-09-04
+
+Read only audit of the release candidate plus three fixes.
+
+Fixed
+- `src/styles.css`: `--answer-no` moved from `#8A7663` to `#6B5544`. The No thumb
+  carries white label text and measured 4.33:1, below AA. Now 6.98:1.
+- `src/components/SiteFooter.tsx`: mobile bottom padding so the floating RSVP
+  card no longer sits on top of the footer links.
+- `src/lib/ics.server.ts`: the "time not set yet" note now attaches to every
+  event flagged time_tbd, not only ones with no timestamp. Bar Crawl was
+  exporting as a bare all day block with no explanation.
+- Migration: revoked the blanket anon and authenticated privileges on
+  `internal_secrets`, `auth_attempts` and `event_rsvps`, replaced with the
+  narrow grants the policies actually need. Nothing had leaked, since every
+  policy already named signed in users only, but the grants were wrong.
+
+Verified against the database
+- 2026 master: 63 going (78 heads), 35 maybe, 32 not this year, 344 no response,
+  474 people who can answer, 18 claimed. Every admin tile matches.
+- Per event yes/no/no choice/heads: City Kitchen 1/0/62/1, Bar Crawl 0/1/62/0,
+  BBQ 1/0/62/2, soccer 0/0/63/0, Alumni Game 1/0/62/1. All match.
+
+Email, read only
+- Provider keys, from address, reply to, unsubscribe secret and site URL all set.
+- `outbound_email_mode = transactional_only`. Nothing but sign in links goes out.
+- Last successful campaign: `drip:t_minus_45`, 339 recipients, 2026-09-03.
+- 0 suppressions, 0 bounced or suppressed people.
+- Next active sequence is `t_minus_21` to the 35 reachable maybes.

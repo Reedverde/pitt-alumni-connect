@@ -96,7 +96,11 @@ export function buildIcs(events: CalendarEvent[], edition: EditionSummary): stri
   for (const event of events) {
     const description = [
       event.notes ?? "",
-      event.time_tbd && !event.starts_at ? TBD_NOTE : "",
+      // Any event flagged time to be confirmed is written as an all-day entry
+      // below, so it always needs the note explaining why. Keying this off
+      // starts_at meant an event that still carried a provisional timestamp
+      // landed in the calendar as a bare all-day block with no explanation.
+      event.time_tbd ? TBD_NOTE : "",
       SITE_URL,
     ]
       .filter(Boolean)

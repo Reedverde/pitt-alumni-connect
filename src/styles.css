@@ -119,7 +119,9 @@
   /* Per event answers. Yes is green, never gold: gold means attending on the
      board and nothing else. No is a muted earth tone, not an alarm. */
   --answer-yes: #1B6E43;
-  --answer-no: #8A7663;
+  /* Carries white label text, so it has to clear AA: 6.98:1 at #6B5544,
+     where the old #8A7663 measured 4.33:1 and failed. */
+  --answer-no: #6B5544;
 
   --background: oklch(0.99 0.005 264.695);
   --foreground: oklch(0.18 0.055 264.695);
