@@ -168,19 +168,21 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
             eager
           />
 
-          {/* The seal straddles the photograph's bottom-right chamfer, roughly half
-              on the frame and half on the black field, away from the huddle faces. */}
+          {/* The seal straddles the photograph's top-right corner: about half on
+              the frame, half on the black field above it, clear of the huddle
+              faces and of the headline column. */}
           <img
             src={firstTwoWeeksSeal.url}
             alt="First two weeks of October, every year"
-            className="pointer-events-none absolute right-[2%] bottom-[4%] select-none md:right-[-4vw] md:bottom-[6%]"
+            className="pointer-events-none absolute right-[4%] top-0 -translate-y-[42%] select-none md:right-[0.5vw] md:-translate-y-1/2"
             style={{
-              width: "clamp(80px, 10vw, 150px)",
+              width: "clamp(104px, 13vw, 196px)",
               height: "auto",
               filter: "drop-shadow(0 14px 28px rgba(0, 0, 0, 0.55))",
             }}
             loading="eager"
           />
+
         </div>
       </div>
     </section>
