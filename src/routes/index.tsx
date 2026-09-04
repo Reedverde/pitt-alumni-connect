@@ -114,13 +114,24 @@ const DIVISION_CHIP_LABELS: Record<string, string> = {
   WOMENS_B: "Danger B",
 };
 
-/** Three states only. "Not this year" is never publicly listable, and
- *  unclaimed is the board's background rather than a status. */
+/** Five states. "Not this year" is never publicly listable, and unclaimed is
+ *  the board's background rather than a status. */
 const STATUS_FILTERS = [
   { code: "going", label: "Going" },
   { code: "maybe", label: "Maybe" },
   { code: "claimed", label: "Claimed" },
+  { code: "unclaimed", label: "Unclaimed" },
+  { code: "no_contact", label: "No contact info" },
 ] as const;
+
+/** The one sentence that sits under the filter chips while a filter is on. */
+const STATUS_BLURBS: Record<string, string> = {
+  going: "Said they are attending 2026 Alumni Weekend.",
+  maybe: "You should encourage your teammates to come. Reach out to them today.",
+  claimed: "Verified their contact information.",
+  unclaimed: "Haven't checked in or verified their contact info.",
+  no_contact: "Have contact info for them? Please let us know by clicking their name.",
+};
 
 /** Copy for a row where nothing matches the toggles that are on. It reads as
  *  early, not broken, and always ends on an invitation. */
@@ -138,6 +149,8 @@ const STATUS_WORDS: Record<string, string> = {
   going: "going",
   maybe: "maybe",
   claimed: "claimed",
+  unclaimed: "unclaimed",
+  no_contact: "with no contact info",
 };
 
 /** "going", "claimed or going", and so on, in a fixed reading order. */
@@ -155,6 +168,8 @@ function flatEmptyCopy(statuses: string[]) {
   if (only === "going") return "Nobody has said yes yet. Be the first.";
   if (only === "maybe") return "Nobody is on the fence yet. Be the first.";
   if (only === "claimed") return "Nobody has claimed yet. Be the first.";
+  if (only === "unclaimed") return "Everyone has checked in already.";
+  if (only === "no_contact") return "We can reach everyone on the board.";
   if (statuses.length === 0) return "Turn a filter back on to see the board.";
   return "Nobody has answered yet. Be the first.";
 }
