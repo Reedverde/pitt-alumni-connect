@@ -6,6 +6,8 @@ import { nameScore, normalize, surnameGate } from "./fuzzy";
 import { normalizeRsvpSource, rsvpSourceLabel } from "./rsvp-src";
 import { SITE_ORIGIN } from "./site-url";
 import { teamLabel } from "./rsvp.server";
+import { loadProfileReviews } from "./profile-review.server";
+import type { ProfileReviewSummary } from "./profile-review";
 import {
   currentEditionYear,
   firstOctoberWeekend,
