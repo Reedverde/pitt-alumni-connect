@@ -402,7 +402,9 @@ function outcomeFor(status: string): "sent" | "blocked" | "failed" | "suppressed
  *  on a screen instead of in a log nobody reads. */
 export async function logSend(input: LogInput) {
   const outcome = outcomeFor(input.status);
-  await supabaseAdmin.from("sends").insert({
+  // A dropped log row makes a real send invisible, so a failure here is
+  // reported loudly rather than swallowed by the ignored error object.
+  const { error } = await supabaseAdmin.from("sends").insert({
     person_id: input.personId,
     sequence_id: input.sequenceId ?? null,
     kind: input.kind,
@@ -415,7 +417,11 @@ export async function logSend(input: LogInput) {
     blocked_reason: outcome === "sent" ? null : input.error,
     sent_at: input.status === "sent" ? new Date().toISOString() : null,
   } as never);
+  if (error) {
+    console.error(`[mail] send log write failed for ${input.toEmail}: ${error.message}`);
+  }
 }
+
 
 /** Asks the auth admin API for a one-time sign-in link so we can carry it in
  *  our own message. The service role key stays on the server.
