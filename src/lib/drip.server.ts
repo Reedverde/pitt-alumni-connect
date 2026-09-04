@@ -5,7 +5,7 @@ import { editionDateRange } from "./edition-format";
 import { partySizeLink } from "./party-token.server";
 import {
   DISCORD_INVITE_SUBJECT,
-  EVENT_RSVP_PROMPT_SUBJECT,
+  eventRsvpPromptSubject,
   HOTEL_REMINDER_SUBJECT,
   T_MINUS_10_SUBJECT,
   T_MINUS_14_SUBJECT,
@@ -216,7 +216,7 @@ async function buildFor(
         shared.pendingEvents.get(person.id) ?? shared.pendingEvents.get("__all__") ?? [];
       const body = buildEventRsvpPromptBody({ name, pending });
       if (!body) return null;
-      return { subject: EVENT_RSVP_PROMPT_SUBJECT, ...body };
+      return { subject: eventRsvpPromptSubject(pending.length), ...body };
     }
     case "t_minus_7":
       return { subject: T_MINUS_7_SUBJECT, ...buildTMinus7Body({ name }) };

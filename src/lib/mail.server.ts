@@ -924,7 +924,7 @@ export function buildEventRsvpPromptBody(opts: {
 
   const lines = [
     "You are down as coming to Alumni Weekend, which is the part that matters. Thank you.",
-    `Two things need headcounts of their own: ${list}. Food, seating and roster sizes are planned off those numbers, so a no is just as useful as a yes.`,
+    `${countWord(opts.pending.length)} ${opts.pending.length === 1 ? "thing needs" : "things need"} headcounts of their own: ${list}. Food, seating and roster sizes are planned off those numbers, so a no is just as useful as a yes.`,
     "It takes one tap on the board.",
   ];
 
