@@ -57,6 +57,18 @@ export const submitRosterCorrection = createServerFn({ method: "POST" })
     return submitRosterCorrectionServer(data, ip);
   });
 
+/** "Looks right" in the claim flow. Records an explicit profile review. */
+export const confirmRosterFacts = createServerFn({ method: "POST" })
+  .inputValidator((input: { personId: string; email: string }) => ({
+    personId: String(input?.personId ?? ""),
+    email: String(input?.email ?? ""),
+  }))
+  .handler(async ({ data }): Promise<{ ok: boolean }> => {
+    const { confirmRosterFactsServer } = await import("./rsvp.server");
+    return confirmRosterFactsServer(data);
+  });
+
+
 export const submitRsvp = createServerFn({ method: "POST" })
   .inputValidator(
     (input: {
