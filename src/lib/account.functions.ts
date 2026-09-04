@@ -115,6 +115,18 @@ export const addMeAsPerson = createServerFn({ method: "POST" })
     });
   });
 
+/** The Phase 1 deadline rule, enforced where the write happens. The weekend
+ *  ends and the answer stops moving: no grace period, and the page's read only
+ *  state is a courtesy, not the boundary. */
+async function assertRsvpEditable(
+  client: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> },
+  eventYear: number,
+) {
+  const { data } = await client.rpc("rsvp_is_editable", { _event_year: eventYear });
+  if (data === false)
+    throw new Error("That weekend is over, so the answer can no longer be changed.");
+}
+
 export const getMyProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<MyProfile> => {
@@ -409,6 +421,7 @@ export const setMyRsvp = createServerFn({ method: "POST" })
     const eventYear = await currentEditionYear();
     const personId = await resolveMyPersonId(context.supabase, context.userId);
     if (!personId) throw new Error("Forbidden");
+    await assertRsvpEditable(context.supabase, eventYear);
     const { data: existing } = await context.supabase
       .from("rsvps")
       .select("id")
@@ -453,6 +466,7 @@ export const setMyPartySize = createServerFn({ method: "POST" })
     const eventYear = await currentEditionYear();
     const personId = await resolveMyPersonId(context.supabase, context.userId);
     if (!personId) throw new Error("Forbidden");
+    await assertRsvpEditable(context.supabase, eventYear);
     const { error } = await context.supabase
       .from("rsvps")
       .update({ party_size: normalizePartySize("going", data.partySize) })
