@@ -37,9 +37,13 @@ function Measure({ children, className = "" }: { children: React.ReactNode; clas
   return <div className={`max-w-[560px] text-left ${className}`}>{children}</div>;
 }
 
+/* Only milestones the project can actually evidence. The board carries
+   Fastbacks players from 1978, so that year is stated as what it is, the
+   earliest roster anyone has documented, not as a founding date. No founding
+   year is claimed anywhere on this page, because nothing here settles it. */
 const RECORD = [
-  { figure: "1998", label: "Founded" },
-  { figure: "2005", label: "First Nationals" },
+  { figure: "1978", label: "Earliest documented roster" },
+  { figure: "2005", label: "First Pitt team to reach Nationals" },
   { figure: "2012 & 2013", label: "National titles" },
   { figure: "2026", label: "Back at Nationals" },
 ];
