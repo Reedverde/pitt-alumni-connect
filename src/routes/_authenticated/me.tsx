@@ -99,6 +99,73 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+/** Three states, never blurred: nobody has confirmed this, you confirmed it on
+ *  a date, or you sent a correction that is still waiting. An address on file
+ *  and a proven inbox live above; neither counts as a review. */
+function ProfileReviewCard({
+  review,
+  onConfirm,
+  onCorrect,
+}: {
+  review: ProfileReviewSummary;
+  onConfirm: () => void | Promise<void>;
+  onCorrect: (note: string) => void | Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const pending = review.state === "correction_pending";
+
+  return (
+    <Section title="Is this still right?">
+      <p style={{ fontSize: 15, color: "var(--steel-ink)" }}>{profileReviewSentence(review)}</p>
+      {!open ? (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button type="button" style={primaryButton} onClick={() => void onConfirm()}>
+            {review.state === "confirmed" ? "Confirm again" : "This is right"}
+          </button>
+          <button type="button" style={secondaryButton} onClick={() => setOpen(true)}>
+            Something is off
+          </button>
+          {pending && (
+            <span className="label-caps" style={{ color: "var(--sterling)" }}>
+              Correction waiting
+            </span>
+          )}
+        </div>
+      ) : (
+        <div className="mt-4">
+          <FieldLabel htmlFor="profile-correction">What should it say?</FieldLabel>
+          <textarea
+            id="profile-correction"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={3}
+            style={{ ...fieldStyle, minHeight: 84 }}
+            placeholder="Tell the organizers what to change"
+          />
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              style={primaryButton}
+              disabled={!note.trim()}
+              onClick={() => {
+                void onCorrect(note.trim());
+                setNote("");
+                setOpen(false);
+              }}
+            >
+              Send correction
+            </button>
+            <button type="button" style={secondaryButton} onClick={() => setOpen(false)}>
+              Never mind
+            </button>
+          </div>
+        </div>
+      )}
+    </Section>
+  );
+}
+
 /** Signed in and verified, but we do not yet know which name is theirs. Never
  *  a dead end and never an account step: the link already made the account. */
 function NoRecordPanel({ onDone }: { onDone: () => void }) {
