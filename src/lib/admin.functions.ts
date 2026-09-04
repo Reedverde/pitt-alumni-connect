@@ -414,3 +414,48 @@ export const adminCancelScheduledCampaign = createServerFn({ method: "POST" })
     if (!actor) return { ok: false };
     return mod.cancelScheduledCampaignForAdmin(actor, data.key);
   });
+
+/** Targeted resend: an organizer names the exact addresses. Dry run unless
+ *  the caller explicitly asks to send. Admin only. */
+export const adminTargetedResend = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { campaignKey: string; addresses: string; dryRun?: boolean }) => input)
+  .handler(async ({ data, context }) => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return null;
+    const targeted = await import("./targeted-resend.server");
+    const result = await targeted.runTargetedResend({
+      campaignKey: data.campaignKey,
+      addresses: data.addresses,
+      dryRun: data.dryRun !== false,
+    });
+    if (!result.dryRun) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin.from("audit_log").insert({
+        actor_person_id: actor,
+        action: "targeted_resend",
+        table_name: "sends",
+        record_id: null,
+        before: null as never,
+        after: {
+          campaignKey: result.campaignKey,
+          sent: result.sent,
+          failed: result.failed,
+          skipped: result.skipped,
+          rows: result.rows,
+        } as never,
+      });
+    }
+    return result;
+  });
+
+export const adminCampaignKeys = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<string[]> => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return [];
+    const targeted = await import("./targeted-resend.server");
+    return targeted.listCampaignKeys();
+  });

@@ -24,6 +24,7 @@ import { EditionsPanel } from "@/components/admin/EditionsPanel";
 import { PhotosPanel } from "@/components/admin/PhotosPanel";
 import { RsvpBreakdownPanel, SendsPanel, SourcesPanel } from "@/components/admin/SendsPanel";
 import { MailPanel } from "@/components/admin/MailPanel";
+import { TargetedResendPanel } from "@/components/admin/TargetedResendPanel";
 import { DripDispatchPanel } from "@/components/admin/DripDispatchPanel";
 import { ScheduledCampaignPanel } from "@/components/admin/ScheduledCampaignPanel";
 import { AuthAttemptsPanel } from "@/components/admin/AuthAttemptsPanel";
@@ -237,6 +238,7 @@ function AdminInner() {
         <>
           <RsvpBreakdownPanel data={data.rsvpBreakdown} />
           <SendsPanel rows={data.sends} totals={data.sendTotals} />
+          <TargetedResendPanel />
           <SourcesPanel sources={data.rsvpSources} />
         </>
       ) : null}
