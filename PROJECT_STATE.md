@@ -703,3 +703,24 @@ Still open from the audit: phase D language and primitive consolidation, phase F
 - `BoardExperience.tsx` filters on era bands, reports a single result label, and folds the colour key into a disclosure instead of an always open legend.
 - Retired `StatusRadioChips`, `BoardSearch`, `DecadeRail` and their helpers.
 - `.board-chrome` sticky offset is now nav plus counter only, since the jump rail is gone, and `summary` gets the shared focus ring.
+
+## 2026-09-04 News as the public change log, plus day-of Discord
+
+News is not an article section and not an RSVP feed. It is the public change log
+for Alumni Weekend. Schedule is the source of truth for current logistics, News
+explains what changed and when, Discord handles real-time coordination.
+
+- `/news` heading is now WEEKEND UPDATES. Changes to the public plan lead the
+  page; RSVP rollups sit under a quieter "Who is coming" section.
+- Every update shows its posted date and time in Pittsburgh and links into
+  /schedule when the related URL is one of ours. Organizer notes are never shown.
+- `createEditionEvent` queues a pending update for TBD additions as well as
+  confirmed ones. `deleteEditionEvent` queues a cancellation for any non
+  placeholder event. `updateEditionEvent` summaries now carry the new concrete
+  time, not just "moved to a new time".
+- Admin: saving in Editions raises a "Queued a public update" toast, and the News
+  tab opens with a royal banner counting changes waiting to be announced.
+- `src/components/DiscordDayOf.tsx` renders a compact Discord action. During the
+  edition dates it reads "Already out in Pittsburgh? Drop into Discord and say
+  where you are." Outside them it is a plain invite. It appears on /news and
+  beside the current day on /schedule. Same invite, no new community.
