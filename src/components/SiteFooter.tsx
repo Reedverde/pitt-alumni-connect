@@ -3,8 +3,11 @@ import { Link } from "@tanstack/react-router";
 import pittUltimateShield from "@/assets/pitt-ultimate-shield.png.asset.json";
 import { DISCORD_INVITE_URL } from "@/lib/site-url";
 
-/** Shield, the three permanent links, and the endowment. Footer only. */
+/** Shield, the permanent links, and the ways to give. Footer only. */
 export function SiteFooter() {
+  const footerLink = { color: "var(--steel-ink)", textDecoration: "none" as const };
+  const giveLink = { color: "var(--pitt-royal)", textDecoration: "none" as const };
+
   return (
     <footer style={{ borderTop: "1px solid var(--chalk)", background: "var(--pure-white)" }}>
       <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-5 py-10 md:flex-row md:items-center md:justify-between">
@@ -31,30 +34,30 @@ export function SiteFooter() {
           </span>
         </div>
         <nav className="flex flex-wrap items-center gap-x-5 gap-y-3">
-          <Link to="/" className="label-caps" style={{ color: "var(--steel-ink)", textDecoration: "none" }}>
+          <Link to="/" className="label-caps" style={footerLink}>
             Board
           </Link>
-          <Link to="/schedule" className="label-caps" style={{ color: "var(--steel-ink)", textDecoration: "none" }}>
-            Weekend
+          <Link to="/schedule" className="label-caps" style={footerLink}>
+            Schedule
           </Link>
-          <Link to="/alumni" className="label-caps" style={{ color: "var(--steel-ink)", textDecoration: "none" }}>
+          <Link to="/alumni" className="label-caps" style={footerLink}>
             Alumni
           </Link>
-          <a
-            href="https://www.esnultimate.org/endowment/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="label-caps"
-            style={{ color: "var(--pitt-royal)", textDecoration: "none" }}
-          >
+          <Link to="/donate" hash="endowment" className="label-caps" style={giveLink}>
             Endowment
-          </a>
+          </Link>
+          <Link to="/donate" hash="paypal" className="label-caps" style={giveLink}>
+            PayPal
+          </Link>
+          <Link to="/donate" hash="venmo" className="label-caps" style={giveLink}>
+            Venmo
+          </Link>
           <a
             href={DISCORD_INVITE_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="label-caps"
-            style={{ color: "var(--pitt-royal)", textDecoration: "none" }}
+            style={giveLink}
           >
             Discord
           </a>
