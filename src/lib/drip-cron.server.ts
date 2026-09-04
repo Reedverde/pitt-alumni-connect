@@ -85,13 +85,27 @@ async function recordAttempt(o: SequenceOutcome & { runDate: string }) {
   });
 }
 
-/** One daily tick. Every active sequence whose target date has arrived runs,
- *  one at a time, with the outbound switch open only for the length of that
- *  single dispatch. The switch is forced closed again no matter what. */
+/** One daily tick. Nothing happens unless outbound_email_mode reads
+ *  "drip_enabled". When it does, every active sequence whose target date has
+ *  arrived runs one at a time, with the send choke point opened only for the
+ *  length of that single dispatch and forced back to the armed value after. */
 export async function runDripCronTick(): Promise<CronTickResult> {
   const runDate = easternToday();
   const edition = await loadCurrentEdition();
   const eventDate = edition.starts_on;
+
+  const mode = await readOutboundMode();
+  if (mode !== ARMED_MODE) {
+    return {
+      ok: false,
+      reason: `outbound_email_mode is "${mode ?? "unset"}", not "${ARMED_MODE}"; no sends`,
+      runDate,
+      eventDate,
+      considered: 0,
+      eligible: 0,
+      outcomes: [],
+    };
+  }
 
   const { data: rows } = await supabaseAdmin
     .from("sequences")
@@ -134,7 +148,7 @@ export async function runDripCronTick(): Promise<CronTickResult> {
       } catch (err) {
         outcome.error = err instanceof Error ? err.message : String(err);
       } finally {
-        await setOutboundMode("transactional_only");
+        await setOutboundMode(ARMED_MODE);
       }
 
       outcomes.push(outcome);
@@ -145,8 +159,9 @@ export async function runDripCronTick(): Promise<CronTickResult> {
       }
     }
   } finally {
-    await setOutboundMode("transactional_only");
+    await setOutboundMode(ARMED_MODE);
   }
+
 
   return {
     ok: true,
