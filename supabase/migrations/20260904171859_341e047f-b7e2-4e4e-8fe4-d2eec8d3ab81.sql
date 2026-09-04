@@ -1,0 +1,1 @@
+UPDATE public.sequences SET audience_states = ARRAY['going'] WHERE key = 'event_rsvp_prompt';
