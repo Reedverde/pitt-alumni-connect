@@ -2295,20 +2295,32 @@ export async function createEditionEvent(
   if (error) throw new Error(error.message);
   await audit(actor, "edition.add_event", "events", (data?.id as string) ?? null, null, row);
 
-  // Only a confirmed time is news. A TBD placeholder waits until it is real.
-  if (!row.time_tbd && row.starts_at) {
-    const { addPendingUpdate } = await import("./news.server");
-    await addPendingUpdate({
-      kind: "schedule_confirmed",
-      title: `${row.title} is on the schedule`,
-      summary: row.location ? `At ${row.location}.` : "",
-      category: "Schedule",
-      relatedUrl: `${SITE_ORIGIN}/schedule`,
-      dedupeKey: `event:${(data?.id as string) ?? row.title}`,
-    });
-  }
-  return { ok: true };
+  // Adding an event to the public plan is news either way. A confirmed time
+  // says so; a TBD says the slot exists and the time is still coming.
+  const { addPendingUpdate } = await import("./news.server");
+  const when =
+    !row.time_tbd && row.starts_at
+      ? new Intl.DateTimeFormat("en-US", {
+          timeZone: "America/New_York",
+          weekday: "long",
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(new Date(row.starts_at))
+      : null;
+  const parts = [when ? `${when}.` : "Time still TBD.", row.location ? `At ${row.location}.` : ""]
+    .filter(Boolean)
+    .join(" ");
+  const queued = await addPendingUpdate({
+    kind: row.time_tbd ? "schedule_added" : "schedule_confirmed",
+    title: `${row.title} is on the schedule`,
+    summary: parts,
+    category: "Schedule",
+    relatedUrl: `${SITE_ORIGIN}/schedule`,
+    dedupeKey: `event:${(data?.id as string) ?? row.title}`,
+  });
+  return { ok: true, queuedNews: queued.created };
 }
+
 
 export async function listEditionEvents(eventYear: number) {
   const { data } = await supabaseAdmin
