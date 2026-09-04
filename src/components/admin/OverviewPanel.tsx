@@ -57,7 +57,7 @@ export function OverviewPanel({
 
 function Grid({ tiles, onOpen }: { tiles: OverviewTile[]; onOpen: (t: OverviewTile) => void }) {
   return (
-    <div className="grid gap-px sm:grid-cols-2 lg:grid-cols-4" style={{ background: "var(--chalk)", border: hairline }}>
+    <div className="grid gap-px sm:grid-cols-2 lg:grid-cols-4" style={{ background: "var(--pure-white)", border: hairline }}>
       {tiles.map((tile) => (
         <button
           key={tile.key}
@@ -66,6 +66,7 @@ function Grid({ tiles, onOpen }: { tiles: OverviewTile[]; onOpen: (t: OverviewTi
           className="text-left"
           style={{
             background: "var(--pure-white)",
+            boxShadow: "0 0 0 0.5px var(--chalk)",
             padding: "14px 14px 16px",
             cursor: "pointer",
             minHeight: 96,
