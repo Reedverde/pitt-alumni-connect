@@ -140,7 +140,7 @@ export function V2Nav() {
         </div>
 
         <div className="flex justify-center">
-          <Link to="/v2" aria-label="Pitt Club Ultimate, home" className="flex items-center py-2">
+          <Link to="/" aria-label="Pitt Club Ultimate, home" className="flex items-center py-2">
             <img
               src={pittClubUltimateLogo.url}
               alt="Pitt Club Ultimate"
