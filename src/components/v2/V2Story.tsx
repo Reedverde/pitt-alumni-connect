@@ -3,7 +3,6 @@ import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ChamferPhoto } from "@/components/v2/ChamferPhoto";
 import { ACTION, ALUMNI_WEEKEND } from "@/components/v2/curated-photos";
 import nationalsCelebration from "@/assets/hero-nationals-celebration.jpg.asset.json";
-import clemsonBye from "@/assets/hero-clemson-on-our-bye.jpg.asset.json";
 import firstNationals2005 from "@/assets/pitt-first-nationals-team-2005.jpg.asset.json";
 
 const BONE = "#F6F3ED";
@@ -37,34 +36,27 @@ const linkButton = {
   textDecoration: "none",
 };
 
+/** The three weekend photographs: one shared ratio, one shared radius, so the
+ *  row scans as a set instead of three separate cuts. */
+const DAY_RATIO = "4 / 3";
+const DAY_RADIUS = 12;
+
 const DAYS = [
   {
     day: "Friday",
     photo: ALUMNI_WEEKEND.friday,
-    ratio: "4 / 3",
-    corners: ["tl", "br"] as const,
-    notch: 56,
-    offset: "md:mt-0",
     summary:
       "Social night. City Kitchen, Pitt at Virginia Tech on the screen, then wherever the night takes us.",
   },
   {
     day: "Saturday",
     photo: ALUMNI_WEEKEND.saturday,
-    ratio: "1 / 1",
-    corners: ["tr", "bl"] as const,
-    notch: 72,
-    offset: "md:-mt-16",
     summary:
       "The big one. Family BBQ at Schenley Overlook, then Pitt women's soccer that evening.",
   },
   {
     day: "Sunday",
     photo: ALUMNI_WEEKEND.sunday,
-    ratio: "16 / 10",
-    corners: ["tl", "br"] as const,
-    notch: 48,
-    offset: "md:mt-10",
     summary: "Currents vs alumni at the Bubble. Play if you want to, watch if you don't.",
   },
 ];
@@ -72,7 +64,6 @@ const DAYS = [
 /** Everything on /v2 between the hero and the claim board. The board itself is
  *  untouched: this block only sets up the story and the way into it. */
 export function V2Story() {
-  const pile = ACTION.contested;
   const transition = ACTION.sky;
 
 
@@ -111,46 +102,27 @@ export function V2Story() {
             </div>
           </div>
 
-          <div className="mt-14 grid grid-cols-1 gap-10 md:mt-20 md:grid-cols-12 md:gap-8">
-            {/* Portrait crop, deliberately dropped below the text baseline. */}
-            <div className="md:col-span-4 md:pt-16">
-              <ChamferPhoto
-                src={clemsonBye.url}
-                alt="Pitt players in team hoodies lying together on the grass between games"
-                ratio="3 / 4"
-                corners={["tl", "br"]}
-                notch={52}
-              />
-            </div>
-
-            <div className="md:col-span-8">
+          {/* One composition: the narrative and the 2005 photograph read together. */}
+          <div className="mt-14 grid grid-cols-1 items-center gap-10 md:mt-20 md:grid-cols-12 md:gap-12">
+            <div className="md:col-span-7">
               <p className="max-w-[620px]" style={lede}>
-                2025 was the first year since 2004 we missed Nationals. Everyone felt it. Then this
+                2025 was the first year since 2005 we missed Nationals. Everyone felt it. Then this
                 year, we made it back.
               </p>
-
-              <div className="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2 md:items-start">
-                <p className="max-w-[560px]" style={body}>
-                  That's not a coincidence. It's not one class of seniors. It's every alum who ever
-                  showed up to a Sunday scrimmage, made an introduction, sent a "you good?" text to
-                  a sophomore having a rough season. The program doesn't run on nostalgia. It runs
-                  on people staying in it.
-                </p>
-                <ChamferPhoto
-                  src={pile.src}
-                  alt={pile.alt}
-                  ratio="4 / 3"
-                  corners={["tr", "bl"]}
-                  notch={48}
-                  className="md:-mt-10"
-                />
-              </div>
+              <p className="mt-8 max-w-[560px]" style={body}>
+                That's not a coincidence. It's not one class of seniors. It's every alum who ever
+                showed up to a Sunday scrimmage, made an introduction, sent a "you good?" text to
+                a sophomore having a rough season. The program doesn't run on nostalgia. It runs
+                on people staying in it.
+              </p>
+              <p className="mt-6 max-w-[560px]" style={body}>
+                Every season since has been measured against the one where a Pitt team first showed
+                up at Nationals. The names on the board below start well before that photograph and
+                keep going after it.
+              </p>
             </div>
-          </div>
 
-          {/* ARCHIVE: one specific, captioned historical moment. */}
-          <div className="mt-16 grid grid-cols-1 items-end gap-8 md:mt-24 md:grid-cols-12">
-            <div className="md:col-span-7">
+            <div className="md:col-span-5">
               <figure className="m-0">
                 <ChamferPhoto
                   src={firstNationals2005.url}
@@ -172,14 +144,6 @@ export function V2Story() {
                 </figcaption>
               </figure>
             </div>
-            <div className="md:col-span-5 md:pb-6">
-              <SlashEyebrow>Where it started</SlashEyebrow>
-              <p className="mt-4 max-w-[460px]" style={body}>
-                Every season since has been measured against the one where a Pitt team first showed
-                up at Nationals. The names on the board below start well before that photograph and
-                keep going after it.
-              </p>
-            </div>
           </div>
 
         </div>
@@ -187,7 +151,7 @@ export function V2Story() {
         {/* A navy field cut on the same angle, carrying the eye into the weekend. */}
         <div
           aria-hidden="true"
-          className="absolute -bottom-24 -left-16 hidden md:block"
+          className="absolute -bottom-44 -left-16 hidden md:block"
           style={{
             width: 420,
             height: 220,
@@ -236,14 +200,22 @@ export function V2Story() {
 
           <div className="mt-14 grid grid-cols-1 gap-10 md:mt-20 md:grid-cols-3 md:items-start md:gap-8">
             {DAYS.map((d) => (
-              <div key={d.day} className={d.offset}>
-                <ChamferPhoto
-                  src={d.photo.src}
-                  alt={d.photo.alt}
-                  ratio={d.ratio}
-                  corners={[...d.corners]}
-                  notch={d.notch}
-                />
+              <div key={d.day}>
+                <figure className="m-0">
+                  <img
+                    src={d.photo.src}
+                    alt={d.photo.alt}
+                    loading="lazy"
+                    decoding="async"
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      aspectRatio: DAY_RATIO,
+                      objectFit: "cover",
+                      borderRadius: DAY_RADIUS,
+                    }}
+                  />
+                </figure>
                 <h3
                   className="mt-6"
                   style={{
