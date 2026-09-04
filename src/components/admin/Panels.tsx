@@ -1,8 +1,16 @@
 import { useServerFn } from "@tanstack/react-start";
+import { QRCodeSVG } from "qrcode.react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+
 import { adminExportCsv, adminSetDivisionVisible, adminUpdateTeamName } from "@/lib/admin.functions";
+import {
+  FOUNDATION_DONATE_URL,
+  PAYPAL_DONATE_URL,
+  VENMO_DONATE_URL,
+} from "@/lib/donate";
+
 import type {
   DataGaps,
   DigestCohort,
@@ -263,6 +271,49 @@ export function EventHeadcountPanel({ rows }: { rows: EventHeadcountRow[] }) {
           </table>
         </div>
       )}
+    </Section>
+  );
+}
+
+/** Three scannable codes for the donation links, one per way to give. Same
+ *  print first pattern as the /qr poster, black on white, level H. Static
+ *  constants, so nothing to fetch. Screenshot or print at an in person event. */
+export function DonateQrPanel() {
+  const targets = [
+    { name: "Endowment fund", url: FOUNDATION_DONATE_URL },
+    { name: "PayPal", url: PAYPAL_DONATE_URL },
+    { name: "Venmo", url: VENMO_DONATE_URL },
+  ];
+
+  return (
+    <Section eyebrow="Donations" title="Scan to give">
+      <div className="flex flex-wrap gap-6">
+        {targets.map((target) => (
+          <div
+            key={target.name}
+            className="flex flex-col items-center"
+            style={{
+              border: "1px solid var(--chalk)",
+              background: "var(--pure-white)",
+              padding: 20,
+              width: 220,
+            }}
+          >
+            <QRCodeSVG
+              value={target.url}
+              level="H"
+              marginSize={2}
+              bgColor="#FFFFFF"
+              fgColor="#0B0B0C"
+              title={`QR code for ${target.name}`}
+              size={160}
+            />
+            <p className="mt-3 label-caps" style={{ color: "var(--sabah-black)" }}>
+              {target.name}
+            </p>
+          </div>
+        ))}
+      </div>
     </Section>
   );
 }

@@ -580,3 +580,16 @@ Three migrations ran, plus code.
 Nothing was sent. `outbound_email_mode` stayed `transactional_only` and every sequence `active` flag is unchanged.
 
 **2026-09-04 route rename.** The schedule page moved from `/weekend` to `/schedule` (`src/routes/schedule.tsx`). `src/routes/weekend.tsx` is now a permanent 301 stub that forwards the query string, so `?src=email` attribution in previously sent emails survives. Hash fragments never reach the server, so pre-move `#where-to-stay` links land at the top of `/schedule`; every internal hash link was updated. All nav, footer, homepage, news, `event-intent` returnTo, mail, admin, news, and ICS URL builders now emit `/schedule`, and the page carries a canonical tag. The stub route is `noindex`.
+
+## 2026-09-04 Donate page, footer gives, hotel consolidation
+
+**Donate.** New public route `/donate` (`src/routes/donate.tsx`) presents three equal ways to give: the Pittsburgh Foundation endowment fund, PayPal, and Venmo. The PayPal and Venmo cards each carry a plain note that the gift goes to Brody Brotman personally, not to a program or organization account, and is not tax deductible or club handled. All three URLs live in `src/lib/donate.ts`, the one place they are defined.
+
+**Footer.** The old direct external "Endowment" link to esnultimate.org is gone. The footer now links Endowment, PayPal, and Venmo, all to `/donate` with hash anchors (#endowment, #paypal, #venmo), so there is one canonical page. The footer label "Weekend" was also aligned to "Schedule" to match the nav rename.
+
+**Admin QR.** New `DonateQrPanel` in `src/components/admin/Panels.tsx`, rendered in the Schedule tab below the per event headcount panel. Three QRCodeSVG codes (level H, black on white, same print pattern as the /qr poster), one per donation URL. Static constants, no fetch, no server change.
+
+**Schedule page hotel consolidation.** The hardcoded HotelBlock is deleted, including its Saturday-only render call. The editions driven WhereToStay section (reads editions.lodging_note and travel_note) moved from the bottom of the page to directly after the header, so it is the first content block. No content or data change.
+
+**2026-09-04 event toggles on every event.** The per event RSVP prompts were expanded from the BBQ and Alumni Game allowlist to every event of the current edition, placeholders included, and the card level answer toggles on `/schedule` and the homepage summary now cover all 7 events. See the 2026-09-03 Event RSVPs section above for the write allowlist contract.
+
