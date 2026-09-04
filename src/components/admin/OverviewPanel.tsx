@@ -16,7 +16,6 @@ export function OverviewPanel({
 
   const attendance = group([
     "going",
-    "heads",
     "maybe",
     "not_this_year",
     "no_response",
@@ -49,7 +48,8 @@ export function OverviewPanel({
       </h3>
       <Grid tiles={actions} onOpen={onOpen} />
       <p className="mt-4" style={{ fontSize: 12, color: "var(--sterling)" }}>
-        No response means nobody has answered for them. It is never counted as a no.
+        No response means nobody has answered for them. It is never counted as a no. Heads are
+        counted per event, not for the weekend as a whole.
       </p>
     </Section>
   );

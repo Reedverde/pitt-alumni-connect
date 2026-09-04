@@ -11,6 +11,8 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "../components/ui/sonner";
+import { RsvpDock } from "../components/rsvp/RsvpDock";
+
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { captureRsvpSource } from "../lib/rsvp-src";
 import { SAFE_STORAGE_SNIPPET } from "../lib/safe-storage";
@@ -149,6 +151,9 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      {/* One card, every page: the answer is always within reach. */}
+      <RsvpDock />
     </QueryClientProvider>
   );
 }
+
