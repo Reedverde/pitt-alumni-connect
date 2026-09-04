@@ -2,18 +2,19 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 import { loadCurrentEdition } from "./editions.server";
 
-/** Every event of the current edition can collect its own answer. There is no
- *  allowlist: a placeholder row without a locked time or place (Bar Crawl and
- *  the like) still gathers a soft interest signal, and the same list is the
- *  server side write allowlist, so eligibility has exactly one definition. */
 export type PromptEvent = {
   id: string;
+  key: string;
   label: string;
   title: string;
   starts_at: string | null;
   location: string | null;
 };
 
+/** Every event on the current edition gets an individual RSVP prompt, including
+ *  events still marked is_placeholder (a placeholder can still collect interest
+ *  signal before its time or location locks). key is the event id itself now,
+ *  since there is no longer a fixed small set of named slots to key by. */
 export async function loadPromptEvents(): Promise<PromptEvent[]> {
   const edition = await loadCurrentEdition();
   const { data } = await supabaseAdmin
@@ -24,8 +25,9 @@ export async function loadPromptEvents(): Promise<PromptEvent[]> {
 
   return (data ?? []).map((e) => ({
     id: e.id as string,
-    label: String(e.title ?? "Event"),
-    title: String(e.title ?? "Event"),
+    key: e.id as string,
+    label: e.title as string,
+    title: e.title as string,
     starts_at: (e.starts_at as string | null) ?? null,
     location: (e.location as string | null) ?? null,
   }));
