@@ -171,13 +171,19 @@ export async function runDrip(opts: { dryRun: boolean }): Promise<DripRunReport>
 
   const sequences = ((seqRes.data ?? []) as SequenceRow[]).filter((s) => s.active);
 
-  const primaryEmail = new Map<string, string>();
   const verified = new Set<string>();
+  const addresses = new Map<string, { email: string; primary: boolean; verified: boolean }[]>();
   for (const row of identRes.data ?? []) {
     const pid = row.person_id as string;
     if (row.verified_at) verified.add(pid);
-    if (row.is_primary && typeof row.email === "string" && row.email.trim())
-      primaryEmail.set(pid, row.email.trim().toLowerCase());
+    if (typeof row.email !== "string" || !row.email.trim()) continue;
+    const list = addresses.get(pid) ?? [];
+    list.push({
+      email: row.email.trim().toLowerCase(),
+      primary: Boolean(row.is_primary),
+      verified: Boolean(row.verified_at),
+    });
+    addresses.set(pid, list);
   }
 
   const rsvpStatus = new Map<string, string>();
@@ -287,12 +293,14 @@ export async function runDrip(opts: { dryRun: boolean }): Promise<DripRunReport>
       }
       if (!states.includes(state)) continue;
 
-      const email = primaryEmail.get(person.id);
-      if (!email) {
+      const own = addresses.get(person.id) ?? [];
+      if (own.length === 0) {
         excluded.no_email++;
         continue;
       }
-      if (suppressed.has(email)) {
+      // Deliverable means any address of theirs that is not suppressed.
+      const email = pickDeliverable(own, suppressed);
+      if (!email) {
         excluded.suppressed++;
         continue;
       }
