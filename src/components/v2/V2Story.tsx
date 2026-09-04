@@ -3,7 +3,6 @@ import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ChamferPhoto } from "@/components/v2/ChamferPhoto";
 import { ACTION, ALUMNI_WEEKEND } from "@/components/v2/curated-photos";
 import nationalsCelebration from "@/assets/hero-nationals-celebration.jpg.asset.json";
-import clemsonBye from "@/assets/hero-clemson-on-our-bye.jpg.asset.json";
 import firstNationals2005 from "@/assets/pitt-first-nationals-team-2005.jpg.asset.json";
 
 const BONE = "#F6F3ED";
