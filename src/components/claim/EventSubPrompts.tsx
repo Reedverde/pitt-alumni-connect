@@ -27,6 +27,7 @@ export function EventSubPrompts({
   const [answers, setAnswers] = useState<Record<string, TriState>>({});
   const [partySizes, setPartySizes] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,6 +59,7 @@ export function EventSubPrompts({
 
   const submit = async () => {
     setBusy(true);
+    setSaveError(null);
     try {
       await save({
         data: {
@@ -72,8 +74,11 @@ export function EventSubPrompts({
         },
       });
     } catch {
-      // The weekend RSVP is already recorded. A failure here is never fatal and
-      // the drip prompt will ask again.
+      // The weekend RSVP is already recorded. A failure here is never fatal, so
+      // say so in place and let them retry or move on.
+      setSaveError("Those event answers did not save. Your weekend answer is safe, and you can set these later on your record.");
+      setBusy(false);
+      return;
     }
     onDone();
   };
@@ -111,6 +116,12 @@ export function EventSubPrompts({
           );
         })}
       </div>
+
+      {saveError && (
+        <p role="alert" className="mt-4" style={{ fontSize: 13, color: "var(--pitt-royal)" }}>
+          {saveError}
+        </p>
+      )}
 
       <div className="mt-6 flex items-center gap-3">
         <button

@@ -14,6 +14,7 @@ import {
   removeStint,
   reportMemorial,
   saveStint,
+  setMyEventAnswer,
   setMyRsvp,
   setMyPartySize,
   setPrimaryEmail,
@@ -24,6 +25,7 @@ import {
   type MyProfile,
 } from "@/lib/account.functions";
 import { PartySizeStepper } from "@/components/claim/PartySizeStepper";
+import { EventAnswerToggle, type TriState } from "@/components/events/EventAnswerToggle";
 import { searchPeople } from "@/lib/rsvp.functions";
 import { personDisplayName as matchName, type PersonMatch } from "@/lib/rsvp-types";
 import { STATUS_LABELS, personDisplayName, type RsvpStatus } from "@/lib/rsvp-types";
@@ -314,6 +316,7 @@ function MePage() {
   const dropStint = useServerFn(removeStint);
   const putRsvp = useServerFn(setMyRsvp);
   const putPartySize = useServerFn(setMyPartySize);
+  const putEventAnswer = useServerFn(setMyEventAnswer);
   const loadPending = useServerFn(getPendingVerifications);
   const vouch = useServerFn(vouchForPerson);
   const suggest = useServerFn(suggestNewPerson);
@@ -604,6 +607,13 @@ function MePage() {
         onPartySize={(next) =>
           run(() => putPartySize({ data: { partySize: next } }), "Party size updated.")
         }
+        onEventAnswer={async (eventId, state, size) => {
+          const result = await putEventAnswer({
+            data: { eventId, state, partySize: size },
+          });
+          await refresh();
+          return { promotedToGoing: Boolean(result.promotedToGoing) };
+        }}
       />
 
       {profile.history.length > 0 && (
@@ -746,6 +756,7 @@ function AnnualCard({
   events,
   onAnswer,
   onPartySize,
+  onEventAnswer,
 }: {
   title: string;
   edition: MyProfile["edition"];
@@ -756,6 +767,11 @@ function AnnualCard({
   events: MyEventAnswer[];
   onAnswer: (status: RsvpStatus) => void;
   onPartySize: (next: number) => void;
+  onEventAnswer: (
+    eventId: string,
+    state: TriState,
+    partySize: number,
+  ) => Promise<{ promotedToGoing: boolean }>;
 }) {
   const closed = formatDeadline(editableUntil);
 
@@ -817,43 +833,128 @@ function AnnualCard({
             <p className="label-caps mt-4" style={{ color: "var(--sterling)" }}>
               Events that ask
             </p>
-            <ul className="mt-2 flex flex-col">
+            <p className="mt-2" style={{ fontSize: 13, color: "var(--sterling)" }}>
+              Each answer saves on its own. Leaving one in the middle means you have not chosen
+              yet, and that is not the same as a no.
+              {answer !== "going" && editable
+                ? " Saying yes to any of these also marks you as going for the weekend, and the card above will say so."
+                : ""}
+            </p>
+            <ul className="mt-3 flex flex-col">
               {events.map((row) => (
                 <li
                   key={row.id}
-                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2"
+                  className="py-4"
                   style={{ borderBottom: "1px solid var(--concrete)" }}
                 >
-                  <span style={{ fontSize: 15, color: "var(--steel-ink)" }}>
+                  <p style={{ fontSize: 15, color: "var(--steel-ink)" }}>
                     {row.title}
-                    <span className="label-caps ml-3" style={{ color: "var(--sterling)" }}>
-                      {[eventWhen(row), row.location].filter(Boolean).join(" · ")}
-                    </span>
-                  </span>
-                  <span
-                    className="label-caps"
-                    style={{ color: row.answer === null ? "var(--sterling)" : "var(--steel-ink)" }}
-                  >
-                    {row.answer === "yes"
-                      ? "Yes"
-                      : row.answer === "no"
-                        ? "No"
-                        : "Not answered"}
-                  </span>
+                    {row.is_placeholder ? (
+                      <span className="label-caps ml-3" style={{ color: "var(--sterling)" }}>
+                        Being planned
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className="label-caps mt-0.5" style={{ color: "var(--sterling)" }}>
+                    {[eventWhen(row), row.location].filter(Boolean).join(" · ")}
+                  </p>
+                  <div className="mt-3">
+                    {editable ? (
+                      <EventAnswerRow row={row} onSave={onEventAnswer} />
+                    ) : (
+                      <span className="label-caps" style={{ color: "var(--steel-ink)" }}>
+                        {row.answer === "yes"
+                          ? `Yes${row.party_size > 1 ? ` · ${row.party_size} heads` : ""}`
+                          : row.answer === "no"
+                            ? "No"
+                            : "No choice made"}
+                      </span>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
-            <p className="mt-3" style={{ fontSize: 13, color: "var(--sterling)" }}>
-              Answering each event from here is coming next. For now these follow the questions you
-              were asked by email or when you claimed your name.
-            </p>
           </div>
         )}
+
       </div>
     </NotchedBox>
   );
 }
 
+
+/** One event row inside the annual card. Saves on change and says so in place:
+ *  the toast is a courtesy, not the feedback. Party size is kept only while the
+ *  answer is yes, so a change away from yes can never leave planned heads
+ *  behind in the organizers' counts. */
+function EventAnswerRow({
+  row,
+  onSave,
+}: {
+  row: MyEventAnswer;
+  onSave: (
+    eventId: string,
+    state: TriState,
+    partySize: number,
+  ) => Promise<{ promotedToGoing: boolean }>;
+}) {
+  const initial: TriState = row.answer ?? "unanswered";
+  const [state, setState] = useState<TriState>(initial);
+  const [party, setParty] = useState(row.party_size);
+  const [phase, setPhase] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [promoted, setPromoted] = useState(false);
+
+  useEffect(() => {
+    setState(row.answer ?? "unanswered");
+    setParty(row.party_size);
+  }, [row.answer, row.party_size]);
+
+  const commit = async (next: TriState, heads: number) => {
+    setState(next);
+    setParty(next === "yes" ? heads : 1);
+    setPhase("saving");
+    try {
+      const result = await onSave(row.id, next, next === "yes" ? heads : 1);
+      setPromoted(result.promotedToGoing);
+      setPhase("saved");
+    } catch {
+      setPhase("error");
+    }
+  };
+
+  return (
+    <div>
+      <EventAnswerToggle
+        eventTitle={row.title}
+        state={state}
+        onStateChange={(next) => void commit(next, party)}
+        partySize={party}
+        onPartySizeChange={(next) => void commit("yes", next)}
+        describedBy={`event-status-${row.id}`}
+      />
+      <p
+        id={`event-status-${row.id}`}
+        role="status"
+        className="mt-2"
+        style={{
+          fontSize: 13,
+          color: phase === "error" ? "var(--pitt-royal)" : "var(--sterling)",
+          minHeight: 18,
+        }}
+      >
+        {phase === "saving"
+          ? "Saving…"
+          : phase === "error"
+            ? "That didn't save. Try that answer again."
+            : phase === "saved"
+              ? promoted
+                ? "Saved. Saying yes here also set your weekend answer to going."
+                : "Saved."
+              : ""}
+      </p>
+    </div>
+  );
+}
 
 function ProfileForm({
   person,

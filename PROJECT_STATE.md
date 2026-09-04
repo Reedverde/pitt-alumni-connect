@@ -768,3 +768,12 @@ since the person is not signed in yet).
 - The deadline is the Phase 1 rule with no grace period. `getMyProfile` reads `rsvp_is_editable` / `rsvp_editable_until`, and `setMyRsvp` and `setMyPartySize` refuse the write after it passes, so the read only state is a courtesy rather than the boundary.
 - A one click jump under the name states the current answer and links to the card, so nobody scrolls past every permanent field to change their mind.
 - Verified signed in: editable card, locked card (temporary `app_settings.rsvp_editable_until`, since removed), desktop and 390px mobile with no overflow, keyboard focus on the answer buttons, no console errors.
+
+## Phase 5: three position event answers (2026-09-04)
+
+- `EventAnswerToggle` is now a segmented radiogroup with a thumb that travels: No on the left in a muted earth tone, No choice in the centre, Yes on the right in green. Gold never appears here, since gold means attending on the board. Arrow keys, Home and End move it, the checked segment is the only tab stop, the group is labelled by its event, and `.tri-thumb` drops its transition under prefers reduced motion. Tap targets are 40 to 44px.
+- One control, two places: the annual card on `/me` and the claim handoff both render it. There is no second version.
+- `setMyEventAnswer` in `account.functions.ts` saves a single event. The centre position deletes the row rather than writing a no, so silence and refusal stay distinct in `event_rsvps` and in the organizer totals. Verified in the database: centre removed the row, No wrote `status = no`.
+- Party size lives only under Yes. Moving away from Yes writes `party_size = 1`, so no stale planned heads survive in `admin_event_rsvp_totals`.
+- A yes from someone not marked going promotes the weekend answer, returns `promotedToGoing`, and the row says "Saying yes here also set your weekend answer to going". A hint above the list warns before the fact when the overall answer is not going.
+- Feedback is inline per row: Saving, Saved, or a retry message, with `role="status"` and an `aria-live` reading of the current value. The deadline lock is enforced server side by `assertRsvpEditable`; the locked card renders the answers as plain text.

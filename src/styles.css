@@ -116,6 +116,11 @@
   --concrete: #E9ECF1;
   --field-white: #FBFBFC;
   --pure-white: #FFFFFF;
+  /* Per event answers. Yes is green, never gold: gold means attending on the
+     board and nothing else. No is a muted earth tone, not an alarm. */
+  --answer-yes: #1B6E43;
+  --answer-no: #8A7663;
+
   --background: oklch(0.99 0.005 264.695);
   --foreground: oklch(0.18 0.055 264.695);
   --card: oklch(1 0 0);
@@ -442,5 +447,16 @@
   }
   .qr-body {
     font-size: 12pt;
+  }
+}
+
+/* The three position event answer control. The thumb travels so the change is
+   visible; anyone who asks for less motion simply gets an instant jump. */
+.tri-thumb {
+  transition: transform 180ms ease, background-color 180ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tri-thumb {
+    transition: none;
   }
 }

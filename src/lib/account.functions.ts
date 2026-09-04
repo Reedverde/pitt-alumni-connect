@@ -19,6 +19,8 @@ export type MyEventAnswer = {
   location: string | null;
   is_placeholder: boolean;
   answer: "yes" | "no" | null;
+  /** Heads for this event, meaningful only while the answer is yes. */
+  party_size: number;
 };
 
 /** A past year, read only. */
@@ -230,13 +232,17 @@ export const getMyProfile = createServerFn({ method: "GET" })
           .order("sort_order");
         const { data: answers } = await supabaseAdmin
           .from("event_rsvps")
-          .select("event_id, status")
+          .select("event_id, status, party_size")
           .eq("person_id", personId);
         const byEvent = new Map(
-          (answers ?? []).map((a) => [a.event_id as string, a.status as string]),
+          (answers ?? []).map((a) => [
+            a.event_id as string,
+            { status: a.status as string, party: Number(a.party_size ?? 1) },
+          ]),
         );
         return (events ?? []).map((e) => {
-          const answer = byEvent.get(e.id as string);
+          const row = byEvent.get(e.id as string);
+          const answer = row?.status;
           return {
             id: e.id as string,
             title: e.title as string,
@@ -246,6 +252,7 @@ export const getMyProfile = createServerFn({ method: "GET" })
             location: (e.location as string | null) ?? null,
             is_placeholder: Boolean(e.is_placeholder),
             answer: answer === "yes" ? "yes" : answer === "no" ? "no" : null,
+            party_size: Math.min(10, Math.max(1, row?.party ?? 1)),
           } satisfies MyEventAnswer;
         });
       })(),
@@ -477,6 +484,112 @@ export const setMyPartySize = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** One event, one answer, saved on its own.
+ *
+ *  "unanswered" deletes the row rather than writing a no, so the organizers'
+ *  reports keep silence and a refusal apart. A yes from someone who is not
+ *  marked going promotes the weekend answer to going, and the caller is told
+ *  so it can say that out loud rather than changing it invisibly. */
+export const setMyEventAnswer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: { eventId: string; state: "yes" | "no" | "unanswered"; partySize?: number | null }) => ({
+      eventId: String(input?.eventId ?? ""),
+      state:
+        input?.state === "yes" ? ("yes" as const) : input?.state === "no" ? ("no" as const) : ("unanswered" as const),
+      partySize: input?.partySize ?? 1,
+    }),
+  )
+  .handler(
+    async ({ data, context }): Promise<{ ok: true; promotedToGoing: boolean }> => {
+      const { currentEditionYear } = await import("./editions.server");
+      const eventYear = await currentEditionYear();
+      const personId = await resolveMyPersonId(context.supabase, context.userId);
+      if (!personId) throw new Error("Forbidden");
+      await assertRsvpEditable(context.supabase, eventYear);
+
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+      // The event has to be one this edition actually asks about.
+      const { data: event } = await supabaseAdmin
+        .from("events")
+        .select("id")
+        .eq("id", data.eventId)
+        .eq("event_year", eventYear)
+        .eq("published", true)
+        .eq("prompt_rsvp", true)
+        .maybeSingle();
+      if (!event) throw new Error("That event is not asking for an answer.");
+
+      if (data.state === "unanswered") {
+        const { error } = await supabaseAdmin
+          .from("event_rsvps")
+          .delete()
+          .eq("person_id", personId)
+          .eq("event_id", data.eventId);
+        if (error) throw new Error(error.message);
+        return { ok: true, promotedToGoing: false };
+      }
+
+      const heads =
+        data.state === "yes"
+          ? Math.min(10, Math.max(1, Math.round(Number(data.partySize ?? 1)) || 1))
+          : 1;
+
+      const { error } = await supabaseAdmin.from("event_rsvps").upsert(
+        {
+          person_id: personId,
+          event_id: data.eventId,
+          status: data.state,
+          party_size: heads,
+          responded_at: new Date().toISOString(),
+        },
+        { onConflict: "person_id,event_id" },
+      );
+      if (error) throw new Error(error.message);
+
+      let promotedToGoing = false;
+      if (data.state === "yes") {
+        const { data: rsvp } = await supabaseAdmin
+          .from("rsvps")
+          .select("id, status")
+          .eq("person_id", personId)
+          .eq("event_year", eventYear)
+          .maybeSingle();
+        if (rsvp?.status !== "going") {
+          const { data: promoted } = await supabaseAdmin
+            .from("rsvps")
+            .upsert(
+              {
+                person_id: personId,
+                event_year: eventYear,
+                status: "going",
+                responded_at: new Date().toISOString(),
+              },
+              { onConflict: "person_id,event_year" },
+            )
+            .select("id")
+            .maybeSingle();
+          promotedToGoing = true;
+          await supabaseAdmin.from("audit_log").insert({
+            actor_person_id: personId,
+            action: "rsvp_promoted_by_event_answer",
+            table_name: "rsvps",
+            record_id: (promoted?.id as string) ?? null,
+            after: {
+              status: "going",
+              previous_status: rsvp?.status ?? null,
+              event_year: eventYear,
+              event_id: data.eventId,
+            },
+          });
+        }
+      }
+
+      return { ok: true, promotedToGoing };
+    },
+  );
 
 export const suggestNewPerson = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
