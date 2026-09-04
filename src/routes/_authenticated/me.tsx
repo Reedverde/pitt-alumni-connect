@@ -368,7 +368,12 @@ function MePage() {
     );
   }
 
-  const divisions = profile.divisions.length > 0 ? profile.divisions : DIVISIONS;
+  // The team names people actually used win over the database's neutral
+  // labels; the table only supplies programs this project has not named.
+  const divisions = [
+    ...DIVISIONS,
+    ...profile.divisions.filter((d) => !DIVISIONS.some((known) => known.code === d.code)),
+  ];
   const divisionLabel = (code: string) =>
     divisions.find((d) => d.code === code)?.label ?? code;
   const editionYear = profile.edition?.event_year ?? CURRENT_YEAR;
