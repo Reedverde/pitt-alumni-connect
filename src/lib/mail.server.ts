@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   emailButton,
   emailFooter,
+  emailList,
   emailMuted,
   emailParagraph,
   emailPlainUrl,

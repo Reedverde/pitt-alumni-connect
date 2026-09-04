@@ -251,6 +251,8 @@ export type DispatchResult = {
   sequenceId: string | null;
   dryRun: boolean;
   audience: number;
+  /** False means this run was a preview of a campaign that cannot send yet. */
+  sequenceActive: boolean;
   wouldSend: { personId: string; email: string; firstName: string; isAnchor: boolean }[];
   skips: DispatchSkips;
   sample: { subject: string; text: string; html: string } | null;
@@ -266,6 +268,7 @@ function empty(sequenceKey: string, dryRun: boolean, reason: string): DispatchRe
     sequenceId: null,
     dryRun,
     audience: 0,
+    sequenceActive: false,
     wouldSend: [],
     skips: { already_sent: 0, recent_send: 0, no_body: 0, over_limit: 0 },
     sample: null,
@@ -287,7 +290,10 @@ export async function dispatchSequence(opts: {
 
   const seq = await loadSequence(key);
   if (!seq) return empty(key, dryRun, `No sequence row with key "${key}".`);
-  if (!seq.active) return empty(key, dryRun, `Sequence "${key}" is not active.`);
+  // An inactive sequence must never send, but organizers do need to read a
+  // campaign before switching it on. A dry run is allowed to walk an inactive
+  // sequence; only a real send is refused.
+  if (!seq.active && !dryRun) return empty(key, dryRun, `Sequence "${key}" is not active.`);
   if (!BUILDER_KEYS.has(key)) return empty(key, dryRun, `No email copy exists for "${key}".`);
 
   const edition = await loadCurrentEdition();
@@ -371,11 +377,12 @@ export async function dispatchSequence(opts: {
 
   return {
     ok: true,
-    reason: null,
+    reason: seq.active ? null : `Preview only: sequence "${key}" is not active and will not send.`,
     sequenceKey: key,
     sequenceId: seq.id,
     dryRun,
     audience: audience.length,
+    sequenceActive: seq.active,
     wouldSend,
     skips,
     sample,
