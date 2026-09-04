@@ -917,15 +917,15 @@ export function buildEventRsvpPromptBody(opts: {
 }): { text: string; html: string } | null {
   if (opts.pending.length === 0) return null;
 
-  const list =
-    opts.pending.length === 1
-      ? `the ${opts.pending[0]}`
-      : `the ${opts.pending.slice(0, -1).join(", the ")} and the ${opts.pending[opts.pending.length - 1]}`;
+  const many = opts.pending.length > 1;
 
   const lines = [
-    "You are down as coming to Alumni Weekend, which is the part that matters. Thank you.",
-    `${countWord(opts.pending.length)} ${opts.pending.length === 1 ? "thing needs" : "things need"} headcounts of their own: ${list}. Food, seating and roster sizes are planned off those numbers, so a no is just as useful as a yes.`,
-    "It takes one tap on the board.",
+    "You are down as coming to Alumni Weekend. Thank you.",
+    `${many ? "Each of these still needs" : "One thing still needs"} a yes or a no of its own, because food, seating and roster sizes are planned off those numbers. A no is just as useful as a yes.`,
+    // Never promise one tap when several answers are outstanding.
+    many
+      ? "You can answer all of them in one visit to the board."
+      : "It takes one tap on the board.",
   ];
 
   const url = "https://alumni.pittultimate.org/?src=email";
@@ -936,6 +936,8 @@ export function buildEventRsvpPromptBody(opts: {
     lines[0],
     "",
     lines[1],
+    "",
+    ...opts.pending.map((item) => `- ${item}`),
     "",
     url,
     "",
@@ -949,6 +951,7 @@ export function buildEventRsvpPromptBody(opts: {
       emailParagraph(`${opts.name},`),
       emailParagraph(lines[0]),
       emailParagraph(lines[1]),
+      emailList(opts.pending),
       emailButton(url, "Answer on the board"),
       emailPlainUrl(url),
       emailParagraph(lines[2]),
@@ -957,7 +960,9 @@ export function buildEventRsvpPromptBody(opts: {
         "You are receiving this because you have a record on the alumni board.",
       ]),
     ].join("\n"),
-    "Two quick headcounts for Alumni Weekend.",
+    // The preheader used to say "Two quick headcounts", which was wrong the
+    // moment the number of events changed. It no longer counts anything.
+    "Each event needs its own yes or no.",
   );
 
   return { text, html };
