@@ -305,13 +305,14 @@ export async function publishWeeklyRoundup(opts: {
   if (opts.dryRun)
     return { created: false, newsId: null, names, reason: `Dry run, window: ${windowLabel}.` };
 
+  // "alumni" was wrong: current players answer too, and they are on the board.
   const title =
-    names.length === 1 ? "One more alumnus is coming" : `${names.length} more alumni are coming`;
+    names.length === 1 ? "One more person is coming" : `${names.length} more people are coming`;
   const lines = sorted.map((r) => {
     const year = r.board_year ? ` ${r.board_year}` : "";
     return `${displayName(r as never)}${year}`;
   });
-  const body = `${lines.join("\n")}\n\nSee the whole board at ${SITE_ORIGIN}/`;
+  const body = `${lines.join("\n")}\n\nSee everyone on the board at ${SITE_ORIGIN}/`;
 
   const { data, error } = await supabaseAdmin
     .from("news_items")
