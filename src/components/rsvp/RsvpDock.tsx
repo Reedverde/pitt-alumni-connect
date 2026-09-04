@@ -100,6 +100,25 @@ function Dock() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, setOpenPersisted]);
 
+  // Outside dismissal. pointerdown covers mouse, touch and pen in one event,
+  // so nothing fires twice. Capture phase means the card closes even when the
+  // thing tapped stops propagation; we never preventDefault, so the tap still
+  // does its normal page job after the card closes. Anything inside the panel
+  // (answers, steppers, links, scrolling, minimise) is ignored. Attached only
+  // while the card is expanded, and focus returns to the collapsed trigger
+  // through setOpenPersisted.
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const panel = panelRef.current;
+      if (panel && e.target instanceof Node && !panel.contains(e.target)) {
+        setOpenPersisted(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [open, setOpenPersisted]);
+
   const refresh = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["rsvp-dock"] }),
