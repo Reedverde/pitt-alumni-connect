@@ -109,9 +109,9 @@ const STATUS_WORDS: Record<string, string> = {
 };
 
 
-/** "going", "claimed or going", and so on, in a fixed reading order. */
+/** "coming", "claimed or coming", and so on, in a fixed reading order. */
 function statusPhrase(statuses: string[]) {
-  const ordered = ["claimed", "maybe", "going", "unclaimed", "no_contact"].filter((s) =>
+  const ordered = ["claimed", "maybe", "going", "unclaimed", "no_contact", "memorial"].filter((s) =>
     statuses.includes(s),
   );
   const words = ordered.map((s) => STATUS_WORDS[s]);
@@ -128,6 +128,7 @@ function flatEmptyCopy(statuses: string[]) {
   if (only === "claimed") return "Nobody has claimed yet. Be the first.";
   if (only === "unclaimed") return "Everyone has checked in already.";
   if (only === "no_contact") return "We can reach everyone on the board.";
+  if (only === "memorial") return "Nobody is remembered here yet.";
   if (statuses.length === 0) return "Turn a filter back on to see the board.";
   return "Nobody has answered yet. Be the first.";
 }
@@ -138,13 +139,11 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
   const filters = useMemo(
     () =>
       data.divisions
-        .map((d) => ({
-        code: d.code,
-        label: DIVISION_CHIP_LABELS[d.code] ?? d.label,
-        }))
-        .concat([{ code: "__coaches", label: "Coaches" }]),
+        .map((d) => ({ code: d.code, label: programLabel(d.code, d.label) }))
+        .concat([{ code: "__coaches", label: "Coaches and managers" }]),
     [data.divisions],
   );
+
   // Single-select: null means every program.
   const [divisionFilter, setDivisionFilter] = useState<string | null>(null);
   // Single-select: null means "everyone", the normal year-row board.
