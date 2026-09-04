@@ -162,32 +162,11 @@ export function PhotoSlot({
     );
   }
 
-  return (
-    <NotchedBox
-      className={className}
-      corners={corners}
-      notch={notch}
-      stroke="var(--chalk)"
-      dashed
-      fill="var(--concrete)"
-      style={frame}
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          padding: 14,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          color: "var(--sterling)",
-        }}
-      >
-        <span style={labelStyle}>{label} →</span>
-        <span style={{ ...numeralStyle, alignSelf: "flex-end" }}>{index}</span>
-      </div>
-    </NotchedBox>
-  );
+  // No photograph assigned yet: render nothing. A dashed grey plane with a
+  // caption reads as a broken image to a reader and left whole sections of
+  // the site looking unfinished. The slot reappears the moment an organizer
+  // assigns a picture to it.
+  return null;
 }
 
 /** A dashed notched card that holds a short statement instead of a photograph. */
