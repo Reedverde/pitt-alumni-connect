@@ -235,6 +235,8 @@ function WeekendPage() {
           </div>
         </header>
 
+        <WhereToStay edition={edition} />
+
         <NotchedBox
           className="my-8"
           corners={["tl", "br"]}
