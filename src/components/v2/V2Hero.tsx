@@ -1,9 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { type HeroRenderArgs } from "@/components/board/BoardExperience";
-import { ChamferPhoto } from "@/components/v2/ChamferPhoto";
-import { ACTION } from "@/components/v2/curated-photos";
 import { editionShortDates } from "@/lib/edition-format";
 import firstTwoWeeksSeal from "@/assets/first-two-weeks-seal.png.asset.json";
+import huddle from "@/assets/hero-team-huddle.jpg.asset.json";
 
 const ctaBase = {
   display: "inline-flex",
@@ -21,27 +20,36 @@ const ctaBase = {
   cursor: "pointer",
 };
 
+/** Aggressive asymmetric chamfer: deep cut top-left, shallower cut bottom-right. */
+const HUDDLE_CLIP = "polygon(0 14%, 22% 0, 100% 0, 100% 82%, 88% 100%, 0 100%)";
+
 /**
- * The /v2 hero. Oversized condensed headline against a layered photographic
- * cluster of real action frames: a handler throwing around a mark as the wide
- * anchor, a contested throw as a compact crop on its top-right corner, and a
- * player skying for the catch overlapping on the opposite corners, with a
- * royal field continuing the wide crop's diagonal. The "first two weeks" seal
- * straddles the wide photo's top edge, half on the frame, half on black. Gold
- * stays reserved for attending, so the only gold here is the eyebrow slash
- * the whole site already uses.
+ * The /v2 hero. One dominant photograph: the team huddle, oversized and pushed
+ * to the page edge, cut with aggressive asymmetric chamfers, with royal and
+ * navy planes continuing the crop's diagonals behind and beneath it. The
+ * headline sits beside the image rather than on top of it. Photography renders
+ * in original colour: no tint, no duotone, no grade. Gold stays reserved for
+ * attending, so the only gold here is the eyebrow slash.
  */
 export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
   const dates = season.edition ? editionShortDates(season.edition) : null;
 
-  const wide = ACTION.aroundTheMark;
-  const portrait = ACTION.sky;
-  const small = ACTION.contested;
-
   return (
     <section style={{ background: "var(--sabah-black)" }} className="relative overflow-hidden">
-      <div className="relative mx-auto grid w-full max-w-[1320px] grid-cols-1 items-end gap-12 px-5 pt-12 pb-16 md:grid-cols-12 md:gap-8 md:pt-16 md:pb-24">
-        <div className="md:col-span-7">
+      {/* Royal plane echoing the photograph's top-left diagonal. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 right-0 hidden md:block"
+        style={{
+          width: "58%",
+          background: "var(--royal-dark)",
+          clipPath: "polygon(26% 0, 100% 0, 100% 100%, 8% 100%)",
+          opacity: 0.55,
+        }}
+      />
+
+      <div className="relative mx-auto grid w-full max-w-[1480px] grid-cols-1 items-center gap-10 px-5 pt-12 pb-16 md:grid-cols-12 md:gap-6 md:pt-20 md:pb-24 md:pl-10 md:pr-0">
+        <div className="md:col-span-5">
           <p className="flex items-center" style={{ color: "var(--pure-white)" }}>
             <span
               aria-hidden="true"
@@ -57,8 +65,8 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
             style={{
               fontFamily: '"Archivo", sans-serif',
               fontWeight: 800,
-              fontSize: "clamp(52px, 10.5vw, 148px)",
-              lineHeight: 0.85,
+              fontSize: "clamp(52px, 8.4vw, 132px)",
+              lineHeight: 0.84,
               letterSpacing: "-0.045em",
               paddingBottom: "0.08em",
               color: "var(--pure-white)",
@@ -109,54 +117,47 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
           </div>
         </div>
 
-        <div className="relative mt-10 pt-12 md:col-span-5 md:mt-0 md:pt-24">
-          {/* A royal field on the same 45 degree angle, continuing the crop's edge. */}
+        {/* The dominant image, oversized and run to the page edge. */}
+        <div className="relative mt-8 md:col-span-7 md:mt-0">
+          {/* Navy plane continuing the bottom-right cut. */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -right-6 top-4 hidden md:block md:top-8"
+            className="pointer-events-none absolute -bottom-8 left-[-6%] hidden md:block"
             style={{
-              width: "62%",
-              height: "58%",
-              background: "var(--royal-dark)",
-              clipPath: "polygon(72px 0, 100% 0, 100% 100%, 0 100%, 0 72px)",
+              width: "46%",
+              height: "34%",
+              background: "var(--pitt-royal)",
+              clipPath: "polygon(0 0, 100% 0, 100% 100%, 14% 100%)",
             }}
           />
-          <ChamferPhoto
-              src={wide.src}
-              alt={wide.alt}
-              ratio="4 / 3"
-              corners={["tl", "br"]}
-              notch={72}
-              eager
-              className="relative"
+          <figure
+            className="relative m-0 md:mr-[-4vw]"
+            style={{ width: "100%", aspectRatio: "3 / 2", clipPath: HUDDLE_CLIP }}
+          >
+            <img
+              src={huddle.url}
+              alt="Pitt players packed into a huddle with fists raised before a point"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "50% 45%",
+              }}
             />
-          <ChamferPhoto
-              src={small.src}
-              alt={small.alt}
-              ratio="4 / 5"
-              corners={["bl", "tr"]}
-              notch={36}
-              outline="var(--sabah-black)"
-              outlineWidth={6}
-              className="absolute -top-2 right-[-12px] w-[36%] md:right-[-28px] md:top-4 md:w-[44%]"
-            />
-          <ChamferPhoto
-              src={portrait.src}
-              alt={portrait.alt}
-              ratio="3 / 4"
-              corners={["tr", "bl"]}
-              notch={44}
-              outline="var(--sabah-black)"
-              outlineWidth={6}
-              className="relative mt-4 w-1/2 md:absolute md:-bottom-16 md:-left-20 md:mt-0 md:w-[58%]"
-            />
-          {/* The seal bridges the black field and the wide frame, roughly half
-              on the photograph and half off its top edge. */}
+          </figure>
+
+          {/* The seal straddles the photograph's top-left chamfer, roughly half
+              on the frame and half on the black field. */}
           <img
             src={firstTwoWeeksSeal.url}
             alt="First two weeks of October, every year"
-            className="pointer-events-none absolute left-3 top-[6px] select-none md:left-8 md:top-[38px]"
-            style={{ width: "clamp(72px, 9vw, 132px)", height: "auto" }}
+            className="pointer-events-none absolute left-[-4%] top-[2%] select-none md:left-[-5%] md:top-[4%]"
+            style={{ width: "clamp(80px, 10vw, 150px)", height: "auto" }}
             loading="eager"
           />
         </div>
