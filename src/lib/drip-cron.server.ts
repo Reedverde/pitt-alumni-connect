@@ -19,6 +19,7 @@ export type SequenceOutcome = {
 
 export type CronTickResult = {
   ok: boolean;
+  reason?: string;
   runDate: string;
   eventDate: string;
   considered: number;
@@ -42,11 +43,27 @@ export function easternToday(now: Date = new Date()): string {
   }).format(now);
 }
 
-async function setOutboundMode(mode: "all" | "transactional_only") {
+/** The arming switch. The drip runs only while this reads exactly
+ *  "drip_enabled", a value only a human sets. Anything else, including an
+ *  unreadable row, means no sends at all. */
+const ARMED_MODE = "drip_enabled";
+
+async function readOutboundMode(): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from("app_settings")
+    .select("value")
+    .eq("key", "outbound_email_mode")
+    .maybeSingle();
+  const value = (data as { value?: string } | null)?.value;
+  return typeof value === "string" ? value : null;
+}
+
+async function setOutboundMode(mode: string) {
   await supabaseAdmin
     .from("app_settings")
     .upsert({ key: "outbound_email_mode", value: mode } as never, { onConflict: "key" });
 }
+
 
 async function recordAttempt(o: SequenceOutcome & { runDate: string }) {
   await supabaseAdmin.from("audit_log").insert({
