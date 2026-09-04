@@ -62,7 +62,7 @@ type SequenceRow = {
   active: boolean;
 };
 
-const RECENT_SEND_DAYS = 7;
+const RECENT_SEND_DAYS = 10;
 const SEND_INTERVAL_MS = 500;
 
 async function loadSequence(key: string): Promise<SequenceRow | null> {
