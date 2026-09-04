@@ -71,7 +71,7 @@ export function V2Story() {
     <>
       {/* THEME: the emotional centre of the page. */}
       <section style={{ background: BONE }} className="relative overflow-hidden">
-        <div className="mx-auto w-full max-w-[1320px] px-5 pt-16 pb-20 md:pt-24 md:pb-28">
+        <div className="relative z-10 mx-auto w-full max-w-[1320px] px-5 pt-16 pb-20 md:pt-24 md:pb-28">
           <div className="grid grid-cols-1 items-end gap-10 md:grid-cols-12">
             <div className="md:col-span-7">
               <SlashEyebrow>This year</SlashEyebrow>
