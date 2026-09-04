@@ -460,3 +460,13 @@
     transition: none;
   }
 }
+
+/* Comfortable targets on touch screens. min-height does nothing to an inline
+   link inside a sentence, so prose keeps its natural rhythm while real
+   controls grow to a thumb sized target. */
+@media (pointer: coarse) {
+  :where(button, select, summary, [role="radio"], [role="button"]),
+  :where(a[href]):where(.label-caps, .btn, [data-tap]) {
+    min-height: 44px;
+  }
+}
