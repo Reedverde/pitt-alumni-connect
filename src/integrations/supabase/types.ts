@@ -453,6 +453,7 @@ export type Database = {
           map_url: string | null
           notes: string | null
           prompt_rsvp: boolean
+          published: boolean
           sort_order: number
           starts_at: string | null
           ticket_url: string | null
@@ -470,6 +471,7 @@ export type Database = {
           map_url?: string | null
           notes?: string | null
           prompt_rsvp?: boolean
+          published?: boolean
           sort_order?: number
           starts_at?: string | null
           ticket_url?: string | null
@@ -487,6 +489,7 @@ export type Database = {
           map_url?: string | null
           notes?: string | null
           prompt_rsvp?: boolean
+          published?: boolean
           sort_order?: number
           starts_at?: string | null
           ticket_url?: string | null
@@ -1932,8 +1935,76 @@ export type Database = {
         }
         Relationships: []
       }
+      roster_stints: {
+        Row: {
+          division: string | null
+          person_id: string | null
+          year: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stints_division_fkey"
+            columns: ["division"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
     }
     Functions: {
+      admin_annual_rsvp_totals: {
+        Args: { _event_year?: number }
+        Returns: {
+          event_year: number
+          going: number
+          maybe: number
+          no_response: number
+          not_this_year: number
+          planned_heads: number
+        }[]
+      }
+      admin_event_rsvp_totals: {
+        Args: { _event_year?: number }
+        Returns: {
+          event_id: string
+          is_placeholder: boolean
+          no_count: number
+          planned_heads: number
+          starts_at: string
+          title: string
+          unanswered_count: number
+          yes_count: number
+        }[]
+      }
       admin_rsvp_detail: {
         Args: { p_event_year?: number }
         Returns: {
@@ -1953,6 +2024,8 @@ export type Database = {
         Args: { _identity_id: string }
         Returns: boolean
       }
+      rsvp_editable_until: { Args: { _event_year?: number }; Returns: string }
+      rsvp_is_editable: { Args: { _event_year?: number }; Returns: boolean }
       set_current_edition: { Args: { _event_year: number }; Returns: undefined }
       signin_token_state: {
         Args: { _token: string; _user_id: string }
