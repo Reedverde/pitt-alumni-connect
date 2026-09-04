@@ -2110,13 +2110,36 @@ export async function listEditions(): Promise<EditionRow[]> {
   }));
 }
 
-/** Placeholder lane events are meant to be replaced, so deleting one is routine. */
+/** Placeholder lane events are meant to be replaced, so deleting one is routine.
+ *  A real, dated event disappearing is a cancellation the public needs to see. */
 export async function deleteEditionEvent(actor: string | null, id: string) {
+  const { data: beforeRow } = await supabaseAdmin
+    .from("events")
+    .select("id, title, location, starts_at, time_tbd, is_placeholder")
+    .eq("id", id)
+    .maybeSingle();
   const { error } = await supabaseAdmin.from("events").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  await audit(actor, "edition.delete_event", "events", id, null, null);
-  return { ok: true };
+  await audit(actor, "edition.delete_event", "events", id, (beforeRow as Json) ?? null, null);
+
+  const before = beforeRow as Record<string, unknown> | null;
+  let queuedNews = false;
+  if (before && !before.is_placeholder) {
+    const title = String(before.title ?? "An event");
+    const { addPendingUpdate } = await import("./news.server");
+    const result = await addPendingUpdate({
+      kind: "schedule_cancelled",
+      title: `${title} is off the schedule`,
+      summary: `${title} has been cancelled. Check the Schedule for what is still on.`,
+      category: "Schedule",
+      relatedUrl: `${SITE_ORIGIN}/schedule`,
+      dedupeKey: `event_cancelled:${id}`,
+    });
+    queuedNews = result.created;
+  }
+  return { ok: true, queuedNews };
 }
+
 
 export function defaultEditionDates(eventYear: number) {
   return firstOctoberWeekend(eventYear);
@@ -2272,20 +2295,32 @@ export async function createEditionEvent(
   if (error) throw new Error(error.message);
   await audit(actor, "edition.add_event", "events", (data?.id as string) ?? null, null, row);
 
-  // Only a confirmed time is news. A TBD placeholder waits until it is real.
-  if (!row.time_tbd && row.starts_at) {
-    const { addPendingUpdate } = await import("./news.server");
-    await addPendingUpdate({
-      kind: "schedule_confirmed",
-      title: `${row.title} is on the schedule`,
-      summary: row.location ? `At ${row.location}.` : "",
-      category: "Schedule",
-      relatedUrl: `${SITE_ORIGIN}/schedule`,
-      dedupeKey: `event:${(data?.id as string) ?? row.title}`,
-    });
-  }
-  return { ok: true };
+  // Adding an event to the public plan is news either way. A confirmed time
+  // says so; a TBD says the slot exists and the time is still coming.
+  const { addPendingUpdate } = await import("./news.server");
+  const when =
+    !row.time_tbd && row.starts_at
+      ? new Intl.DateTimeFormat("en-US", {
+          timeZone: "America/New_York",
+          weekday: "long",
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(new Date(row.starts_at))
+      : null;
+  const parts = [when ? `${when}.` : "Time still TBD.", row.location ? `At ${row.location}.` : ""]
+    .filter(Boolean)
+    .join(" ");
+  const queued = await addPendingUpdate({
+    kind: row.time_tbd ? "schedule_added" : "schedule_confirmed",
+    title: `${row.title} is on the schedule`,
+    summary: parts,
+    category: "Schedule",
+    relatedUrl: `${SITE_ORIGIN}/schedule`,
+    dedupeKey: `event:${(data?.id as string) ?? row.title}`,
+  });
+  return { ok: true, queuedNews: queued.created };
 }
+
 
 export async function listEditionEvents(eventYear: number) {
   const { data } = await supabaseAdmin
@@ -2361,12 +2396,24 @@ export async function updateEditionEvent(
   if (after.time_tbd && !changedPlace && !changedDay) return { ok: true, queuedNews: false };
 
   const title = String(after.title ?? "The schedule");
+  // An update is only useful if it carries the new concrete information.
+  const whenText =
+    !after.time_tbd && after.starts_at
+      ? new Intl.DateTimeFormat("en-US", {
+          timeZone: "America/New_York",
+          weekday: "long",
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(new Date(String(after.starts_at)))
+      : null;
   const bits: string[] = [];
-  if (changedTbd && !after.time_tbd) bits.push("has a confirmed time");
-  else if (changedTime) bits.push("moved to a new time");
-  if (changedDay) bits.push("moved to a different day");
+  if (changedTbd && !after.time_tbd)
+    bits.push(whenText ? `has a confirmed time, ${whenText}` : "has a confirmed time");
+  else if (changedTime) bits.push(whenText ? `moved to ${whenText}` : "moved to a new time");
+  if (changedDay && !whenText) bits.push("moved to a different day");
   if (changedPlace) bits.push(after.location ? `is now at ${after.location}` : "changed location");
   const summary = bits.length ? `${title} ${bits.join(" and ")}.` : "";
+
 
   // Stable per distinct material state, so retries collapse and a later real
   // change still gets its own entry.

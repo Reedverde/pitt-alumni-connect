@@ -30,7 +30,9 @@ import { EventCardAnswer } from "@/components/events/EventCardAnswer";
 import { ClosingCta } from "@/components/claim/ClosingCta";
 import { ClaimDialog } from "@/components/claim/ClaimDialog";
 import { DiscordCta } from "@/components/DiscordCta";
+import { DiscordDayOf } from "@/components/DiscordDayOf";
 import { LatestNews } from "@/components/news/LatestNews";
+
 
 const scheduleQuery = queryOptions({
   queryKey: ["schedule-page"],
@@ -293,6 +295,15 @@ function WeekendPage() {
                   </div>
                 </div>
               </NotchedBox>
+
+              {isToday ? (
+                <DiscordDayOf
+                  className="mt-4"
+                  startsOn={edition.starts_on}
+                  endsOn={edition.ends_on}
+                />
+              ) : null}
+
 
               <div className="mt-4 flex flex-col gap-4">
                 {wholeProgram.map((event) => (
