@@ -479,7 +479,7 @@ export const PRESET_LABELS: Record<PeopleFilterKey, string> = {
   not_this_year: "Not this year",
   no_response: "No response yet",
   claimed: "Claimed a profile",
-  no_contact: "No contact on file",
+  no_contact: "No way to reach them",
   missing_event_answers: "Going, events unanswered",
   event_yes: "Yes to this event",
   event_no: "No to this event",
@@ -509,7 +509,7 @@ function matchesPreset(
     case "claimed":
       return person.emails.some((e) => e.verified);
     case "no_contact":
-      return !person.deceased && person.emails.length === 0;
+      return !person.deceased && person.reachable === false;
     case "missing_event_answers":
       return person.state === "going" && person.event_answers.length < promptEventCount;
     // Per event views share one population with the overview tallies: people
