@@ -15,13 +15,13 @@ export const Route = createFileRoute("/donate")({
       {
         name: "description",
         content:
-          "Three ways to support Pitt Club Ultimate: the Pittsburgh Foundation endowment fund, PayPal, or Venmo.",
+          "Two ways to support Pitt Club Ultimate: the Pittsburgh Foundation endowment fund, or a direct gift by PayPal or Venmo.",
       },
       { property: "og:title", content: "Donate | Pitt Club Ultimate Alumni" },
       {
         property: "og:description",
         content:
-          "Three ways to support Pitt Club Ultimate: the Pittsburgh Foundation endowment fund, PayPal, or Venmo.",
+          "Two ways to support Pitt Club Ultimate: the Pittsburgh Foundation endowment fund, or a direct gift by PayPal or Venmo.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -57,15 +57,14 @@ function DonateCard({
   name,
   body,
   note,
-  href,
-  cta,
+  links,
 }: {
   id: string;
   name: string;
   body: string;
   note?: string;
-  href: string;
-  cta: string;
+  /** One card can carry more than one way to send the same kind of gift. */
+  links: { href: string; cta: string }[];
 }) {
   return (
     <div id={id} className="flex min-w-0 flex-col" style={cardStyle}>
@@ -89,10 +88,18 @@ function DonateCard({
         </p>
       )}
       <div className="mt-4 flex-auto" />
-      <div>
-        <a href={href} target="_blank" rel="noopener noreferrer" style={giveButton}>
-          {cta}
-        </a>
+      <div className="flex flex-wrap gap-3">
+        {links.map((link) => (
+          <a
+            key={link.cta}
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={giveButton}
+          >
+            {link.cta}
+          </a>
+        ))}
       </div>
     </div>
   );
@@ -108,7 +115,8 @@ function DonatePage() {
         DONATE
       </h1>
       <p className="mt-4 max-w-[640px]" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
-        Three ways to give, all equal. Pick whichever is easiest for you.
+        Two ways to give. Pick whichever is easiest for you, and read the note under each one so
+        you know exactly where the money lands.
       </p>
 
       <div className="mt-8 flex flex-col gap-6 md:flex-row">
@@ -117,24 +125,19 @@ function DonatePage() {
           name="Pittsburgh Foundation endowment fund"
           body="The official Endowment for Pitt Ultimate, held at the Pittsburgh Foundation. Gifts support the program for the long haul."
           note="A gift to the fund is handled by the Foundation and is generally tax deductible. The Foundation page handles the receipt."
-          href={FOUNDATION_DONATE_URL}
-          cta="Give to the fund"
+          links={[{ href: FOUNDATION_DONATE_URL, cta: "Give to the fund" }]}
         />
+        {/* PayPal and Venmo are the same kind of gift with the same handling, so
+            they share one card and one note instead of repeating it twice. */}
         <DonateCard
-          id="paypal"
-          name="PayPal"
-          body="A direct gift through PayPal."
+          id="direct"
+          name="Direct gift by PayPal or Venmo"
+          body="A direct gift, whichever app you already use."
           note="This goes to Brody Brotman personally, not to a program or organization account. It is not tax deductible and it is not handled by the club."
-          href={PAYPAL_DONATE_URL}
-          cta="Give with PayPal"
-        />
-        <DonateCard
-          id="venmo"
-          name="Venmo"
-          body="A direct gift through Venmo."
-          note="This goes to Brody Brotman personally, not to a program or organization account. It is not tax deductible and it is not handled by the club."
-          href={VENMO_DONATE_URL}
-          cta="Give with Venmo"
+          links={[
+            { href: PAYPAL_DONATE_URL, cta: "Give with PayPal" },
+            { href: VENMO_DONATE_URL, cta: "Give with Venmo" },
+          ]}
         />
       </div>
     </PageShell>
