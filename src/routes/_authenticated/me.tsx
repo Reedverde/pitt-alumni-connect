@@ -353,11 +353,12 @@ function MePage() {
       setJustConfirmed(false);
       return;
     }
-    handedOff.current = true;
     const node = rsvpHeadingRef.current;
     if (!node) return;
+    handedOff.current = true;
     node.scrollIntoView({ block: "start", behavior: "smooth" });
     node.focus({ preventScroll: true });
+
   }, [justConfirmed, needsAnswer, profile]);
 
   useEffect(() => {
