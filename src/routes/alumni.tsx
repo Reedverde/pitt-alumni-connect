@@ -130,7 +130,7 @@ function AlumniPage() {
         <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-12">
           <PhotoSlot
             className="md:col-span-4"
-            label="Earliest documented roster, 1978"
+            label="EN SABAH NUR · SECTIONALS, 1998"
             slotKey="why_founding_1998"
             index="01"
             ratio="3 / 4"
