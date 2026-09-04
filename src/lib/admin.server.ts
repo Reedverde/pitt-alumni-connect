@@ -2097,6 +2097,10 @@ export async function overview(
   let eligible = 0;
   let going = 0;
   let heads = 0;
+  let goingAlumni = 0;
+  let goingAlumniHeads = 0;
+  let goingCurrent = 0;
+  let goingCurrentHeads = 0;
   let maybe = 0;
   let notThisYear = 0;
   let noResponse = 0;
@@ -2113,8 +2117,18 @@ export async function overview(
     const status = ctx.rsvp.get(person.id) ?? null;
     if (live) {
       if (status === "going") {
+        const party = ctx.party.get(person.id) ?? 1;
         going++;
-        heads += ctx.party.get(person.id) ?? 1;
+        heads += party;
+        // Current players are on this season's roster, which is the database's
+        // own rule. Graduates are everyone going who is not.
+        if (ctx.currentPlayers.has(person.id)) {
+          goingCurrent++;
+          goingCurrentHeads += party;
+        } else {
+          goingAlumni++;
+          goingAlumniHeads += party;
+        }
       } else if (status === "maybe") maybe++;
       else if (status === "not_this_year") notThisYear++;
       else noResponse++;
@@ -2166,8 +2180,12 @@ export async function overview(
   const otherQueue = queue.filter((q) => q.type !== "new_person" && q.status === "pending").length;
 
   const tiles: OverviewTile[] = [
-    { key: "going", label: "Going", value: going, hint: "Answered yes for this edition.", tab: "people", filter: "going" },
-    { key: "heads", label: "Expected heads", value: heads, hint: "Party sizes of everyone going.", tab: "people", filter: "going" },
+    { key: "going", label: "Going (people)", value: going, hint: "Everyone who answered yes: graduates and current players together.", tab: "people", filter: "going" },
+    { key: "heads", label: "Expected heads (heads)", value: heads, hint: "Party sizes of everyone going, graduates and current players.", tab: "people", filter: "going" },
+    { key: "going_alumni", label: "Graduates going (people)", value: goingAlumni, hint: `Going, and not on a ${rosterSeasonYear()} roster. The organizer facing alumni number.`, tab: "people", filter: "going_alumni" },
+    { key: "going_alumni_heads", label: "Graduates going (heads)", value: goingAlumniHeads, hint: "Party sizes of the graduates going.", tab: "people", filter: "going_alumni" },
+    { key: "going_current", label: "Current players going (people)", value: goingCurrent, hint: `On a ${rosterSeasonYear()} roster as a player or captain.`, tab: "people", filter: "going_current" },
+    { key: "going_current_heads", label: "Current players going (heads)", value: goingCurrentHeads, hint: "Party sizes of the current players going.", tab: "people", filter: "going_current" },
     { key: "maybe", label: "Maybe", value: maybe, hint: "Still deciding.", tab: "people", filter: "maybe" },
     { key: "not_this_year", label: "Not this year", value: notThisYear, hint: "Answered, but not coming.", tab: "people", filter: "not_this_year" },
     { key: "no_response", label: "No response", value: noResponse, hint: "Never answered. Silence is not a no.", tab: "people", filter: "no_response" },
