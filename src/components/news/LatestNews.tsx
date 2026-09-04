@@ -8,14 +8,19 @@ import { LabelRow } from "@/components/board/LabelRow";
 export function LatestNews({ limit = 3 }: { limit?: number }) {
   const { data } = useQuery({
     queryKey: ["news", "latest", limit],
-    queryFn: () => getPublishedNews({ data: { limit } }),
+    queryFn: () => getPublishedNews({ data: { limit: limit + 6 } }),
   });
-  const items = (data ?? []).slice(0, limit);
+  const all = data ?? [];
+  // Changes to the public plan lead. RSVP rollups only fill leftover slots.
+  const changes = all.filter((i) => !(i.category === "RSVP" || i.post_type === "weekly_going"));
+  const rest = all.filter((i) => i.category === "RSVP" || i.post_type === "weekly_going");
+  const items = [...changes, ...rest].slice(0, limit);
   if (items.length === 0) return null;
 
   return (
     <section className="mt-14">
-      <LabelRow label="Latest news" right="Short notes when something changes" />
+      <LabelRow label="Weekend updates" right="What changed, and when" />
+
       <div className="mt-3 flex flex-col">
         {items.map((item) => (
           <article key={item.id} className="py-4" style={{ borderTop: "1px solid var(--chalk)" }}>
