@@ -36,7 +36,7 @@ const weekendQuery = queryOptions({
   queryFn: () => getWeekendPage(),
 });
 
-export const Route = createFileRoute("/weekend")({
+export const Route = createFileRoute("/schedule")({
   loader: ({ context }) => context.queryClient.ensureQueryData(weekendQuery),
   head: () => ({
     meta: [
