@@ -4,7 +4,9 @@ import { useServerFn } from "@tanstack/react-start";
 
 import { getAdminDashboard } from "@/lib/admin.functions";
 import { MergeTool } from "@/components/admin/MergeTool";
-import { PeopleTable } from "@/components/admin/PeopleTable";
+import { PRESET_LABELS, PeopleTable } from "@/components/admin/PeopleTable";
+import { OverviewPanel } from "@/components/admin/OverviewPanel";
+import type { OverviewTile, PeopleFilterKey } from "@/lib/admin.server";
 import { ReviewQueue } from "@/components/admin/ReviewQueue";
 import { RosterImport } from "@/components/admin/RosterImport";
 import {
@@ -32,6 +34,7 @@ import { PageShell } from "@/components/layout/PageShell";
 export const Route = createFileRoute("/_authenticated/admin")({
   validateSearch: (search: Record<string, unknown>) => ({
     tab: typeof search.tab === "string" ? search.tab : undefined,
+    view: typeof search.view === "string" ? search.view : undefined,
   }),
   head: () => ({
     meta: [
@@ -48,6 +51,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const TABS = [
+  { key: "overview", label: "Overview" },
   { key: "review", label: "Review queue" },
   { key: "people", label: "People" },
   { key: "duplicates", label: "Duplicates" },
@@ -101,8 +105,15 @@ function AdminInner() {
   });
 
   const refresh = () => queryClient.invalidateQueries();
-  const active: TabKey = (TABS.find((t) => t.key === search.tab)?.key ?? "review") as TabKey;
-  const go = (tab: TabKey) => navigate({ search: { tab }, replace: true });
+  const active: TabKey = (TABS.find((t) => t.key === search.tab)?.key ?? "overview") as TabKey;
+  const preset =
+    search.view && search.view in PRESET_LABELS ? (search.view as PeopleFilterKey) : null;
+  const go = (tab: TabKey, view?: string) =>
+    navigate({ search: { tab, ...(view ? { view } : {}) }, replace: true });
+  /** A tile is the number and the list at once: opening one lands on exactly
+   *  the people it counted. */
+  const openTile = (tile: OverviewTile) =>
+    go(tile.tab as TabKey, tile.filter ?? undefined);
 
   if (isLoading)
     return (
@@ -174,8 +185,15 @@ function AdminInner() {
         })}
       </nav>
 
+      {active === "overview" ? <OverviewPanel overview={data.overview} onOpen={openTile} /> : null}
       {active === "review" ? <ReviewQueue queue={data.queue} onRefresh={refresh} /> : null}
-      {active === "people" ? <PeopleTable /> : null}
+      {active === "people" ? (
+        <PeopleTable
+          preset={preset}
+          promptEventCount={data.eventHeadcounts.length}
+          onClearPreset={() => go("people")}
+        />
+      ) : null}
       {active === "duplicates" ? (
         <MergeTool pairs={data.duplicates} archived={data.archived} onDone={refresh} />
       ) : null}
