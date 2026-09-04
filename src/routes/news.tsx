@@ -41,6 +41,7 @@ export const Route = createFileRoute("/news")({
       { name: "twitter:card", content: "summary" },
     ],
     links: [
+      { rel: "canonical", href: `${SITE_ORIGIN}/news` },
       {
         rel: "alternate",
         type: "application/rss+xml",
@@ -82,6 +83,42 @@ function scheduleLink(item: NewsItem) {
   return path;
 }
 
+/**
+ * Bulletin bodies are plain text written by organizers and by the roundup
+ * generator, and they carry bare addresses like "See everyone on the board at
+ * https://…". Rendered as text those are unreachable by keyboard and invisible
+ * to a screen reader as links. Only our own origin is ever turned into a link,
+ * so a pasted third party address stays inert text.
+ */
+function Linkify({ text }: { text: string }) {
+  // Plain string scanning, no regex to escape. Walk the text for our own
+  // origin, take everything up to the next whitespace as the address, and
+  // leave every other character exactly as written.
+  const nodes: React.ReactNode[] = [];
+  let rest = text;
+  let key = 0;
+  for (;;) {
+    const at = rest.indexOf(SITE_ORIGIN);
+    if (at === -1) break;
+    if (at > 0) nodes.push(<span key={key++}>{rest.slice(0, at)}</span>);
+    const after = rest.slice(at);
+    const end = after.search(/\s/);
+    const url = end === -1 ? after : after.slice(0, end);
+    nodes.push(
+      <a
+        key={key++}
+        href={url.slice(SITE_ORIGIN.length) || "/"}
+        style={{ color: "var(--pitt-royal)", fontWeight: 600 }}
+      >
+        {url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+      </a>,
+    );
+    rest = end === -1 ? "" : after.slice(end);
+  }
+  if (rest) nodes.push(<span key={key++}>{rest}</span>);
+  return <>{nodes}</>;
+}
+
 function Bulletin({ item, quiet = false }: { item: NewsItem; quiet?: boolean }) {
   const link = scheduleLink(item);
   return (
@@ -118,7 +155,7 @@ function Bulletin({ item, quiet = false }: { item: NewsItem; quiet?: boolean }) 
           className="mt-2 max-w-[640px]"
           style={{ fontSize: 15, color: "var(--sterling)", whiteSpace: "pre-line" }}
         >
-          {item.body}
+          <Linkify text={item.body} />
         </p>
       ) : null}
       {link ? (
@@ -147,7 +184,7 @@ function NewsPage() {
 
   return (
     <PageShell bare>
-      <main className="mx-auto w-full max-w-[860px] px-5 pb-20">
+      <main id="main" className="mx-auto w-full max-w-[860px] px-5 pb-20">
         <header className="pt-10 pb-6 md:pt-14">
           <SlashEyebrow>Alumni Weekend · What changed</SlashEyebrow>
           <h1 className="display-64 mt-3" style={{ color: "var(--sabah-black)" }}>

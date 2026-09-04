@@ -5,15 +5,24 @@ import { DISCORD_INVITE_URL } from "@/lib/site-url";
 
 /** Shield, the permanent links, and the ways to give. Footer only. */
 export function SiteFooter() {
-  const footerLink = { color: "var(--steel-ink)", textDecoration: "none" as const };
-  const giveLink = { color: "var(--pitt-royal)", textDecoration: "none" as const };
+  // Every footer link is a real tap target: 44px tall on a phone, which is
+  // taller than the text itself. The row gap shrinks to compensate.
+  const tapTarget = {
+    display: "inline-flex" as const,
+    alignItems: "center" as const,
+    minHeight: 44,
+    textDecoration: "none" as const,
+  };
+  const footerLink = { ...tapTarget, color: "var(--steel-ink)" };
+  const giveLink = { ...tapTarget, color: "var(--pitt-royal)" };
 
   return (
     <footer style={{ borderTop: "1px solid var(--chalk)", background: "var(--pure-white)" }}>
-      {/* The floating RSVP card is pinned to the bottom of the viewport, full
-          width on phones. Without this the last row of footer links sat
-          underneath it and could not be tapped. */}
-      <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-5 pt-10 pb-32 md:flex-row md:items-center md:justify-between md:pb-10">
+      {/* The floating RSVP card is pinned to the bottom of the viewport: full
+          width on phones, bottom right on a desktop, where it sat on top of
+          the right hand footer links. The bottom padding on both sizes keeps
+          the card over empty space instead of over something clickable. */}
+      <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-5 pt-10 pb-32 md:flex-row md:items-center md:justify-between md:pb-28">
         <div className="flex items-center gap-4">
           <img
             src={pittUltimateShield.url}
@@ -36,7 +45,7 @@ export function SiteFooter() {
             Pitt Club Ultimate
           </span>
         </div>
-        <nav className="flex flex-wrap items-center gap-x-5 gap-y-3">
+        <nav className="flex flex-wrap items-center gap-x-5 gap-y-0">
           <Link to="/" className="label-caps" style={footerLink}>
             Home
           </Link>
@@ -73,7 +82,7 @@ export function SiteFooter() {
               fontWeight: 400,
               letterSpacing: "0.04em",
               color: "var(--sterling)",
-              textDecoration: "none",
+              ...tapTarget,
             }}
           >
             Site by everde.co

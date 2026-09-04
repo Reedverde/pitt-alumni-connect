@@ -450,7 +450,7 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
         </div>
       )}
 
-      <main className="mx-auto w-full max-w-[1320px] px-5 pb-24">
+      <main id="main" className="mx-auto w-full max-w-[1320px] px-5 pb-24">
 
         <header id="board" className="chrome-anchor pt-6 pb-8">
           <SlashEyebrow>The board</SlashEyebrow>

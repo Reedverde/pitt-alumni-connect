@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
-import { useSessionPerson } from "@/lib/useSessionPerson";
+import { useEffect, useState } from "react";
+
 import { DISCORD_INVITE_URL } from "@/lib/site-url";
 
 const circle = {
@@ -38,31 +38,40 @@ function DiscordGlyph() {
   );
 }
 
-/** Fixed bottom-left stack of circular actions. When a page can open the claim
- *  dialog itself, the RSVP circle opens it instead of navigating. */
-export function ActionRail({ onRsvp }: { onRsvp?: () => void } = {}) {
-  const { signedIn } = useSessionPerson();
+/**
+ * Fixed bottom-left stack of circular actions, desktop only.
+ *
+ * There is no RSVP circle here any more. The floating RSVP card is the one
+ * persistent answer affordance on every page, and a second round RSVP button
+ * four inches away from it was two front doors to the same room. On a phone
+ * the card is a full width bar along the bottom edge, so this rail is hidden
+ * below md rather than stacked on top of it.
+ */
+export function ActionRail() {
+  // At the foot of the page the rail sat on top of the footer links and made
+  // them unclickable. Once the footer is in view the rail steps aside; the
+  // links it duplicates are right there anyway.
+  const [overFooter, setOverFooter] = useState(false);
+  useEffect(() => {
+    const footer = document.querySelector("footer");
+    if (!footer || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([entry]) => setOverFooter(!!entry?.isIntersecting), {
+      rootMargin: "0px 0px -8px 0px",
+    });
+    io.observe(footer);
+    return () => io.disconnect();
+  }, []);
+
   return (
     <div
-      className="fixed left-4 bottom-4 z-40 flex flex-col gap-3"
-      style={{ pointerEvents: "auto" }}
+      className="fixed left-4 bottom-4 z-30 hidden flex-col gap-3 md:flex"
+      style={{
+        pointerEvents: overFooter ? "none" : "auto",
+        opacity: overFooter ? 0 : 1,
+        visibility: overFooter ? "hidden" : "visible",
+        transition: "opacity 180ms ease",
+      }}
     >
-      {!signedIn && (onRsvp ? (
-        <button
-          type="button"
-          onClick={onRsvp}
-          style={{ ...circle, background: "var(--pitt-royal)", color: "var(--pure-white)", border: "1px solid transparent" }}
-        >
-          RSVP
-        </button>
-      ) : (
-        <Link
-          to="/"
-          style={{ ...circle, background: "var(--pitt-royal)", color: "var(--pure-white)", border: "1px solid transparent" }}
-        >
-          RSVP
-        </Link>
-      ))}
       <button
         type="button"
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
