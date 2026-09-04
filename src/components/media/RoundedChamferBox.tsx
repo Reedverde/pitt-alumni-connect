@@ -73,8 +73,9 @@ export function RoundedChamferBox({
     <div
       ref={ref}
       aria-hidden={ariaHidden}
-      className={className}
-      style={{ position: "relative", width: "100%", aspectRatio: ratio, ...style }}
+      className={["relative", className].filter(Boolean).join(" ")}
+      // position defaults to relative but must not beat an absolute utility class
+      style={{ width: "100%", aspectRatio: ratio, ...style }}
     >
       {path && (
         <svg aria-hidden="true" width={0} height={0} style={{ position: "absolute" }}>
