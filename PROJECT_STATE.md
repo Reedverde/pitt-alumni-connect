@@ -621,3 +621,5 @@ New route `src/routes/v2.tsx` (noindex) renders the same `BoardExperience` with 
 
 Verified at 1440 and 390 wide: no overflow introduced by /v2 (the only overflow is the preexisting board name chip, which also occurs on `/`), no console errors, typecheck and build clean.
 
+## /v2 hero collage refinement (2026-09-04)
+`/` unchanged. Scoped to `src/components/v2/V2Hero.tsx`: the hero cluster now layers three action frames (wide around-the-mark anchor, compact contested-throw crop on its top-right corner, sky portrait overlapping bottom-left) so the right side reads dense and energetic instead of two photos on black. The "First 2 Weeks of October · Every Year" seal moved from floating at the hero corner onto the wide photo's top-left edge, roughly half on the frame and half on black on both desktop and mobile, positioned away from faces. Royal field, deep chamfers, original colour and lazy loading all kept. Verified at 1280 and 390: no new overflow (only the preexisting board chip), no console errors, typecheck clean.

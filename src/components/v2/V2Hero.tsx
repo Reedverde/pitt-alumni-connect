@@ -22,18 +22,21 @@ const ctaBase = {
 };
 
 /**
- * The /v2 hero. Oversized condensed headline against an aggressively cut
- * photographic composition of real action frames: a handler throwing around a
- * mark, chamfered top-left and bottom-right, with a player skying for the catch
- * overlapping it on the opposite corners, and a royal field
- * that continues the wide crop's diagonal. Gold stays reserved for attending,
- * so the only gold here is the eyebrow slash the whole site already uses.
+ * The /v2 hero. Oversized condensed headline against a layered photographic
+ * cluster of real action frames: a handler throwing around a mark as the wide
+ * anchor, a contested throw as a compact crop on its top-right corner, and a
+ * player skying for the catch overlapping on the opposite corners, with a
+ * royal field continuing the wide crop's diagonal. The "first two weeks" seal
+ * straddles the wide photo's top edge, half on the frame, half on black. Gold
+ * stays reserved for attending, so the only gold here is the eyebrow slash
+ * the whole site already uses.
  */
 export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
   const dates = season.edition ? editionShortDates(season.edition) : null;
 
   const wide = ACTION.aroundTheMark;
   const portrait = ACTION.sky;
+  const small = ACTION.contested;
 
   return (
     <section style={{ background: "var(--sabah-black)" }} className="relative overflow-hidden">
@@ -106,11 +109,11 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
           </div>
         </div>
 
-        <div className="relative md:col-span-5">
+        <div className="relative mt-10 pt-12 md:col-span-5 md:mt-0 md:pt-24">
           {/* A royal field on the same 45 degree angle, continuing the crop's edge. */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -right-6 -top-8 hidden md:block"
+            className="pointer-events-none absolute -right-6 top-4 hidden md:block md:top-8"
             style={{
               width: "62%",
               height: "58%",
@@ -128,6 +131,16 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
               className="relative"
             />
           <ChamferPhoto
+              src={small.src}
+              alt={small.alt}
+              ratio="4 / 5"
+              corners={["bl", "tr"]}
+              notch={36}
+              outline="var(--sabah-black)"
+              outlineWidth={6}
+              className="absolute -top-2 right-[-12px] w-[36%] md:right-[-28px] md:top-4 md:w-[44%]"
+            />
+          <ChamferPhoto
               src={portrait.src}
               alt={portrait.alt}
               ratio="3 / 4"
@@ -137,15 +150,16 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
               outlineWidth={6}
               className="relative mt-4 w-1/2 md:absolute md:-bottom-16 md:-left-20 md:mt-0 md:w-[58%]"
             />
+          {/* The seal bridges the black field and the wide frame, roughly half
+              on the photograph and half off its top edge. */}
+          <img
+            src={firstTwoWeeksSeal.url}
+            alt="First two weeks of October, every year"
+            className="pointer-events-none absolute left-3 top-[6px] select-none md:left-8 md:top-[38px]"
+            style={{ width: "clamp(72px, 9vw, 132px)", height: "auto" }}
+            loading="eager"
+          />
         </div>
-
-        <img
-          src={firstTwoWeeksSeal.url}
-          alt="First two weeks of October, every year"
-          className="pointer-events-none absolute right-4 top-4 select-none md:right-6 md:top-6"
-          style={{ width: "clamp(72px, 9vw, 132px)", height: "auto" }}
-          loading="eager"
-        />
       </div>
     </section>
   );
