@@ -7,10 +7,11 @@ import { getBoard, type BoardPerson, type BoardPhoto } from "@/lib/board.functio
 
 import { buildYearGroups, claimedCount, type YearGroup } from "@/lib/board-grouping";
 import { rankMatches, tokenizeQuery, TIER_FUZZY, type MatchTier } from "@/lib/name-match";
-import { NameChip } from "@/components/board/NameChip";
+import { NameChip, ChipSessionContext } from "@/components/board/NameChip";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { ClaimDialog, type ClaimTarget } from "@/components/claim/ClaimDialog";
+import { ContactTipDialog, type ContactTipTarget } from "@/components/claim/ContactTipDialog";
 import { secondaryButton } from "@/components/claim/ui";
 import { SiteNav } from "@/components/SiteNav";
 import { PersonPanel } from "@/components/board/PersonPanel";
@@ -183,6 +184,7 @@ function BoardPage() {
   const [claimTarget, setClaimTarget] = useState<ClaimTarget | null>(null);
   const [claimPrefill, setClaimPrefill] = useState("");
   const [panelPerson, setPanelPerson] = useState<BoardPerson | null>(null);
+  const [tipTarget, setTipTarget] = useState<ContactTipTarget | null>(null);
   const [focusPersonId, setFocusPersonId] = useState<string | null>(null);
   // Set when an answer link from email had expired or been tampered with. The
   // page never dead-ends: it says so plainly and the claim flow is right there.
@@ -195,6 +197,12 @@ function BoardPage() {
   // own chip goes straight to /me.
   const openChip = (person: BoardPerson) => {
     if (person.state === "memorial") return;
+    // Nobody has a way to reach them: signed-in members are asked for a tip
+    // instead of being sent down the claim flow.
+    if (person.state === "unclaimed" && person.has_contact === false && session.signedIn) {
+      setTipTarget({ id: person.id, first_name: person.first_name, last_name: person.last_name });
+      return;
+    }
     if (person.state === "unclaimed") {
       openClaim(person);
       return;
@@ -369,6 +377,7 @@ function BoardPage() {
   const onlyFuzzy = searching && ranked.length > 0 && ranked.every((r) => r.tier === TIER_FUZZY);
 
   return (
+    <ChipSessionContext.Provider value={session.signedIn}>
     <div style={{ background: "var(--field-white)" }} className="board-chrome min-h-screen">
       <SiteNav onClaim={() => openClaim()} />
       <Hero season={season} clock={clock} countdownLive={countdownLive} onClaim={() => openClaim()} />
@@ -614,7 +623,14 @@ function BoardPage() {
           if (personId) setFocusPersonId(personId);
         }}
       />
+
+      <ContactTipDialog
+        open={tipTarget !== null}
+        target={tipTarget}
+        onClose={() => setTipTarget(null)}
+      />
     </div>
+    </ChipSessionContext.Provider>
   );
 }
 

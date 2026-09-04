@@ -427,7 +427,7 @@ export async function recordMemorialConfirmation(
 
 export type QueueItem = {
   id: string;
-  type: "new_person" | "edit" | "memorial" | "roster_import";
+  type: "new_person" | "edit" | "memorial" | "roster_import" | "contact_tip";
   status: string;
   created_at: string | null;
   submitter: string | null;

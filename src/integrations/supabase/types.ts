@@ -1779,6 +1779,7 @@ export type Database = {
         Row: {
           deceased: boolean | null
           first_name: string | null
+          has_contact: boolean | null
           id: string | null
           last_name: string | null
           played_as: string | null
@@ -1796,6 +1797,7 @@ export type Database = {
           divisions: string[] | null
           first_name: string | null
           has_coached: boolean | null
+          has_contact: boolean | null
           id: string | null
           is_coach: boolean | null
           is_current: boolean | null

@@ -596,3 +596,9 @@ Nothing was sent. `outbound_email_mode` stayed `transactional_only` and every se
 **2026-09-04 homepage story rewrite.** `/` now opens with story content between the hero and the counter bar: section 1 "The climb" (We came back), section 2 "Why this weekend" (You don't stop being Pitt Ultimate), and section 3, a new `WeekendColumns` component (`src/components/home/WeekendColumns.tsx`), a three column FRIDAY / SATURDAY / SUNDAY teaser of notched white cards that each link to `/schedule`. `/schedule` stays the single source of truth for times, locations, and per event RSVP, so the homepage's `ScheduleSummary` (full per event tiles with toggles) was removed along with its `weekendQuery` loader entry; the homepage loader now fetches only the board. Copy is approved verbatim. No gold in the new sections.
 
 
+
+### No contact info chip state and contact tips (2026-09-04)
+- `board_people` and `board_coaches` gained a `has_contact` boolean (a yes/no derived from `identities`, never an address). `suggestions_type_check` now allows `contact_tip`.
+- `NameChip` renders unclaimed people with no contact info with a 1.5px dashed Chalk border. Signed-in viewers get a trailing "Help us reach them ?" affordance on hover; anonymous viewers see the dashed border only. Session comes from `ChipSessionContext`, provided once by the board page.
+- Clicking a dashed chip while signed in opens `src/components/claim/ContactTipDialog.tsx`, which writes a `contact_tip` suggestion via `suggestContactTip` in `src/lib/account.functions.ts`. Write only: it never displays anyone's contact info.
+- Admin review queue has a Contact tips group. Approve only marks the tip handled; the admin adds the address to the record themselves.

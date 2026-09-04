@@ -275,6 +275,56 @@ function RosterCard({ item, onDone }: { item: QueueItem; onDone: () => void }) {
   );
 }
 
+function ContactTipCard({ item, onDone }: { item: QueueItem; onDone: () => void }) {
+  const resolve = useServerFn(adminResolveSuggestion);
+  const [busy, setBusy] = useState(false);
+  const act = async (action: "approve" | "reject") => {
+    if (action === "approve" && !window.confirm("Add this address or number to the person's record in People first. Mark this tip handled?")) return;
+    setBusy(true);
+    try {
+      await resolve({ data: { suggestionId: item.id, action } });
+      toast.success(action === "approve" ? "Tip marked handled." : "Tip closed.");
+      onDone();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't do that.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={{ borderTop: hairline, padding: "14px 0" }}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p style={{ fontSize: 15, color: "var(--steel-ink)" }}>
+          {item.person?.name ?? "Unknown record"}
+          {item.person?.grad_year ? <> · <Num>{item.person.grad_year}</Num></> : null}
+        </p>
+        <p style={{ fontSize: 12, color: "var(--sterling)" }}>
+          from {item.submitter ?? "a member"} · <When value={item.created_at} />
+        </p>
+      </div>
+      <p className="mt-2" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
+        {String(item.payload.contact_value ?? "no value given")}
+      </p>
+      {item.payload.context_note ? (
+        <p className="mt-1" style={{ fontSize: 12, color: "var(--sterling)" }}>
+          {String(item.payload.context_note)}
+        </p>
+      ) : null}
+      {item.status === "pending" ? (
+        <div className="mt-3 flex gap-2">
+          <button type="button" style={primaryButton} disabled={busy} onClick={() => act("approve")}>
+            Approve
+          </button>
+          <button type="button" style={secondaryButton} disabled={busy} onClick={() => act("reject")}>
+            Reject
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function ReviewQueue({ queue, onRefresh }: { queue: QueueItem[]; onRefresh: () => void }) {
   const pending = queue.filter((q) => q.status === "pending");
   const stale = pending.filter((q) => q.stale);
@@ -329,6 +379,22 @@ export function ReviewQueue({ queue, onRefresh }: { queue: QueueItem[]; onRefres
           ) : (
             group("roster_import").map((item) => (
               <RosterCard key={item.id} item={item} onDone={onRefresh} />
+            ))
+          )}
+        </div>
+
+        <div>
+          <h3 className="label-caps mb-2" style={{ color: "var(--sterling)" }}>
+            Contact tips · <Num>{group("contact_tip").length}</Num>
+          </h3>
+          <p className="mb-3" style={{ fontSize: 12, color: "var(--sterling)" }}>
+            Approving only marks the tip handled. Add the address to the person's record yourself.
+          </p>
+          {group("contact_tip").length === 0 ? (
+            <Empty>Nothing pending.</Empty>
+          ) : (
+            group("contact_tip").map((item) => (
+              <ContactTipCard key={item.id} item={item} onDone={onRefresh} />
             ))
           )}
         </div>
