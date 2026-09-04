@@ -598,7 +598,10 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
               />
             ),
           )}
-          {data.coaches.length > 0 && <CoachesRow people={data.coaches} onClaim={openChip} />}
+          {eraFilter === null && data.coaches.length > 0 && (
+            <CoachesRow people={data.coaches} onClaim={openChip} />
+          )}
+
         </div>
         )}
 
