@@ -1,10 +1,32 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveMyPersonId } from "./account-resolve";
 import { normalizePartySize, type RsvpStatus } from "./rsvp-types";
 
 const CURRENT_YEAR = new Date().getFullYear();
+
+/** One row of the annual card's event list. `answer` is null when the person
+ *  has genuinely not answered: an unanswered event is never collapsed into a
+ *  no. Phase 5 turns these rows into a three position control. */
+export type MyEventAnswer = {
+  id: string;
+  title: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  time_tbd: boolean;
+  location: string | null;
+  is_placeholder: boolean;
+  answer: "yes" | "no" | null;
+};
+
+/** A past year, read only. */
+export type MyYearAnswer = {
+  event_year: number;
+  status: RsvpStatus;
+  party_size: number;
+};
 
 export type MyProfile = {
   person: {
@@ -24,7 +46,14 @@ export type MyProfile = {
   rsvpPartySize: number;
   edition: { event_year: number; title: string; starts_on: string; ends_on: string } | null;
   attended: number[];
+  /** Phase 1 deadline rule: the actual end of the weekend, no grace period. */
+  rsvpEditable: boolean;
+  rsvpEditableUntil: string | null;
+  events: MyEventAnswer[];
+  history: MyYearAnswer[];
+  divisions: { code: string; label: string }[];
 };
+
 
 export const finalizeLogin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -87,6 +116,18 @@ export const addMeAsPerson = createServerFn({ method: "POST" })
     });
   });
 
+/** The Phase 1 deadline rule, enforced where the write happens. The weekend
+ *  ends and the answer stops moving: no grace period, and the page's read only
+ *  state is a courtesy, not the boundary. */
+async function assertRsvpEditable(
+  client: SupabaseClient,
+  eventYear: number,
+) {
+  const { data } = await client.rpc("rsvp_is_editable", { _event_year: eventYear });
+  if (data === false)
+    throw new Error("That weekend is over, so the answer can no longer be changed.");
+}
+
 export const getMyProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<MyProfile> => {
@@ -100,8 +141,43 @@ export const getMyProfile = createServerFn({ method: "GET" })
       ends_on: current.ends_on,
     };
 
+    // The deadline is the database's answer, not the browser's clock. Phase 1
+    // fixed it at the real end of the weekend with no grace period.
+    const { data: editableRaw } = await supabase.rpc("rsvp_is_editable", {
+      _event_year: edition.event_year,
+    });
+    const { data: untilRaw } = await supabase.rpc("rsvp_editable_until", {
+      _event_year: edition.event_year,
+    });
+    const rsvpEditable = editableRaw !== false;
+    const rsvpEditableUntil = (untilRaw as string | null) ?? null;
+
+    const { data: divisionRows } = await supabase
+      .from("divisions")
+      .select("code, label, sort_order, visible")
+      .eq("visible", true)
+      .order("sort_order");
+    const divisions = (divisionRows ?? []).map((d) => ({
+      code: d.code as string,
+      label: d.label as string,
+    }));
+
     const personId = await resolveMyPersonId(supabase, context.userId);
-    if (!personId) return { person: null, emails: [], stints: [], rsvp: null, rsvpPartySize: 1, edition, attended: [] };
+    if (!personId)
+      return {
+        person: null,
+        emails: [],
+        stints: [],
+        rsvp: null,
+        rsvpPartySize: 1,
+        edition,
+        attended: [],
+        rsvpEditable,
+        rsvpEditableUntil,
+        events: [],
+        history: [],
+        divisions,
+      };
 
     const { data: mine } = await supabase
       .from("identities")
@@ -109,7 +185,7 @@ export const getMyProfile = createServerFn({ method: "GET" })
       .eq("person_id", personId)
       .order("is_primary", { ascending: false });
 
-    const [personRes, stintRes, rsvpRes, historyRes] = await Promise.all([
+    const [personRes, stintRes, rsvpRes, historyRes, eventsRes] = await Promise.all([
       supabase
         .from("people")
         .select(
@@ -129,12 +205,57 @@ export const getMyProfile = createServerFn({ method: "GET" })
           .eq("event_year", edition.event_year)
           .maybeSingle();
       })(),
-      supabase
-        .from("rsvps")
-        .select("event_year, status")
-        .eq("person_id", personId)
-        .eq("status", "going"),
+      // Every past answer, not only the yesses: the history is a record of what
+      // this person said, including the years they sat out.
+      (async () => {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        return supabaseAdmin
+          .from("rsvps")
+          .select("event_year, status, party_size")
+          .eq("person_id", personId)
+          .order("event_year", { ascending: false });
+      })(),
+      // The edition's published events that ask a question, with this person's
+      // own answer. A missing row stays null: unanswered is not a no.
+      (async () => {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: events } = await supabaseAdmin
+          .from("events")
+          .select(
+            "id, title, starts_at, ends_at, time_tbd, location, is_placeholder, sort_order, published, prompt_rsvp",
+          )
+          .eq("event_year", edition.event_year)
+          .eq("published", true)
+          .eq("prompt_rsvp", true)
+          .order("sort_order");
+        const { data: answers } = await supabaseAdmin
+          .from("event_rsvps")
+          .select("event_id, status")
+          .eq("person_id", personId);
+        const byEvent = new Map(
+          (answers ?? []).map((a) => [a.event_id as string, a.status as string]),
+        );
+        return (events ?? []).map((e) => {
+          const answer = byEvent.get(e.id as string);
+          return {
+            id: e.id as string,
+            title: e.title as string,
+            starts_at: (e.starts_at as string | null) ?? null,
+            ends_at: (e.ends_at as string | null) ?? null,
+            time_tbd: Boolean(e.time_tbd),
+            location: (e.location as string | null) ?? null,
+            is_placeholder: Boolean(e.is_placeholder),
+            answer: answer === "yes" ? "yes" : answer === "no" ? "no" : null,
+          } satisfies MyEventAnswer;
+        });
+      })(),
     ]);
+
+    const allAnswers = (historyRes.data ?? []) as {
+      event_year: number;
+      status: string;
+      party_size: number | null;
+    }[];
 
     return {
       person: (personRes.data ?? null) as MyProfile["person"],
@@ -148,10 +269,22 @@ export const getMyProfile = createServerFn({ method: "GET" })
       rsvp: ((rsvpRes.data?.status as RsvpStatus | undefined) ?? null),
       rsvpPartySize: Number(rsvpRes.data?.party_size ?? 1),
       edition,
-      attended: (historyRes.data ?? [])
-        .map((r) => r.event_year as number)
-        .filter((y) => y < edition.event_year)
+      attended: allAnswers
+        .filter((r) => r.status === "going" && r.event_year < edition.event_year)
+        .map((r) => r.event_year)
         .sort((a, b) => a - b),
+      rsvpEditable,
+      rsvpEditableUntil,
+      events: eventsRes,
+      history: allAnswers
+        .filter((r) => r.event_year !== edition.event_year)
+        .map((r) => ({
+          event_year: r.event_year,
+          status: r.status as RsvpStatus,
+          party_size: Number(r.party_size ?? 1),
+        })),
+      divisions,
+
     };
   });
 
@@ -289,6 +422,7 @@ export const setMyRsvp = createServerFn({ method: "POST" })
     const eventYear = await currentEditionYear();
     const personId = await resolveMyPersonId(context.supabase, context.userId);
     if (!personId) throw new Error("Forbidden");
+    await assertRsvpEditable(context.supabase, eventYear);
     const { data: existing } = await context.supabase
       .from("rsvps")
       .select("id")
@@ -333,6 +467,7 @@ export const setMyPartySize = createServerFn({ method: "POST" })
     const eventYear = await currentEditionYear();
     const personId = await resolveMyPersonId(context.supabase, context.userId);
     if (!personId) throw new Error("Forbidden");
+    await assertRsvpEditable(context.supabase, eventYear);
     const { error } = await context.supabase
       .from("rsvps")
       .update({ party_size: normalizePartySize("going", data.partySize) })
