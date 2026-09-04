@@ -111,6 +111,8 @@ export type AdminPerson = PersonRow & {
   placed: boolean;
   /** One of their addresses hard bounced, complained, or is suppressed. */
   contact_flagged: boolean;
+  /** Derived: at least one address of theirs is not suppressed. */
+  reachable: boolean;
 };
 
 
@@ -130,6 +132,8 @@ type Context = {
   eventAnswers: Map<string, AdminPerson["event_answers"]>;
   /** Addresses we must not mail again: suppressed, hard bounced, complained. */
   badEmails: Set<string>;
+  /** Derived deliverability, from the person_reachability view. */
+  reachable: Set<string>;
 };
 
 
@@ -191,11 +195,21 @@ async function loadContext(): Promise<Context> {
     emails.set(pid, list);
   }
   const { loadEventAnswersByPerson } = await import("./event-rsvp.server");
-  const [eventAnswers, supRes, sendRes] = await Promise.all([
+  const [eventAnswers, supRes, sendRes, reachRes] = await Promise.all([
     loadEventAnswersByPerson(),
     supabaseAdmin.from("suppressions").select("email").limit(2000),
     supabaseAdmin.from("sends").select("to_email, bounced, bounce_type, complained").limit(20000),
+    supabaseAdmin
+      .from("person_reachability")
+      .select("person_id, has_deliverable_email")
+      .limit(20000),
   ]);
+  const reachable = new Set<string>();
+  for (const row of (reachRes.data ?? []) as {
+    person_id: string;
+    has_deliverable_email: boolean;
+  }[])
+    if (row.has_deliverable_email) reachable.add(row.person_id);
   const badEmails = new Set<string>();
   for (const row of supRes.data ?? []) badEmails.add(String(row.email).toLowerCase());
   for (const row of sendRes.data ?? []) {
@@ -214,6 +228,7 @@ async function loadContext(): Promise<Context> {
     emails,
     eventAnswers,
     badEmails,
+    reachable,
   };
 
 }
@@ -243,6 +258,7 @@ function decorate(person: PersonRow, ctx: Context, label: string | null): AdminP
     contact_flagged: (ctx.emails.get(person.id) ?? []).some((e) =>
       ctx.badEmails.has(e.email.toLowerCase()),
     ),
+    reachable: ctx.reachable.has(person.id),
     placed: boardYear !== null && boardYear !== undefined,
 
     board_year: boardYear,
@@ -2040,7 +2056,8 @@ export async function overview(
     }
     if (ctx.verified.has(person.id)) claimed++;
     const emails = ctx.emails.get(person.id) ?? [];
-    if (!person.deceased && emails.length === 0) noContact++;
+    // Unreachable means no deliverable address, not no address on file.
+    if (!person.deceased && !ctx.reachable.has(person.id)) noContact++;
     if (emails.some((e) => badAddresses.has(e.email.toLowerCase()))) badContact++;
     const placedYear = ctx.placement.get(person.id)?.board_year ?? person.grad_year;
     if (!person.deceased && !person.archived && (placedYear === null || placedYear === undefined))
@@ -2075,7 +2092,7 @@ export async function overview(
     { key: "not_this_year", label: "Not this year", value: notThisYear, hint: "Answered, but not coming.", tab: "people", filter: "not_this_year" },
     { key: "no_response", label: "No response", value: noResponse, hint: "Never answered. Silence is not a no.", tab: "people", filter: "no_response" },
     { key: "claimed", label: "Claimed profiles", value: claimed, hint: "Verified an address and claimed a record.", tab: "people", filter: "claimed" },
-    { key: "no_contact", label: "No contact on file", value: noContact, hint: "Nobody can be reached at all.", tab: "people", filter: "no_contact" },
+    { key: "no_contact", label: "No way to reach them", value: noContact, hint: "No address on file that still delivers.", tab: "people", filter: "no_contact" },
     { key: "missing_event_answers", label: "Going, events unanswered", value: missingEventAnswers, hint: "Coming, but has not answered every event that asks.", tab: "people", filter: "missing_event_answers" },
     { key: "new_person", label: "New person reviews", value: newPeople, hint: "Someone asked to be added.", tab: "review" },
     { key: "queue", label: "Other pending reviews", value: otherQueue, hint: "Edits, tips and memorial notes.", tab: "review" },

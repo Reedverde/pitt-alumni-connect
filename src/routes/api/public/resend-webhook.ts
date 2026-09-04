@@ -19,11 +19,6 @@ async function verify(secret: string, id: string, ts: string, sig: string, body:
     .some((candidate) => candidate.length === expected.length && candidate === expected);
 }
 
-const HARD: Record<string, string> = {
-  "email.bounced": "hard_bounce",
-  "email.complained": "complaint",
-};
-
 export const Route = createFileRoute("/api/public/resend-webhook")({
   server: {
     handlers: {
@@ -53,47 +48,70 @@ export const Route = createFileRoute("/api/public/resend-webhook")({
         const messageId = event.data?.email_id ?? null;
         const recipients = (event.data?.to ?? []).map((e) => e.toLowerCase());
 
+        const softBounce = type === "email.bounced" && event.data?.bounce?.type === "Transient";
+        const hardBounce = type === "email.bounced" && !softBounce;
+
+        // The send row is matched by the Resend message id, stored at send time.
+        type SendRow = { id: string; to_email: string | null; soft_bounce_count: number };
+        let sendRow: SendRow | null = null;
         if (messageId) {
+          const { data } = await supabaseAdmin
+            .from("sends")
+            .select("id, to_email, soft_bounce_count")
+            .eq("provider_message_id", messageId)
+            .maybeSingle();
+          sendRow = (data as unknown as SendRow | null) ?? null;
+
           await supabaseAdmin
             .from("sends")
             .update({
               status: type.replace("email.", ""),
-              ...(type === "email.bounced" || type === "email.complained"
-                ? { outcome: "failed" }
+              ...(hardBounce || type === "email.complained" ? { outcome: "failed" } : {}),
+              ...(type === "email.delivered"
+                ? { outcome: "sent", delivered_at: new Date().toISOString() }
                 : {}),
-              ...(type === "email.delivered" ? { outcome: "sent" } : {}),
-              ...(type === "email.bounced" ? { bounced: true } : {}),
-              ...(type === "email.complained" ? { complained: true } : {}),
               ...(type === "email.bounced"
-                ? { bounce_type: event.data?.bounce?.type ?? "hard" }
+                ? { bounced: true, bounce_type: event.data?.bounce?.type ?? "hard" }
                 : {}),
+              ...(softBounce
+                ? { soft_bounce_count: (sendRow?.soft_bounce_count ?? 0) + 1 }
+                : {}),
+              ...(type === "email.complained" ? { complained: true } : {}),
             } as never)
             .eq("provider_message_id", messageId);
         }
 
+        const targets = recipients.length
+          ? recipients
+          : sendRow?.to_email
+            ? [sendRow.to_email.toLowerCase()]
+            : [];
+
         // One hard bounce or one complaint suppresses permanently: these
         // addresses are twenty years old and a retry costs sender reputation.
-        const reason = HARD[type];
-        const soft = type === "email.bounced" && event.data?.bounce?.type === "Transient";
-        if (reason && !soft) {
-          for (const email of recipients) {
+        const reason = hardBounce ? "hard_bounce" : type === "email.complained" ? "complaint" : null;
+        if (reason) {
+          for (const email of targets) {
             await supabaseAdmin
               .from("suppressions")
               .upsert({ email, reason }, { onConflict: "email" });
           }
-        } else if (soft) {
+        } else if (softBounce) {
           // Three soft bounces is a dead address wearing a temporary excuse.
-          for (const email of recipients) {
-            const { count } = await supabaseAdmin
+          for (const email of targets) {
+            const { data: soft } = await supabaseAdmin
               .from("sends")
-              .select("id", { count: "exact", head: true })
+              .select("soft_bounce_count")
               .eq("to_email", email)
-              .eq("bounced", true)
-              .eq("bounce_type", "Transient");
-            if ((count ?? 0) >= 3) {
+              .limit(5000);
+            const total = (soft ?? []).reduce(
+              (sum, row) => sum + Number((row as { soft_bounce_count: number }).soft_bounce_count ?? 0),
+              0,
+            );
+            if (total >= 3) {
               await supabaseAdmin
                 .from("suppressions")
-                .upsert({ email, reason: "soft_bounce" }, { onConflict: "email" });
+                .upsert({ email, reason: "soft_bounce_x3" }, { onConflict: "email" });
             }
           }
         }

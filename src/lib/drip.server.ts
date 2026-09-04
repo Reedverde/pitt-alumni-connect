@@ -77,6 +77,20 @@ async function loadSequence(key: string): Promise<SequenceRow | null> {
   return (data as SequenceRow | null) ?? null;
 }
 
+/** The address to write to: the primary when it is still deliverable, else any
+ *  other address that is not suppressed. Verified addresses come first. */
+export function pickDeliverable(
+  list: { email: string; primary: boolean; verified: boolean }[] | undefined,
+  suppressed: Set<string>,
+): string | null {
+  const live = (list ?? []).filter((a) => !suppressed.has(a.email));
+  if (live.length === 0) return null;
+  const rank = (a: { primary: boolean; verified: boolean }) =>
+    (a.primary ? 0 : 2) + (a.verified ? 0 : 1);
+  live.sort((a, b) => rank(a) - rank(b));
+  return live[0]!.email;
+}
+
 /** Everyone who belongs to a sequence's audience, before any send history is
  *  considered. Deceased, archived, address-less and suppressed people are gone
  *  by the time this returns. */
@@ -98,13 +112,19 @@ export async function resolveAudience(sequenceKey: string): Promise<Recipient[]>
     supabaseAdmin.from("sends").select("person_id, bounced, bounce_type, complained"),
   ]);
 
-  const primaryEmail = new Map<string, string>();
   const verified = new Set<string>();
+  const addresses = new Map<string, { email: string; primary: boolean; verified: boolean }[]>();
   for (const row of identRes.data ?? []) {
     const pid = row.person_id as string;
     if (row.verified_at) verified.add(pid);
-    if (row.is_primary && typeof row.email === "string" && row.email.trim())
-      primaryEmail.set(pid, row.email.trim().toLowerCase());
+    if (typeof row.email !== "string" || !row.email.trim()) continue;
+    const list = addresses.get(pid) ?? [];
+    list.push({
+      email: row.email.trim().toLowerCase(),
+      primary: Boolean(row.is_primary),
+      verified: Boolean(row.verified_at),
+    });
+    addresses.set(pid, list);
   }
 
   const rsvpStatus = new Map<string, string>();
@@ -137,8 +157,10 @@ export async function resolveAudience(sequenceKey: string): Promise<Recipient[]>
     if (seq.anchors_only && !person.is_anchor) continue;
     const state = personState({ status: rsvpStatus.get(person.id), verified: verified.has(person.id) });
     if (!states.includes(state)) continue;
-    const email = primaryEmail.get(person.id);
-    if (!email || suppressed.has(email)) continue;
+    // Reachability is a property of the addresses, not of the primary one:
+    // a dead alternate must not retire someone whose other address works.
+    const email = pickDeliverable(addresses.get(person.id), suppressed);
+    if (!email) continue;
     out.push({
       personId: person.id,
       email,
