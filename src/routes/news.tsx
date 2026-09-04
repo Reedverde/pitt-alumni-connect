@@ -119,7 +119,7 @@ function Bulletin({ item, quiet = false }: { item: NewsItem; quiet?: boolean }) 
           className="mt-2 max-w-[640px]"
           style={{ fontSize: 15, color: "var(--sterling)", whiteSpace: "pre-line" }}
         >
-          {item.body}
+          <Linkify text={item.body} />
         </p>
       ) : null}
       {link ? (
