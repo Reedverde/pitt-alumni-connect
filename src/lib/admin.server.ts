@@ -2038,6 +2038,7 @@ export type AdminDashboard = {
   sendTotals: SendTotals;
   rsvpSources: SourceCount[];
   rsvpBreakdown: RsvpBreakdown;
+  overview: AdminOverview;
 };
 
 export async function dashboard(): Promise<AdminDashboard> {
@@ -2062,6 +2063,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     rsvpSources(),
     rsvpBreakdown(),
   ]);
+  const summary = await overview(queue, duplicates);
   return {
     isAdmin: true,
     queue,
@@ -2079,6 +2081,7 @@ export async function dashboard(): Promise<AdminDashboard> {
     sendTotals: totals,
     rsvpSources: sources,
     rsvpBreakdown: breakdown,
+    overview: summary,
     seasonYear: CURRENT_SEASON,
   };
 }
