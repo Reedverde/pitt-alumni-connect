@@ -81,7 +81,7 @@ export function EventSubPrompts({
   return (
     <div>
       <p style={{ fontSize: 14, color: "var(--steel-ink)" }}>
-        Two of the weekend's pieces need their own headcount. A no is just as useful as a yes.
+        Each piece of the weekend wants its own answer. A no is just as useful as a yes.
       </p>
 
       <div className="mt-5 flex flex-col gap-6">

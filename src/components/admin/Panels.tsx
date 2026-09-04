@@ -217,9 +217,9 @@ export function HeadcountPanel({ headcount }: { headcount: Headcount }) {
   );
 }
 
-/** Per event answers for the two events we ask about individually. Until
- *  someone answers one of them there is nothing to tabulate, so the panel says
- *  so rather than showing a table of zeros. */
+/** Per event answers for every event of the current edition. Until someone
+ *  answers one of them there is nothing to tabulate, so the panel says so
+ *  rather than showing a table of zeros. */
 export function EventHeadcountPanel({ rows }: { rows: EventHeadcountRow[] }) {
   const anyAnswers = rows.some((row) => row.yes + row.no > 0);
 
@@ -228,7 +228,7 @@ export function EventHeadcountPanel({ rows }: { rows: EventHeadcountRow[] }) {
       {rows.length === 0 ? (
         <Empty>No tracked events on the current edition yet.</Empty>
       ) : !anyAnswers ? (
-        <Empty>No answers yet for either event.</Empty>
+        <Empty>No answers yet for any event.</Empty>
       ) : (
         <div className="overflow-x-auto" style={{ borderBottom: hairline }}>
           <table className="w-full" style={{ borderCollapse: "collapse", minWidth: 520 }}>
