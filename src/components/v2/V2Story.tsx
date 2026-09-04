@@ -159,7 +159,7 @@ export function V2Story() {
           fill="var(--royal-dark)"
           opacity={0.9}
           tier="hero"
-          corners={["tl", "bl"]}
+          corners={["tl"]}
           style={{ width: 420, height: 220 }}
         />
       </section>

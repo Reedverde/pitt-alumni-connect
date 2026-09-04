@@ -19,6 +19,8 @@ type RoundedChamferBoxProps = RoundedChamferGeometry & {
   ratio?: string;
   className?: string;
   style?: CSSProperties;
+  /** Decorative planes mark themselves hidden from assistive tech. */
+  "aria-hidden"?: boolean | "true" | "false";
   children?: ReactNode;
 };
 
@@ -40,6 +42,7 @@ export function RoundedChamferBox({
   ratio,
   className,
   style,
+  "aria-hidden": ariaHidden,
   children,
 }: RoundedChamferBoxProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -69,6 +72,7 @@ export function RoundedChamferBox({
   return (
     <div
       ref={ref}
+      aria-hidden={ariaHidden}
       className={className}
       style={{ position: "relative", width: "100%", aspectRatio: ratio, ...style }}
     >
