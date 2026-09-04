@@ -55,15 +55,17 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
         aria-hidden="true"
         className="pointer-events-none absolute select-none"
         style={{
-          left: "-2%",
-          top: "44%",
+          left: "1%",
+          right: "1%",
+          top: "52%",
           transform: "rotate(-6deg)",
           fontFamily: '"Great Vibes", cursive',
-          fontSize: "clamp(96px, 20vw, 340px)",
+          fontSize: "clamp(56px, 11vw, 190px)",
           lineHeight: 0.8,
           whiteSpace: "nowrap",
+          textAlign: "center",
           color: "var(--pure-white)",
-          opacity: 0.07,
+          opacity: 0.09,
         }}
       >
         En Sabah Nur
