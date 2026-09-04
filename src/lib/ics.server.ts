@@ -18,6 +18,11 @@ export type CalendarEvent = {
   sort_order: number;
   map_url: string | null;
   ticket_url: string | null;
+  /** Planning state: tentative, confirmed, changed, cancelled. */
+  status: string;
+  /** Who the event is for. Codes; labels live in event-model.ts. */
+  audience: string;
+  timezone: string;
 };
 
 function publicClient() {
@@ -32,9 +37,12 @@ export async function loadEvents(year: number, id?: string): Promise<CalendarEve
   let query = publicClient()
     .from("events")
     .select(
-      "id, title, day_number, starts_at, ends_at, time_tbd, location, notes, division, sort_order, map_url, ticket_url",
+      "id, title, day_number, starts_at, ends_at, time_tbd, location, notes, division, sort_order, map_url, ticket_url, status, audience, timezone",
     )
     .eq("event_year", year)
+    // Unpublished events are organizer drafts. The public reads, the calendar
+    // feeds, and the emails all share this one gate.
+    .eq("published", true)
     .order("day_number", { ascending: true })
     .order("sort_order", { ascending: true });
   if (id) query = query.eq("id", id);
@@ -94,6 +102,8 @@ export function buildIcs(events: CalendarEvent[], edition: EditionSummary): stri
   ];
 
   for (const event of events) {
+    // A cancelled event does not belong in anyone's calendar.
+    if (event.status === "cancelled") continue;
     const description = [
       event.notes ?? "",
       // Any event flagged time to be confirmed is written as an all-day entry
