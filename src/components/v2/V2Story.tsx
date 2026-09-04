@@ -47,7 +47,7 @@ const DAYS = [
   {
     day: "Saturday",
     photo: ALUMNI_WEEKEND.saturday,
-    ratio: "3 / 4",
+    ratio: "1 / 1",
     corners: ["tr", "bl"] as const,
     notch: 72,
     offset: "md:-mt-16",
@@ -71,6 +71,7 @@ export function V2Story() {
   const climb = ACTION.nightRun;
   const roots = ACTION.catchClose;
   const pile = ACTION.contested;
+  const transition = ACTION.sky;
 
   return (
     <>
@@ -264,15 +265,13 @@ export function V2Story() {
               </p>
             </div>
             <div className="md:col-span-7">
-              {climb && (
-                <ChamferPhoto
-                  src={climb.src}
-                  alt={climb.alt}
-                  ratio="21 / 9"
-                  corners={["tl", "tr", "br", "bl"]}
-                  notch={40}
-                />
-              )}
+              <ChamferPhoto
+                src={transition.src}
+                alt={transition.alt}
+                ratio="21 / 9"
+                corners={["tl", "tr", "br", "bl"]}
+                notch={40}
+              />
             </div>
           </div>
         </div>
