@@ -102,46 +102,27 @@ export function V2Story() {
             </div>
           </div>
 
-          <div className="mt-14 grid grid-cols-1 gap-10 md:mt-20 md:grid-cols-12 md:gap-8">
-            {/* Portrait crop, deliberately dropped below the text baseline. */}
-            <div className="md:col-span-4 md:pt-16">
-              <ChamferPhoto
-                src={clemsonBye.url}
-                alt="Pitt players in team hoodies lying together on the grass between games"
-                ratio="3 / 4"
-                corners={["tl", "br"]}
-                notch={52}
-              />
-            </div>
-
-            <div className="md:col-span-8">
+          {/* One composition: the narrative and the 2005 photograph read together. */}
+          <div className="mt-14 grid grid-cols-1 items-center gap-10 md:mt-20 md:grid-cols-12 md:gap-12">
+            <div className="md:col-span-7">
               <p className="max-w-[620px]" style={lede}>
-                2025 was the first year since 2004 we missed Nationals. Everyone felt it. Then this
+                2025 was the first year since 2005 we missed Nationals. Everyone felt it. Then this
                 year, we made it back.
               </p>
-
-              <div className="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2 md:items-start">
-                <p className="max-w-[560px]" style={body}>
-                  That's not a coincidence. It's not one class of seniors. It's every alum who ever
-                  showed up to a Sunday scrimmage, made an introduction, sent a "you good?" text to
-                  a sophomore having a rough season. The program doesn't run on nostalgia. It runs
-                  on people staying in it.
-                </p>
-                <ChamferPhoto
-                  src={pile.src}
-                  alt={pile.alt}
-                  ratio="4 / 3"
-                  corners={["tr", "bl"]}
-                  notch={48}
-                  className="md:-mt-10"
-                />
-              </div>
+              <p className="mt-8 max-w-[560px]" style={body}>
+                That's not a coincidence. It's not one class of seniors. It's every alum who ever
+                showed up to a Sunday scrimmage, made an introduction, sent a "you good?" text to
+                a sophomore having a rough season. The program doesn't run on nostalgia. It runs
+                on people staying in it.
+              </p>
+              <p className="mt-6 max-w-[560px]" style={body}>
+                Every season since has been measured against the one where a Pitt team first showed
+                up at Nationals. The names on the board below start well before that photograph and
+                keep going after it.
+              </p>
             </div>
-          </div>
 
-          {/* ARCHIVE: one specific, captioned historical moment. */}
-          <div className="mt-16 grid grid-cols-1 items-end gap-8 md:mt-24 md:grid-cols-12">
-            <div className="md:col-span-7">
+            <div className="md:col-span-5">
               <figure className="m-0">
                 <ChamferPhoto
                   src={firstNationals2005.url}
@@ -162,14 +143,6 @@ export function V2Story() {
                   The first Pitt team to reach Nationals &middot; 2005
                 </figcaption>
               </figure>
-            </div>
-            <div className="md:col-span-5 md:pb-6">
-              <SlashEyebrow>Where it started</SlashEyebrow>
-              <p className="mt-4 max-w-[460px]" style={body}>
-                Every season since has been measured against the one where a Pitt team first showed
-                up at Nationals. The names on the board below start well before that photograph and
-                keep going after it.
-              </p>
             </div>
           </div>
 
