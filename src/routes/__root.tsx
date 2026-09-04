@@ -20,22 +20,66 @@ import { OG_IMAGE, SITE_ORIGIN } from "../lib/site-url";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+    <div
+      style={{ background: "var(--field-white)" }}
+      className="flex min-h-screen flex-col items-center justify-center px-5"
+    >
+      {/* pb-40 keeps the actions clear of the floating RSVP bar, which on a
+          phone is a full width strip along the bottom edge. */}
+      <main id="main" className="w-full max-w-[560px] pb-40 text-center">
+        <p
+          style={{
+            fontFamily: '"Space Mono", monospace',
+            fontSize: 13,
+            letterSpacing: "0.08em",
+            color: "var(--sterling)",
+          }}
+        >
+          404
         </p>
-        <div className="mt-6">
+        <h1
+          className="display-30 mt-3"
+          style={{ color: "var(--sabah-black)" }}
+        >
+          That page is not here.
+        </h1>
+        <p className="mt-4" style={{ fontSize: 16, color: "var(--steel-ink)", lineHeight: 1.6 }}>
+          The link may be old, or the page may have moved. The board and the schedule are both
+          one tap away.
+        </p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="label-caps"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              minHeight: 44,
+              padding: "0 20px",
+              borderRadius: 7,
+              background: "var(--pitt-royal)",
+              color: "var(--pure-white)",
+              textDecoration: "none",
+            }}
           >
-            Go home
+            Find your name
+          </Link>
+          <Link
+            to="/schedule"
+            className="label-caps"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              minHeight: 44,
+              padding: "0 12px",
+              color: "var(--pitt-royal)",
+              textDecoration: "none",
+            }}
+          >
+            This year&rsquo;s schedule
           </Link>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
