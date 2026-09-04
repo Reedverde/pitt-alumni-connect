@@ -33,7 +33,7 @@ export function readEventIntent(): EventIntent | null {
       eventId: String(parsed.eventId),
       status: parsed.status,
       partySize: Math.min(10, Math.max(1, Number(parsed.partySize ?? 1) || 1)),
-      returnTo: typeof parsed.returnTo === "string" ? parsed.returnTo : "/weekend",
+      returnTo: typeof parsed.returnTo === "string" ? parsed.returnTo : "/schedule",
     };
   } catch {
     return null;

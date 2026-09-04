@@ -201,7 +201,7 @@ export async function publishDigest(opts: {
       post_type: "daily_digest",
       status: "published",
       published_at: new Date().toISOString(),
-      related_url: `${SITE_ORIGIN}/weekend`,
+      related_url: `${SITE_ORIGIN}/schedule`,
       author: opts.author ?? null,
       event_year: edition?.event_year ?? null,
       created_by: opts.actorPersonId ?? null,

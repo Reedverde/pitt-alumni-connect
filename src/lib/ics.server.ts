@@ -125,7 +125,7 @@ export function buildIcs(events: CalendarEvent[], edition: EditionSummary): stri
     lines.push(`SUMMARY:${escapeText(event.title)}`);
     if (event.location) lines.push(`LOCATION:${escapeText(event.location)}`);
     lines.push(`DESCRIPTION:${escapeText(description)}`);
-    lines.push(`URL:${SITE_URL}/weekend`);
+    lines.push(`URL:${SITE_URL}/schedule`);
     lines.push("END:VEVENT");
   }
 

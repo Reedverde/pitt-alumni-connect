@@ -108,7 +108,7 @@ function MobileMenu() {
           <Link to="/" className="label-caps px-1 py-2" style={itemStyle} activeProps={{ style: activeStyle }} activeOptions={{ exact: true }}>
             Board
           </Link>
-          <Link to="/weekend" className="label-caps px-1 py-2" style={itemStyle} activeProps={{ style: activeStyle }}>
+          <Link to="/schedule" className="label-caps px-1 py-2" style={itemStyle} activeProps={{ style: activeStyle }}>
             Weekend
           </Link>
           <Link to="/alumni" className="label-caps px-1 py-2" style={itemStyle} activeProps={{ style: activeStyle }}>
@@ -160,7 +160,7 @@ export function SiteNav(_props: { onClaim?: () => void }) {
         <Link to="/" className="label-caps" style={linkStyle} activeProps={{ style: activeStyle }} activeOptions={{ exact: true }}>
           Board
         </Link>
-        <Link to="/weekend" className="label-caps" style={linkStyle} activeProps={{ style: activeStyle }}>
+        <Link to="/schedule" className="label-caps" style={linkStyle} activeProps={{ style: activeStyle }}>
           Weekend
         </Link>
         <Link to="/alumni" className="label-caps" style={linkStyle} activeProps={{ style: activeStyle }}>

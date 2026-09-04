@@ -15,7 +15,7 @@ import {
 } from "./email-chrome";
 import { currentEditionYear, loadCurrentEdition } from "./editions.server";
 import { logAuthAttempt } from "./auth-attempts.server";
-import { DISCORD_INVITE_URL } from "./site-url";
+import { DISCORD_INVITE_URL, SITE_ORIGIN } from "./site-url";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
@@ -828,7 +828,7 @@ export function buildTMinus28Body(opts: {
  *  t_minus_14: the schedule is locked.
  *  ------------------------------------------------------------------------ */
 
-export const T_MINUS_14_WEEKEND_URL = "https://alumni.pittultimate.org/weekend?src=email";
+export const T_MINUS_14_WEEKEND_URL = `${SITE_ORIGIN}/schedule?src=email`;
 
 export const T_MINUS_14_SUBJECT = "Times are locked";
 

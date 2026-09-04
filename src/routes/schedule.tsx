@@ -52,9 +52,10 @@ export const Route = createFileRoute("/schedule")({
         content: "Three days in Pittsburgh. Everybody who ever played. Add any of it to your calendar.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: `${SITE_ORIGIN}/weekend` },
+      { property: "og:url", content: `${SITE_ORIGIN}/schedule` },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: `${SITE_ORIGIN}/schedule` }],
   }),
   errorComponent: () => (
     <main className="mx-auto max-w-[560px] px-5 py-24">
@@ -183,7 +184,7 @@ function timeLabel(event: ScheduleEvent) {
 }
 
 function WeekendPage() {
-  const { data } = useSuspenseQuery(weekendQuery);
+  const { data } = useSuspenseQuery(scheduleQuery);
   const [claimOpen, setClaimOpen] = useState(false);
   const navigate = useNavigate();
   const season = resolveSeason(data.edition, null, todayInNewYork());
