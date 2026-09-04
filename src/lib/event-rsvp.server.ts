@@ -11,16 +11,18 @@ export type PromptEvent = {
   location: string | null;
 };
 
-/** Every event on the current edition gets an individual RSVP prompt, including
- *  events still marked is_placeholder (a placeholder can still collect interest
- *  signal before its time or location locks). key is the event id itself now,
- *  since there is no longer a fixed small set of named slots to key by. */
+/** Prompt events are the current edition's events flagged prompt_rsvp: only
+ *  these collect an individual RSVP answer. Placeholders are eligible too (a
+ *  placeholder can still collect interest signal before its time or location
+ *  locks). key is the event id itself now, since there is no longer a fixed
+ *  small set of named slots to key by. */
 export async function loadPromptEvents(): Promise<PromptEvent[]> {
   const edition = await loadCurrentEdition();
   const { data } = await supabaseAdmin
     .from("events")
     .select("id, title, starts_at, location, sort_order")
     .eq("event_year", edition.event_year)
+    .eq("prompt_rsvp", true)
     .order("sort_order", { ascending: true });
 
   return (data ?? []).map((e) => ({
@@ -72,11 +74,43 @@ export async function submitEventRsvpsServer(input: {
     .eq("event_year", edition.event_year)
     .maybeSingle();
   const going = rsvp?.status === "going";
-  // A yes to a piece of the weekend is only meaningful from someone who is
-  // going. A no carries no contradiction, so it is accepted from anyone: the
-  // event cards let a maybe rule an event out without changing the weekend.
-  if (!going && (input.answers ?? []).some((a) => a.status !== "no"))
-    return { ok: false, written: 0 };
+  // A yes to a piece of the weekend from someone not marked going is a
+  // promotion, not a rejection: saying yes to the BBQ or the alumni game IS
+  // saying you are coming. A no never changes the weekend answer, so the
+  // event cards let a maybe rule an event out freely.
+  const saysYes = (input.answers ?? []).some((a) => a.status === "yes");
+  if (!going && saysYes) {
+    const nowIso = new Date().toISOString();
+    const { data: promoted, error: promoteError } = await supabaseAdmin
+      .from("rsvps")
+      .upsert(
+        {
+          person_id: input.personId,
+          event_year: edition.event_year,
+          status: "going",
+          responded_at: nowIso,
+        },
+        { onConflict: "person_id,event_year" },
+      )
+      .select("id")
+      .maybeSingle();
+    if (promoteError) return { ok: false, written: 0 };
+    // Silent on purpose: no confirmation email. The person answered an event
+    // question, not a weekend question, and a surprise confirmation is noise.
+    await supabaseAdmin.from("audit_log").insert({
+      actor_person_id: input.personId,
+      action: "rsvp_promoted_by_event_answer",
+      table_name: "rsvps",
+      record_id: (promoted?.id as string) ?? null,
+      after: {
+        status: "going",
+        previous_status: rsvp?.status ?? null,
+        event_year: edition.event_year,
+      },
+    });
+  }
+
+
 
 
   const allowed = new Set((await loadPromptEvents()).map((e) => e.id));

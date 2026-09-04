@@ -452,6 +452,7 @@ export type Database = {
           location: string | null
           map_url: string | null
           notes: string | null
+          prompt_rsvp: boolean
           sort_order: number
           starts_at: string | null
           ticket_url: string | null
@@ -468,6 +469,7 @@ export type Database = {
           location?: string | null
           map_url?: string | null
           notes?: string | null
+          prompt_rsvp?: boolean
           sort_order?: number
           starts_at?: string | null
           ticket_url?: string | null
@@ -484,6 +486,7 @@ export type Database = {
           location?: string | null
           map_url?: string | null
           notes?: string | null
+          prompt_rsvp?: boolean
           sort_order?: number
           starts_at?: string | null
           ticket_url?: string | null
