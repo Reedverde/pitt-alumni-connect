@@ -55,8 +55,12 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
   const run = async (fn: () => Promise<unknown>, ok: string) => {
     setBusy(true);
     try {
-      await fn();
+      const result = (await fn()) as { queuedNews?: boolean } | null;
       toast.success(ok);
+      // A public change must never quietly vanish: say so at the moment it queues.
+      if (result?.queuedNews) {
+        toast.info("Queued a public update. Publish it from the News tab.", { duration: 8000 });
+      }
       onSaved();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Couldn't save.");
@@ -64,6 +68,7 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
       setBusy(false);
     }
   };
+
 
   const fillDefaults = async () => {
     const year = Number(draft.event_year);
