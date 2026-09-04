@@ -72,6 +72,7 @@
   --font-mono: "Space Mono", ui-monospace, monospace;
   --color-sabah-black: var(--sabah-black);
   --color-pitt-royal: var(--pitt-royal);
+  --color-royal-dark: var(--royal-dark);
   --color-pitt-gold: var(--pitt-gold);
   --color-steel-ink: var(--steel-ink);
   --color-sterling: var(--sterling);
@@ -91,6 +92,7 @@
   --chrome-height: var(--nav-height);
   --sabah-black: #0B0B0C;
   --pitt-royal: #003594;
+  --royal-dark: #002A75;
   --pitt-gold: #FFB81C;
   --steel-ink: #1C2536;
   --sterling: #6B7280;
