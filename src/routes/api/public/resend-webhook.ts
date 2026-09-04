@@ -52,15 +52,15 @@ export const Route = createFileRoute("/api/public/resend-webhook")({
         const hardBounce = type === "email.bounced" && !softBounce;
 
         // The send row is matched by the Resend message id, stored at send time.
-        let sendRow: { id: string; to_email: string | null; soft_bounce_count: number } | null =
-          null;
+        type SendRow = { id: string; to_email: string | null; soft_bounce_count: number };
+        let sendRow: SendRow | null = null;
         if (messageId) {
           const { data } = await supabaseAdmin
             .from("sends")
             .select("id, to_email, soft_bounce_count")
             .eq("provider_message_id", messageId)
             .maybeSingle();
-          sendRow = (data as typeof sendRow) ?? null;
+          sendRow = (data as unknown as SendRow | null) ?? null;
 
           await supabaseAdmin
             .from("sends")
