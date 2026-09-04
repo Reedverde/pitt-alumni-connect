@@ -1963,6 +1963,9 @@ export type PeopleFilterKey =
   | "claimed"
   | "no_contact"
   | "missing_event_answers"
+  | "event_yes"
+  | "event_no"
+  | "event_no_choice"
   | "needs_review"
   | "unplaced"
   | "bad_contact";
