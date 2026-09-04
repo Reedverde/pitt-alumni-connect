@@ -176,11 +176,16 @@ function AlumniPage() {
               Friday is always a social night.
             </h2>
             <p className="mt-4" style={body}>
-              This year it is a crawl through Oakland and the Pitt away game on a screen.
+              <strong style={{ fontWeight: 700, color: "var(--sabah-black)" }}>Friday.</strong> A
+              crawl through Oakland and the Pitt away game on a screen.
             </p>
             <p className="mt-4" style={body}>
-              Saturday is the cookout, with the field and the playground right there. Sunday is
-              currents versus alumni. Play if you want to, watch if you don't. We just want you
+              <strong style={{ fontWeight: 700, color: "var(--sabah-black)" }}>Saturday.</strong>{" "}
+              The cookout, with the field and the playground right there.
+            </p>
+            <p className="mt-4" style={body}>
+              <strong style={{ fontWeight: 700, color: "var(--sabah-black)" }}>Sunday.</strong>{" "}
+              Currents versus alumni. Play if you want to, watch if you don't. We just want you
               there.
             </p>
           </Measure>
