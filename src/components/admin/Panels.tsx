@@ -16,7 +16,6 @@ import type {
   DigestCohort,
   DivisionRow,
   DripData,
-  EventHeadcountRow,
   Headcount,
   TeamNameRow,
 } from "@/lib/admin.server";
@@ -218,56 +217,6 @@ export function HeadcountPanel({ headcount }: { headcount: Headcount }) {
         Per event answers and expected heads live on the Overview tab, where every tally opens the
         people behind it.
       </p>
-    </Section>
-  );
-}
-
-/** Per event answers for every event of the current edition. Until someone
- *  answers one of them there is nothing to tabulate, so the panel says so
- *  rather than showing a table of zeros. */
-export function EventHeadcountPanel({ rows }: { rows: EventHeadcountRow[] }) {
-  const anyAnswers = rows.some((row) => row.yes + row.no > 0);
-
-  return (
-    <Section eyebrow="Per event" title="Every event of the weekend">
-      {rows.length === 0 ? (
-        <Empty>No tracked events on the current edition yet.</Empty>
-      ) : !anyAnswers ? (
-        <Empty>No answers yet for any event.</Empty>
-      ) : (
-        <div className="overflow-x-auto" style={{ borderBottom: hairline }}>
-          <table className="w-full" style={{ borderCollapse: "collapse", minWidth: 520 }}>
-            <thead>
-              <tr>
-                {["Event", "Yes", "No", "Going, no answer", "Heads"].map((h) => (
-                  <th key={h} style={headStyle}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.eventId}>
-                  <td style={cellStyle}>{row.title}</td>
-                  <td style={cellStyle}>
-                    <Num>{row.yes}</Num>
-                  </td>
-                  <td style={cellStyle}>
-                    <Num>{row.no}</Num>
-                  </td>
-                  <td style={cellStyle}>
-                    <Num>{row.unanswered}</Num>
-                  </td>
-                  <td style={cellStyle}>
-                    <Num>{row.heads}</Num>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </Section>
   );
 }
