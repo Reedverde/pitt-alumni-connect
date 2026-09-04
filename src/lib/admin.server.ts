@@ -1320,10 +1320,17 @@ export async function undoMerge(actor: string | null, input: { loserId: string }
 
 // ---------------------------------------------------------------- export
 
+/** The planning export. Admin only, audited, and deliberately wide: one row a
+ *  person, with this edition's answer, heads, and a column for every event that
+ *  asks, so a spreadsheet can do the catering arithmetic. */
 export async function exportCsv(actor: string | null) {
   const { data } = await supabaseAdmin.from("people").select(PERSON_COLUMNS).limit(3000);
   const ctx = await loadContext();
   const rows = await decorateAll((data ?? []) as PersonRow[], ctx);
+  const eventYear = (await loadCurrentEdition()).event_year;
+
+  const { loadPromptEvents } = await import("./event-rsvp.server");
+  const events = await loadPromptEvents();
 
   const { data: identities } = await supabaseAdmin
     .from("identities")
@@ -1332,6 +1339,9 @@ export async function exportCsv(actor: string | null) {
   const primary = new Map<string, string>();
   for (const row of identities ?? [])
     if (!primary.has(row.person_id as string)) primary.set(row.person_id as string, row.email as string);
+
+  const slug = (title: string) =>
+    title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 40);
 
   const header = [
     "member_no",
@@ -1345,13 +1355,18 @@ export async function exportCsv(actor: string | null) {
     "is_anchor",
     "needs_review",
     "primary_email",
+    `answer_${eventYear}`,
+    `heads_${eventYear}`,
+    ...events.flatMap((event) => [`${slug(event.title)}_answer`, `${slug(event.title)}_heads`]),
   ];
   const esc = (v: unknown) => {
     const s = v === null || v === undefined ? "" : String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const body = rows.map((r) =>
-    [
+  const body = rows.map((r) => {
+    const answers = new Map(r.event_answers.map((a) => [a.event_id, a]));
+    const annual = r.rsvp_history.find((h) => h.event_year === eventYear) ?? null;
+    return [
       r.member_no,
       r.first_name,
       r.last_name,
@@ -1363,15 +1378,28 @@ export async function exportCsv(actor: string | null) {
       r.is_anchor,
       r.needs_review,
       primary.get(r.id) ?? "",
+      annual?.status ?? "no_response",
+      annual?.status === "going" ? annual.party_size : "",
+      ...events.flatMap((event) => {
+        const answer = answers.get(event.id);
+        // An absent row is genuinely unanswered, never a no.
+        return [answer?.status ?? "", answer?.status === "yes" ? answer.party_size : ""];
+      }),
     ]
       .map(esc)
-      .join(","),
-  );
+      .join(",");
+  });
   const csv = [header.join(","), ...body].join("\n");
   const date = new Date().toISOString().slice(0, 10);
-  await audit(actor, "admin_csv_export", "people", null, null, { rows: rows.length, date });
-  return { filename: `pitt-alumni-export-${date}.csv`, csv, rows: rows.length };
+  await audit(actor, "admin_csv_export", "people", null, null, {
+    rows: rows.length,
+    date,
+    event_year: eventYear,
+    columns: header.length,
+  });
+  return { filename: `pitt-alumni-planning-${eventYear}-${date}.csv`, csv, rows: rows.length };
 }
+
 
 // ---------------------------------------------------------------- panels
 
