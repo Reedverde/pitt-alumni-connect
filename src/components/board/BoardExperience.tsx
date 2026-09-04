@@ -818,126 +818,62 @@ function GoldDot() {
   );
 }
 
-/** One neutral radio row. Used by both the program filter and the status
- *  filter so there is only ever one pattern. No gold: gold means attending. */
-function StatusRadioChips({
-  legend,
-  options,
-  value,
-  onPick,
-}: {
-  legend: string;
-  options: { code: string; label: string }[];
-  value: string | null;
-  onPick: (code: string) => void;
-}) {
-  return (
-    <div className="mt-2">
-      <p className="label-caps mb-2" style={{ color: "var(--sterling)" }}>
-        {legend}
-      </p>
-      <div role="radiogroup" aria-label={legend} className="flex flex-wrap gap-2">
-        {options.map((o) => {
-          const on = value === o.code;
-          return (
-            <button
-              key={o.code}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              onClick={() => onPick(o.code)}
-              className="cursor-pointer rounded-full px-3 py-2"
-              style={{
-                background: on ? "var(--pitt-royal)" : "transparent",
-                border: on ? "1px solid transparent" : "1px solid var(--chalk)",
-                color: on ? "var(--pure-white)" : "var(--sterling)",
-                fontSize: 12,
-                fontWeight: 500,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-              }}
-            >
-              {o.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/** Small legend that maps the board chip colors to what they mean. */
+/** The legend, folded away behind one line. It is reference material, not the
+ *  first thing to read, and it keeps this year's answer separate from the
+ *  permanent state of a record. Every swatch is paired with a word. */
 function BoardKey() {
-  const items = [
-    { label: "Not claimed", dot: "var(--chalk)", border: "1px solid var(--chalk)", bg: "transparent", text: "var(--sterling)" },
-    { label: "Claimed", dot: "var(--pitt-royal)", border: "1px solid var(--pitt-royal)", bg: "transparent", text: "var(--pitt-royal)" },
+  const thisYear = [
+    { label: "Coming", dot: "var(--sabah-black)", border: "1px solid transparent", bg: "var(--pitt-gold)", text: "var(--sabah-black)" },
     { label: "Maybe", dot: "var(--pitt-gold)", border: "1px solid var(--pitt-gold)", bg: "transparent", text: "var(--steel-ink)" },
-    { label: "Going", dot: "var(--sabah-black)", border: "1px solid transparent", bg: "var(--pitt-gold)", text: "var(--sabah-black)" },
-    { label: "Remembered", dot: "var(--pure-white)", border: "1px solid transparent", bg: "var(--sabah-black)", text: "var(--pure-white)" },
   ];
-  return (
-    <div className="mt-5">
-      <p className="label-caps mb-2" style={{ color: "var(--sterling)" }}>
-        Key
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {items.map((item) => (
+  const profile = [
+    { label: "Claimed their name", dot: "var(--pitt-royal)", border: "1px solid var(--pitt-royal)", bg: "transparent", text: "var(--pitt-royal)" },
+    { label: "Not claimed yet", dot: "var(--chalk)", border: "1px solid var(--chalk)", bg: "transparent", text: "var(--steel-ink)" },
+    { label: "In memoriam", dot: "var(--pure-white)", border: "1px solid transparent", bg: "var(--sabah-black)", text: "var(--pure-white)" },
+  ];
+  const row = (items: typeof thisYear) => (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span
+          key={item.label}
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5"
+          style={{ background: item.bg, border: item.border, color: item.text, fontSize: 12, fontWeight: 500 }}
+        >
           <span
-            key={item.label}
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5"
-            style={{ background: item.bg, border: item.border, color: item.text, fontSize: 12, fontWeight: 500 }}
-          >
-            <span
-              aria-hidden="true"
-              className="inline-block rounded-full"
-              style={{ width: 6, height: 6, background: item.dot }}
-            />
-            <span className="label-caps" style={{ fontSize: 10 }}>{item.label}</span>
-          </span>
-        ))}
-      </div>
+            aria-hidden="true"
+            className="inline-block rounded-full"
+            style={{ width: 6, height: 6, background: item.dot }}
+          />
+          <span className="label-caps" style={{ fontSize: 10 }}>{item.label}</span>
+        </span>
+      ))}
     </div>
   );
-}
-
-function buildDecades(groups: YearGroup[]) {
-  const years = groups.flatMap((g) => g.years);
-  if (years.length === 0) return [] as { label: string; from: number; to: number }[];
-  const max = Math.max(...years);
-  const bands = [{ label: "1998–2009", from: 1998, to: 2009 }];
-  for (let from = 2010; from <= max; from += 10) {
-    const to = Math.min(from + 9, max);
-    bands.push({ label: from === to ? String(from) : `${from}–${to}`, from, to });
-  }
-  return bands;
-}
-
-function DecadeRail({ groups }: { groups: YearGroup[] }) {
-  const DECADES = buildDecades(groups);
   return (
-    <nav
-      aria-label="Jump to a decade"
-      className="decade-rail sticky z-20 mt-6 flex flex-wrap items-center gap-3 py-3"
-      style={{ background: "var(--field-white)", borderBottom: "1px solid var(--chalk)" }}
-    >
-      {DECADES.map((decade, i) => {
-        const target = groups.find((g) => g.latestYear >= decade.from && g.years[0] <= decade.to);
-        return (
-          <span key={decade.label} className="flex items-center gap-3">
-            {i > 0 && <span style={{ color: "var(--chalk)" }}>·</span>}
-            <a
-              href={target ? `#${target.key}` : "#top"}
-              className="label-caps"
-              style={{ color: "var(--pitt-royal)" }}
-            >
-              {decade.label}
-            </a>
-          </span>
-        );
-      })}
-    </nav>
+    <details className="mt-5 max-w-[560px]">
+      <summary
+        className="label-caps cursor-pointer"
+        style={{ color: "var(--pitt-royal)", minHeight: 36, display: "flex", alignItems: "center" }}
+      >
+        What the colours mean
+      </summary>
+      <div className="mt-2 pb-1">
+        <p className="label-caps" style={{ color: "var(--sterling)" }}>
+          This year
+        </p>
+        {row(thisYear)}
+        <p className="label-caps mt-4" style={{ color: "var(--sterling)" }}>
+          Profile
+        </p>
+        {row(profile)}
+        <p className="mt-3" style={{ fontSize: 13, color: "var(--steel-ink)" }}>
+          In memoriam is a permanent, respectful category. It is never an answer about the weekend.
+        </p>
+      </div>
+    </details>
   );
 }
+
 
 /** Coach-only people have no year to place them on, so they pin above the board. */
 function CoachesRow({
