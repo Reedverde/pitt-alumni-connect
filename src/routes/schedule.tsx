@@ -31,8 +31,8 @@ import { ClaimDialog } from "@/components/claim/ClaimDialog";
 import { DiscordCta } from "@/components/DiscordCta";
 import { LatestNews } from "@/components/news/LatestNews";
 
-const weekendQuery = queryOptions({
-  queryKey: ["weekend-page"],
+const scheduleQuery = queryOptions({
+  queryKey: ["schedule-page"],
   queryFn: () => getWeekendPage(),
 });
 
