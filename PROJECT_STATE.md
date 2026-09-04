@@ -777,3 +777,13 @@ since the person is not signed in yet).
 - Party size lives only under Yes. Moving away from Yes writes `party_size = 1`, so no stale planned heads survive in `admin_event_rsvp_totals`.
 - A yes from someone not marked going promotes the weekend answer, returns `promotedToGoing`, and the row says "Saying yes here also set your weekend answer to going". A hint above the list warns before the fact when the overall answer is not going.
 - Feedback is inline per row: Saving, Saved, or a retry message, with `role="status"` and an `aria-live` reading of the current value. The deadline lock is enforced server side by `assertRsvpEditable`; the locked card renders the answers as plain text.
+
+## Phase 7 (whole site visual, copy and accessibility pass)
+- Schedule, News and editions now render inside PageShell, so one masthead and one footer everywhere.
+- Alumni is evergreen only: annual itinerary, 2026 return story, board explainer and repeat claim CTAs removed. Schedule owns logistics, News owns what changed, /me owns personal answers.
+- Give merged PayPal and Venmo into one direct gift card. Recipient and tax wording unchanged.
+- Photo duotone code removed entirely from PhotoSlot.
+- Touch targets: 44px minimum for real controls on coarse pointers; inline prose links unaffected.
+- Board name chips truncate instead of pushing the page sideways on phones. This also fixed the long standing mobile overflow on / and /rsvp.
+- Verified every public, member and admin route at 1280 and 390 wide: no horizontal overflow, one main, no console errors.
+- Deferred: /qr stays print focused and outside the shared shell by design; legacy homepage rollback file kept until final sign off.
