@@ -92,14 +92,15 @@ export function BoardControls({
     <section aria-label="Find a name" className="pt-6">
       <div className="relative w-full max-w-[720px]">
         <label htmlFor="board-search" className="sr-only">
-          Search for your name
+          Search a name
         </label>
         <input
           id="board-search"
           type="search"
           value={search}
           autoComplete="off"
-          placeholder="Search for your name"
+          placeholder="Search a name"
+
           onChange={(e) => onSearch(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Escape") onClearSearch();
