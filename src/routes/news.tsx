@@ -91,24 +91,32 @@ function scheduleLink(item: NewsItem) {
  * so a pasted third party address stays inert text.
  */
 function Linkify({ text }: { text: string }) {
-  const parts = text.split(new RegExp(`(${SITE_ORIGIN.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}[^\\s]*)`, "g"));
-  return (
-    <>
-      {parts.map((part, i) =>
-        part.startsWith(SITE_ORIGIN) ? (
-          <a
-            key={i}
-            href={part.slice(SITE_ORIGIN.length) || "/"}
-            style={{ color: "var(--pitt-royal)", fontWeight: 600 }}
-          >
-            {part.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-          </a>
-        ) : (
-          <span key={i}>{part}</span>
-        ),
-      )}
-    </>
-  );
+  // Plain string scanning, no regex to escape. Walk the text for our own
+  // origin, take everything up to the next whitespace as the address, and
+  // leave every other character exactly as written.
+  const nodes: React.ReactNode[] = [];
+  let rest = text;
+  let key = 0;
+  for (;;) {
+    const at = rest.indexOf(SITE_ORIGIN);
+    if (at === -1) break;
+    if (at > 0) nodes.push(<span key={key++}>{rest.slice(0, at)}</span>);
+    const after = rest.slice(at);
+    const end = after.search(/\s/);
+    const url = end === -1 ? after : after.slice(0, end);
+    nodes.push(
+      <a
+        key={key++}
+        href={url.slice(SITE_ORIGIN.length) || "/"}
+        style={{ color: "var(--pitt-royal)", fontWeight: 600 }}
+      >
+        {url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+      </a>,
+    );
+    rest = end === -1 ? "" : after.slice(end);
+  }
+  if (rest) nodes.push(<span key={key++}>{rest}</span>);
+  return <>{nodes}</>;
 }
 
 function Bulletin({ item, quiet = false }: { item: NewsItem; quiet?: boolean }) {
