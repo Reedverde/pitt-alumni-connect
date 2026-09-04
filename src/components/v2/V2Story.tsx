@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
-import { RoundedChamferPhoto, CHAMFER_RADIUS } from "@/components/v2/RoundedChamferPhoto";
+import { RoundedChamferPhoto } from "@/components/v2/RoundedChamferPhoto";
+import { RoundedChamferField } from "@/components/media/RoundedChamferBox";
 import { ALUMNI_WEEKEND } from "@/components/v2/curated-photos";
 import nationalsCelebration from "@/assets/hero-nationals-celebration.jpg.asset.json";
 import firstNationals2005 from "@/assets/pitt-first-nationals-team-2005.jpg.asset.json";
@@ -40,8 +41,6 @@ const linkButton = {
 /** The three weekend photographs: one shared ratio and one shared
  *  rounded-chamfer silhouette, so the row scans as a single set of cuts. */
 const DAY_RATIO = "8 / 3";
-const DAY_NOTCH = 40;
-const DAY_RADIUS = 12;
 
 const DAYS = [
   {
@@ -102,8 +101,7 @@ export function V2Story() {
                 alt="Pitt players erupting in celebration on the field after qualifying for Nationals"
                 ratio="5 / 4"
                 corners={["tr", "bl"]}
-                notch={68}
-                radius={CHAMFER_RADIUS.portrait}
+                tier="lg"
               />
             </div>
           </div>
@@ -135,8 +133,7 @@ export function V2Story() {
                   alt="The 2005 Pitt squad, the first Pitt team to reach Nationals, posed together on the field"
                   ratio="3 / 2"
                   corners={["bl", "tr"]}
-                  notch={60}
-                  radius={CHAMFER_RADIUS.portrait}
+                  tier="lg"
                 />
                 <figcaption
                   className="mt-4"
@@ -156,16 +153,14 @@ export function V2Story() {
         </div>
 
         {/* A navy field cut on the same angle, carrying the eye into the weekend. */}
-        <div
+        <RoundedChamferField
           aria-hidden="true"
           className="absolute -bottom-44 -left-16 hidden md:block"
-          style={{
-            width: 420,
-            height: 220,
-            background: "var(--royal-dark)",
-            clipPath: "polygon(96px 0, 100% 0, 100% 100%, 0 100%, 0 96px)",
-            opacity: 0.9,
-          }}
+          fill="var(--royal-dark)"
+          opacity={0.9}
+          tier="hero"
+          corners={["tl", "bl"]}
+          style={{ width: 420, height: 220 }}
         />
       </section>
 
@@ -212,8 +207,7 @@ export function V2Story() {
                   src={d.photo.src}
                   alt={d.photo.alt}
                   ratio={DAY_RATIO}
-                  notch={DAY_NOTCH}
-                  radius={DAY_RADIUS}
+                  tier="md"
                   position={d.position}
                 />
                 <h3
@@ -279,9 +273,7 @@ export function V2Story() {
                 src={clemsonBye.url}
                 alt="Pitt players in blue and gold hoodies lying together on the grass during the Clemson bye week, a disc resting among them"
                 ratio="21 / 9"
-                corners={["tl", "tr", "br", "bl"]}
-                notch={40}
-                radius={CHAMFER_RADIUS.wide}
+                tier="md"
                 position="center 55%"
               />
             </div>
