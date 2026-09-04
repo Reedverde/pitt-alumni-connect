@@ -149,7 +149,10 @@ export async function runTargetedResend(opts: {
     pendingEvents: key === "event_rsvp_prompt" ? await loadPendingEvents() : new Map(),
   };
 
-  const sequenceId = await sequenceIdFor(key);
+  // sends carries a unique (person_id, sequence_id) key, which is exactly the
+  // already-sent rule a resend must ignore. The row is therefore logged with no
+  // sequence id and a resend: kind, so the write can never be silently dropped.
+  void sequenceIdFor;
   const rows: TargetedRow[] = [];
   let sent = 0;
   let failed = 0;
@@ -188,11 +191,11 @@ export async function runTargetedResend(opts: {
     const result = await sendPlainEmail({
       to: email,
       personId,
-      kind: `drip:${key}`,
+      kind: `resend:${key}`,
       subject: built!.subject,
       text: built!.text,
       html: built!.html,
-      sequenceId,
+      sequenceId: null,
     });
     if (result.sent) sent++;
     else failed++;
