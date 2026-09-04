@@ -37,10 +37,11 @@ const linkButton = {
   textDecoration: "none",
 };
 
-/** The three weekend photographs: one shared ratio, one shared radius, so the
- *  row scans as a set instead of three separate cuts. */
+/** The three weekend photographs: one shared ratio and one shared
+ *  rounded-chamfer silhouette, so the row scans as a single set of cuts. */
 const DAY_RATIO = "4 / 3";
-const DAY_RADIUS = 12;
+const DAY_NOTCH = 44;
+const DAY_RADIUS = 18;
 
 const DAYS = [
   {
