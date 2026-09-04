@@ -449,3 +449,14 @@
     font-size: 12pt;
   }
 }
+
+/* The three position event answer control. The thumb travels so the change is
+   visible; anyone who asks for less motion simply gets an instant jump. */
+.tri-thumb {
+  transition: transform 180ms ease, background-color 180ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tri-thumb {
+    transition: none;
+  }
+}
