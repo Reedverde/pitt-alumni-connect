@@ -641,3 +641,6 @@ Typecheck and build clean; / and the claim flow untouched; not published.
 ## /v2 hero script removed (2026-09-04)
 `/` unchanged. Removed the large low-opacity "En Sabah Nur" decorative script layer from `src/components/v2/V2Hero.tsx` and dropped the `Great Vibes` Google Font import from `src/routes/__root.tsx` since it was only used for that overlay. The centered Pitt Club Ultimate logo, editorial masthead navigation, huddle hero image, badge overlap, story composition, Three Days grid, and shared board/claim experience all remain untouched. Verified at 1280 and 390; typecheck and build clean. Not published.
 
+
+## /v2 Three Days rounded chamfers (2026-09-04)
+`/` unchanged. The Friday/Saturday/Sunday photographs keep their bold chamfered polygon silhouette, but every vertex, including the diagonal-to-horizontal junctions, is now rounded. New `src/components/v2/RoundedChamferPhoto.tsx` measures the box and applies an SVG `clipPath` (userSpaceOnUse) built by trimming each polygon vertex and inserting quadratic arcs, since plain border-radius can only round rectangles. `V2Story` uses it with a shared 4/3 ratio, notch 72, radius 14 for all three days, so ratio, dimensions, silhouette and top alignment stay identical. Original photo colour, copy and links unchanged. Verified at 1280 and 390; typecheck and build clean. Not published.
