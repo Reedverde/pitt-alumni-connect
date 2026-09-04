@@ -637,3 +637,7 @@ Typecheck and build clean; / and the claim flow untouched; not published.
 
 ## /v2 transition photo swap (2026-09-04)
 `/` unchanged. The wide photo beside the "Next" lead-in in `V2Story.tsx` is now the user-supplied `hero-clemson-on-our-bye.jpg` (players in blue hoodies and gold pants on the grass with the disc), replacing the ACTION.sky throwing frame. `ChamferPhoto` gained an optional `position` prop (object-position) and the slot uses `center 55%` so the smiling faces, hoodies, gold pants, and disc survive the 21/9 crop. Original colour, same four-corner chamfer treatment, no new image-only block. Huddle hero, centered nav, 2005 composition, Three Days, and the shared board untouched. Verified at 1280 and 390; typecheck clean. Not published.
+
+## /v2 hero script removed (2026-09-04)
+`/` unchanged. Removed the large low-opacity "En Sabah Nur" decorative script layer from `src/components/v2/V2Hero.tsx` and dropped the `Great Vibes` Google Font import from `src/routes/__root.tsx` since it was only used for that overlay. The centered Pitt Club Ultimate logo, editorial masthead navigation, huddle hero image, badge overlap, story composition, Three Days grid, and shared board/claim experience all remain untouched. Verified at 1280 and 390; typecheck and build clean. Not published.
+
