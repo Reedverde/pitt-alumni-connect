@@ -119,10 +119,12 @@ export const addMeAsPerson = createServerFn({ method: "POST" })
  *  ends and the answer stops moving: no grace period, and the page's read only
  *  state is a courtesy, not the boundary. */
 async function assertRsvpEditable(
-  client: SupabaseAuthedClient,
+  client: { rpc: (fn: never, args: never) => Promise<{ data: unknown }> },
   eventYear: number,
 ) {
-  const { data } = await client.rpc("rsvp_is_editable", { _event_year: eventYear });
+  const { data } = await client.rpc("rsvp_is_editable" as never, {
+    _event_year: eventYear,
+  } as never);
   if (data === false)
     throw new Error("That weekend is over, so the answer can no longer be changed.");
 }
