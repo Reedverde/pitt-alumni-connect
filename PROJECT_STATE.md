@@ -593,3 +593,6 @@ Nothing was sent. `outbound_email_mode` stayed `transactional_only` and every se
 
 **2026-09-04 event toggles on every event.** The per event RSVP prompts were expanded from the BBQ and Alumni Game allowlist to every event of the current edition, placeholders included, and the card level answer toggles on `/schedule` and the homepage summary now cover all 7 events. See the 2026-09-03 Event RSVPs section above for the write allowlist contract.
 
+**2026-09-04 homepage story rewrite.** `/` now opens with story content between the hero and the counter bar: section 1 "The climb" (We came back), section 2 "Why this weekend" (You don't stop being Pitt Ultimate), and section 3, a new `WeekendColumns` component (`src/components/home/WeekendColumns.tsx`), a three column FRIDAY / SATURDAY / SATURDAY teaser of notched white cards that each link to `/schedule`. `/schedule` stays the single source of truth for times, locations, and per event RSVP, so the homepage's `ScheduleSummary` (full per event tiles with toggles) was removed along with its `weekendQuery` loader entry; the homepage loader now fetches only the board. Copy is approved verbatim. No gold in the new sections.
+
+
