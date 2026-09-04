@@ -20,6 +20,7 @@ import {
   suggestNewPerson,
   updateMyProfile,
   vouchForPerson,
+  type MyEventAnswer,
   type MyProfile,
 } from "@/lib/account.functions";
 import { PartySizeStepper } from "@/components/claim/PartySizeStepper";
@@ -38,6 +39,7 @@ import {
 } from "@/components/claim/ui";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
+import { NotchedBox } from "@/components/media/NotchedBox";
 
 /** The attendance page is a normal page of the site: header, content, footer.
  *  Signing out must never be the only way off it. */
@@ -944,8 +946,14 @@ function AddEmailForm({ onAdd }: { onAdd: (email: string) => void }) {
   );
 }
 
-function AddStintForm({ onAdd }: { onAdd: (division: string, year: number) => void }) {
-  const [division, setDivision] = useState(DIVISIONS[0].code);
+function AddStintForm({
+  divisions,
+  onAdd,
+}: {
+  divisions: { code: string; label: string }[];
+  onAdd: (division: string, year: number) => void;
+}) {
+  const [division, setDivision] = useState(divisions[0]?.code ?? DIVISIONS[0].code);
   const [year, setYear] = useState("");
 
   return (
@@ -965,7 +973,7 @@ function AddStintForm({ onAdd }: { onAdd: (division: string, year: number) => vo
         value={division}
         onChange={(e) => setDivision(e.target.value)}
       >
-        {DIVISIONS.map((d) => (
+        {divisions.map((d) => (
           <option key={d.code} value={d.code}>
             {d.label}
           </option>
@@ -1024,8 +1032,10 @@ function VisibilityToggles({
 }
 
 function SuggestForm({
+  divisions,
   onSubmit,
 }: {
+  divisions: { code: string; label: string }[];
   onSubmit: (values: {
     first_name: string;
     last_name: string | null;
@@ -1038,7 +1048,7 @@ function SuggestForm({
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [gradYear, setGradYear] = useState("");
-  const [division, setDivision] = useState(DIVISIONS[0].code);
+  const [division, setDivision] = useState(divisions[0]?.code ?? DIVISIONS[0].code);
 
   return (
     <form
@@ -1080,7 +1090,7 @@ function SuggestForm({
       <div>
         <FieldLabel htmlFor="sg-div">Program</FieldLabel>
         <select id="sg-div" style={fieldStyle} value={division} onChange={(e) => setDivision(e.target.value)}>
-          {DIVISIONS.map((d) => (
+          {divisions.map((d) => (
             <option key={d.code} value={d.code}>
               {d.label}
             </option>
