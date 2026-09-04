@@ -484,6 +484,8 @@ const EMPTY_FILTERS = {
  *  counted, so a number and its list can never disagree. */
 export const PRESET_LABELS: Record<PeopleFilterKey, string> = {
   going: "Going this year",
+  going_alumni: "Graduates going this year",
+  going_current: "Current players going this year",
   maybe: "Maybe this year",
   not_this_year: "Not this year",
   no_response: "No response yet",
@@ -513,6 +515,10 @@ function matchesPreset(
   // what the overview tiles count too.
   const canAnswer = !person.deceased && person.show_on_board;
   switch (preset) {
+    case "going_alumni":
+      return canAnswer && person.state === "going" && !person.is_current_player;
+    case "going_current":
+      return canAnswer && person.state === "going" && person.is_current_player;
     case "going":
     case "maybe":
     case "not_this_year":
