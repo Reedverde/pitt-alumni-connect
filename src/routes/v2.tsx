@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { BoardExperience, boardQuery } from "@/components/board/BoardExperience";
 import { V2Hero } from "@/components/v2/V2Hero";
+import { V2Nav } from "@/components/v2/V2Nav";
 import { V2Story } from "@/components/v2/V2Story";
 
 const TITLE = "Still in the Game | Pitt Ultimate Alumni";
@@ -30,5 +31,5 @@ export const Route = createFileRoute("/v2")({
 });
 
 function V2Page() {
-  return <BoardExperience renderHero={(args) => <V2Hero {...args} />} story={<V2Story />} />;
+  return <BoardExperience renderNav={() => <V2Nav />} renderHero={(args) => <V2Hero {...args} />} story={<V2Story />} />;
 }
