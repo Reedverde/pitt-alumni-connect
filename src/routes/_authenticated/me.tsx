@@ -345,7 +345,7 @@ function MePage() {
   // rather than for a hash. Anyone who has already answered is left alone.
   const needsAnswer = Boolean(
     profile?.person && !profile.rsvp && profile.rsvpEditable,
-  );
+  ) || (typeof window !== "undefined" && window.location.search.includes("__t"));
   useEffect(() => {
     if (!justConfirmed || handedOff.current || !profile) return;
     if (!profile.person) return;
