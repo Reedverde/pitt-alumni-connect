@@ -757,3 +757,14 @@ Carried into Phase 4: `/me` still opens on "Are you coming in October?" and has
 no separate view of the claim itself, and roster corrections filed from the
 claim flow appear in the queue as an unattributed edit (`submitted_by` is null,
 since the person is not signed in yet).
+
+## Phase 4: /me rebuilt around profile and annual cards (2026-09-04)
+
+`/me` now separates what is permanent from what belongs to one weekend.
+
+- "My alumni profile" holds names, played as, city, emails and primary address, program and playing years, visibility and networking. Same server functions, same ownership guard through `resolveMyPersonId`.
+- The annual card is titled from the current edition (`2026 Alumni Weekend RSVP`) and appears fresh when organizers roll the edition forward. It carries the overall answer, party size only when going, and the published `prompt_rsvp` events with the person's own answer. An unanswered event renders "Not answered" and is never collapsed into a no; Phase 5 replaces that chip with the three position control.
+- Earlier years render as a compact read only history from every past `rsvps` row, not only the yesses.
+- The deadline is the Phase 1 rule with no grace period. `getMyProfile` reads `rsvp_is_editable` / `rsvp_editable_until`, and `setMyRsvp` and `setMyPartySize` refuse the write after it passes, so the read only state is a courtesy rather than the boundary.
+- A one click jump under the name states the current answer and links to the card, so nobody scrolls past every permanent field to change their mind.
+- Verified signed in: editable card, locked card (temporary `app_settings.rsvp_editable_until`, since removed), desktop and 390px mobile with no overflow, keyboard focus on the answer buttons, no console errors.
