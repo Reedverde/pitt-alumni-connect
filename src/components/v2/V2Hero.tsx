@@ -22,18 +22,21 @@ const ctaBase = {
 };
 
 /**
- * The /v2 hero. Oversized condensed headline against an aggressively cut
- * photographic composition of real action frames: a handler throwing around a
- * mark, chamfered top-left and bottom-right, with a player skying for the catch
- * overlapping it on the opposite corners, and a royal field
- * that continues the wide crop's diagonal. Gold stays reserved for attending,
- * so the only gold here is the eyebrow slash the whole site already uses.
+ * The /v2 hero. Oversized condensed headline against a layered photographic
+ * cluster of real action frames: a handler throwing around a mark as the wide
+ * anchor, a contested throw as a compact crop on its top-right corner, and a
+ * player skying for the catch overlapping on the opposite corners, with a
+ * royal field continuing the wide crop's diagonal. The "first two weeks" seal
+ * straddles the wide photo's top edge, half on the frame, half on black. Gold
+ * stays reserved for attending, so the only gold here is the eyebrow slash
+ * the whole site already uses.
  */
 export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
   const dates = season.edition ? editionShortDates(season.edition) : null;
 
   const wide = ACTION.aroundTheMark;
   const portrait = ACTION.sky;
+  const small = ACTION.contested;
 
   return (
     <section style={{ background: "var(--sabah-black)" }} className="relative overflow-hidden">
