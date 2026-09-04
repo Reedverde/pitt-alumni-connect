@@ -1,5 +1,3 @@
-import { Link } from "@tanstack/react-router";
-import { useSessionPerson } from "@/lib/useSessionPerson";
 import { DISCORD_INVITE_URL } from "@/lib/site-url";
 
 const circle = {
