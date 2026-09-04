@@ -116,6 +116,10 @@ type Context = {
   placement: Map<string, { board_year: number | null; board_division: string | null }>;
   stints: Map<string, number>;
   rsvp: Map<string, string>;
+  /** Heads for the current edition, keyed by person. */
+  party: Map<string, number>;
+  /** Every edition a person has answered, newest first. */
+  history: Map<string, AdminRsvpHistoryRow[]>;
   verified: Set<string>;
   /** Any identity row at all, verified or not. A claim in progress still counts. */
   hasIdentity: Set<string>;
@@ -130,7 +134,11 @@ async function loadContext(): Promise<Context> {
   const [placeRes, stintRes, rsvpRes, identRes] = await Promise.all([
     supabaseAdmin.from("person_board_placement").select("person_id, board_year, board_division"),
     supabaseAdmin.from("stints").select("person_id"),
-    supabaseAdmin.from("rsvps").select("person_id, status").eq("event_year", currentYear),
+    supabaseAdmin
+      .from("rsvps")
+      .select("person_id, event_year, status, party_size")
+      .order("event_year", { ascending: false })
+      .limit(20000),
     supabaseAdmin
       .from("identities")
       .select("person_id, email, is_primary, verified_at")
@@ -146,7 +154,23 @@ async function loadContext(): Promise<Context> {
   for (const row of stintRes.data ?? [])
     stints.set(row.person_id as string, (stints.get(row.person_id as string) ?? 0) + 1);
   const rsvp = new Map<string, string>();
-  for (const row of rsvpRes.data ?? []) rsvp.set(row.person_id as string, row.status as string);
+  const party = new Map<string, number>();
+  const history = new Map<string, AdminRsvpHistoryRow[]>();
+  for (const row of rsvpRes.data ?? []) {
+    const pid = row.person_id as string;
+    const entry: AdminRsvpHistoryRow = {
+      event_year: Number(row.event_year),
+      status: String(row.status),
+      party_size: Number(row.party_size ?? 1),
+    };
+    const list = history.get(pid) ?? [];
+    list.push(entry);
+    history.set(pid, list);
+    if (entry.event_year === currentYear) {
+      rsvp.set(pid, entry.status);
+      party.set(pid, entry.party_size);
+    }
+  }
   const verified = new Set<string>();
   const hasIdentity = new Set<string>();
   const emails = new Map<string, AdminEmail[]>();
@@ -164,9 +188,10 @@ async function loadContext(): Promise<Context> {
   }
   const { loadEventAnswersByPerson } = await import("./event-rsvp.server");
   const eventAnswers = await loadEventAnswersByPerson();
-  return { placement, stints, rsvp, verified, hasIdentity, emails, eventAnswers };
+  return { placement, stints, rsvp, party, history, verified, hasIdentity, emails, eventAnswers };
 
 }
+
 
 function decorate(person: PersonRow, ctx: Context, label: string | null): AdminPerson {
   const place = ctx.placement.get(person.id);
