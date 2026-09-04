@@ -236,15 +236,25 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
     () => buildYearGroups(people.filter((p) => p.board_year > 1997)),
     [people],
   );
+  const eras = useMemo(() => buildEras(people.map((p) => p.board_year)), [people]);
+  const eraBand = eras.find((e) => e.key === eraFilter) ?? null;
+  const inEra = (year: number) =>
+    eraBand === null || (year >= eraBand.from && year <= eraBand.to);
+
   // The anchor block is just another row with a sort key below every real year,
   // so it obeys the toggle: first when oldest first, last when newest first.
   const orderedRows = useMemo(() => {
     const rows: Array<{ kind: "anchor" | "year"; key: string; group?: YearGroup }> = [
-      ...(anchorPeople.length > 0 ? [{ kind: "anchor" as const, key: "anchor" }] : []),
-      ...groups.map((group) => ({ kind: "year" as const, key: group.key, group })),
+      ...(anchorPeople.length > 0 && (eraBand === null || eraBand.from <= 1997)
+        ? [{ kind: "anchor" as const, key: "anchor" }]
+        : []),
+      ...groups
+        .filter((group) => group.years.some((y) => inEra(y)))
+        .map((group) => ({ kind: "year" as const, key: group.key, group })),
     ];
     return newestFirst ? rows.reverse() : rows;
-  }, [groups, anchorPeople, newestFirst]);
+  }, [groups, anchorPeople, newestFirst, eraBand]);
+
 
   const clock = countdown(data.edition, data.nextEdition);
 
