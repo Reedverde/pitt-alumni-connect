@@ -3,6 +3,7 @@ import { type HeroRenderArgs } from "@/components/board/BoardExperience";
 import { editionShortDates } from "@/lib/edition-format";
 import firstTwoWeeksSeal from "@/assets/first-two-weeks-seal.png.asset.json";
 import huddle from "@/assets/hero-team-huddle.jpg.asset.json";
+import { RoundedChamferPhoto, CHAMFER_RADIUS } from "@/components/v2/RoundedChamferPhoto";
 
 const ctaBase = {
   display: "inline-flex",
@@ -20,8 +21,19 @@ const ctaBase = {
   cursor: "pointer",
 };
 
-/** Aggressive asymmetric chamfer: deep cut top-left, shallower cut bottom-right. */
-const HUDDLE_CLIP = "polygon(0 14%, 22% 0, 100% 0, 100% 82%, 88% 100%, 0 100%)";
+/**
+ * Aggressive asymmetric chamfer: deep cut top-left, shallower cut bottom-right.
+ * Expressed as fractions of the box so the shared rounded-polygon mask can
+ * soften every vertex instead of leaving razor-sharp points.
+ */
+const HUDDLE_POINTS: Array<[number, number]> = [
+  [0, 0.14],
+  [0.22, 0],
+  [1, 0],
+  [1, 0.82],
+  [0.88, 1],
+  [0, 1],
+];
 
 /**
  * The /v2 hero. One dominant photograph: the team huddle, oversized and pushed
@@ -132,26 +144,16 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
               clipPath: "polygon(0 0, 100% 0, 100% 100%, 14% 100%)",
             }}
           />
-          <figure
-            className="relative m-0 md:mr-[-4vw]"
-            style={{ width: "100%", aspectRatio: "3 / 2", clipPath: HUDDLE_CLIP }}
-          >
-            <img
-              src={huddle.url}
-              alt="Pitt players packed into a huddle with fists raised before a point"
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                objectPosition: "50% 45%",
-              }}
-            />
-          </figure>
+          <RoundedChamferPhoto
+            className="relative md:mr-[-4vw]"
+            src={huddle.url}
+            alt="Pitt players packed into a huddle with fists raised before a point"
+            ratio="3 / 2"
+            points={HUDDLE_POINTS}
+            radius={CHAMFER_RADIUS.hero}
+            position="50% 45%"
+            eager
+          />
 
           {/* The seal straddles the photograph's bottom-right chamfer, roughly half
               on the frame and half on the black field, away from the huddle faces. */}
