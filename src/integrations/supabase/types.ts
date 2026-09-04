@@ -53,6 +53,13 @@ export type Database = {
             referencedRelation: "person_board_placement"
             referencedColumns: ["person_id"]
           },
+          {
+            foreignKeyName: "admins_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
         ]
       }
       app_settings: {
@@ -136,6 +143,13 @@ export type Database = {
             referencedRelation: "person_board_placement"
             referencedColumns: ["person_id"]
           },
+          {
+            foreignKeyName: "audit_log_actor_person_id_fkey"
+            columns: ["actor_person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
         ]
       }
       auth_attempts: {
@@ -192,6 +206,13 @@ export type Database = {
             referencedRelation: "person_board_placement"
             referencedColumns: ["person_id"]
           },
+          {
+            foreignKeyName: "auth_attempts_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
         ]
       }
       confirmation_sends: {
@@ -246,6 +267,13 @@ export type Database = {
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "confirmation_sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
             referencedColumns: ["person_id"]
           },
         ]
@@ -332,6 +360,13 @@ export type Database = {
             columns: ["ruled_by"]
             isOneToOne: false
             referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "duplicate_rulings_ruled_by_fkey"
+            columns: ["ruled_by"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
             referencedColumns: ["person_id"]
           },
         ]
@@ -437,6 +472,13 @@ export type Database = {
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "event_rsvps_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
             referencedColumns: ["person_id"]
           },
         ]
@@ -576,6 +618,13 @@ export type Database = {
             referencedRelation: "person_board_placement"
             referencedColumns: ["person_id"]
           },
+          {
+            foreignKeyName: "identities_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
         ]
       }
       internal_secrets: {
@@ -645,6 +694,13 @@ export type Database = {
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "magic_link_issues_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
             referencedColumns: ["person_id"]
           },
         ]
@@ -740,6 +796,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "news_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
             referencedColumns: ["person_id"]
           },
         ]
@@ -853,6 +916,13 @@ export type Database = {
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "news_roundup_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
             referencedColumns: ["person_id"]
           },
         ]
@@ -1002,6 +1072,13 @@ export type Database = {
             referencedColumns: ["person_id"]
           },
           {
+            foreignKeyName: "people_deceased_confirmed_by_fkey"
+            columns: ["deceased_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "people_merged_into_person_id_fkey"
             columns: ["merged_into_person_id"]
             isOneToOne: false
@@ -1027,6 +1104,13 @@ export type Database = {
             columns: ["merged_into_person_id"]
             isOneToOne: false
             referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "people_merged_into_person_id_fkey"
+            columns: ["merged_into_person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
             referencedColumns: ["person_id"]
           },
           {
@@ -1100,6 +1184,13 @@ export type Database = {
             referencedRelation: "person_board_placement"
             referencedColumns: ["person_id"]
           },
+          {
+            foreignKeyName: "photo_slots_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
         ]
       }
       photos: {
@@ -1165,6 +1256,13 @@ export type Database = {
             referencedRelation: "person_board_placement"
             referencedColumns: ["person_id"]
           },
+          {
+            foreignKeyName: "photos_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
         ]
       }
       preapproved_emails: {
@@ -1213,6 +1311,13 @@ export type Database = {
             columns: ["consumed_by"]
             isOneToOne: false
             referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "preapproved_emails_consumed_by_fkey"
+            columns: ["consumed_by"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
             referencedColumns: ["person_id"]
           },
         ]
@@ -1281,6 +1386,13 @@ export type Database = {
             referencedRelation: "person_board_placement"
             referencedColumns: ["person_id"]
           },
+          {
+            foreignKeyName: "rsvps_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
         ]
       }
       sends: {
@@ -1290,6 +1402,7 @@ export type Database = {
           bounced: boolean
           complained: boolean
           created_at: string
+          delivered_at: string | null
           error: string | null
           id: string
           kind: string
@@ -1300,6 +1413,7 @@ export type Database = {
           provider_message_id: string | null
           sent_at: string | null
           sequence_id: string | null
+          soft_bounce_count: number
           status: string
           to_email: string | null
         }
@@ -1309,6 +1423,7 @@ export type Database = {
           bounced?: boolean
           complained?: boolean
           created_at?: string
+          delivered_at?: string | null
           error?: string | null
           id?: string
           kind?: string
@@ -1319,6 +1434,7 @@ export type Database = {
           provider_message_id?: string | null
           sent_at?: string | null
           sequence_id?: string | null
+          soft_bounce_count?: number
           status?: string
           to_email?: string | null
         }
@@ -1328,6 +1444,7 @@ export type Database = {
           bounced?: boolean
           complained?: boolean
           created_at?: string
+          delivered_at?: string | null
           error?: string | null
           id?: string
           kind?: string
@@ -1338,6 +1455,7 @@ export type Database = {
           provider_message_id?: string | null
           sent_at?: string | null
           sequence_id?: string | null
+          soft_bounce_count?: number
           status?: string
           to_email?: string | null
         }
@@ -1368,6 +1486,13 @@ export type Database = {
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
             referencedColumns: ["person_id"]
           },
           {
@@ -1482,6 +1607,13 @@ export type Database = {
             referencedColumns: ["person_id"]
           },
           {
+            foreignKeyName: "stints_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "stints_division_fkey"
             columns: ["division"]
             isOneToOne: false
@@ -1514,6 +1646,13 @@ export type Database = {
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
             referencedColumns: ["person_id"]
           },
         ]
@@ -1582,6 +1721,13 @@ export type Database = {
             referencedColumns: ["person_id"]
           },
           {
+            foreignKeyName: "suggestions_peer_verified_by_fkey"
+            columns: ["peer_verified_by"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "suggestions_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
@@ -1610,6 +1756,13 @@ export type Database = {
             referencedColumns: ["person_id"]
           },
           {
+            foreignKeyName: "suggestions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "suggestions_submitted_by_fkey"
             columns: ["submitted_by"]
             isOneToOne: false
@@ -1635,6 +1788,13 @@ export type Database = {
             columns: ["submitted_by"]
             isOneToOne: false
             referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "suggestions_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
             referencedColumns: ["person_id"]
           },
         ]
@@ -1762,6 +1922,13 @@ export type Database = {
             referencedColumns: ["person_id"]
           },
           {
+            foreignKeyName: "verifications_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "verifications_verified_by_fkey"
             columns: ["verified_by"]
             isOneToOne: false
@@ -1787,6 +1954,13 @@ export type Database = {
             columns: ["verified_by"]
             isOneToOne: false
             referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "verifications_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
             referencedColumns: ["person_id"]
           },
         ]
@@ -1877,6 +2051,13 @@ export type Database = {
             referencedRelation: "person_board_placement"
             referencedColumns: ["person_id"]
           },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
         ]
       }
       identities_needing_second_email: {
@@ -1924,6 +2105,13 @@ export type Database = {
             referencedRelation: "person_board_placement"
             referencedColumns: ["person_id"]
           },
+          {
+            foreignKeyName: "identities_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
         ]
       }
       person_board_placement: {
@@ -1944,6 +2132,21 @@ export type Database = {
           board_year?: never
           person_id?: string | null
           stint_count?: never
+        }
+        Relationships: []
+      }
+      person_reachability: {
+        Row: {
+          has_deliverable_email: boolean | null
+          person_id: string | null
+        }
+        Insert: {
+          has_deliverable_email?: never
+          person_id?: string | null
+        }
+        Update: {
+          has_deliverable_email?: never
+          person_id?: string | null
         }
         Relationships: []
       }
@@ -1987,6 +2190,13 @@ export type Database = {
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
             referencedColumns: ["person_id"]
           },
         ]
