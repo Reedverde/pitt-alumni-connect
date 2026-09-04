@@ -1,9 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
-
-import { boardQuery, type HeroRenderArgs } from "@/components/board/BoardExperience";
+import { type HeroRenderArgs } from "@/components/board/BoardExperience";
 import { ChamferPhoto } from "@/components/v2/ChamferPhoto";
-import { anyV2Photo, pickV2Photo } from "@/components/v2/photos";
+import { ACTION } from "@/components/v2/curated-photos";
 import { editionShortDates } from "@/lib/edition-format";
 import firstTwoWeeksSeal from "@/assets/first-two-weeks-seal.png.asset.json";
 
@@ -25,19 +23,17 @@ const ctaBase = {
 
 /**
  * The /v2 hero. Oversized condensed headline against an aggressively cut
- * photographic composition: one wide crop chamfered top-left and bottom-right,
- * a portrait crop overlapping it on the opposite corners, and a royal field
+ * photographic composition of real action frames: a handler throwing around a
+ * mark, chamfered top-left and bottom-right, with a player skying for the catch
+ * overlapping it on the opposite corners, and a royal field
  * that continues the wide crop's diagonal. Gold stays reserved for attending,
  * so the only gold here is the eyebrow slash the whole site already uses.
  */
 export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
-  const { data } = useSuspenseQuery(boardQuery);
   const dates = season.edition ? editionShortDates(season.edition) : null;
 
-  const wide = pickV2Photo(data.photosByYear, [2013, 2014, 2012, 2011]) ?? anyV2Photo(data.photosByYear);
-  const portrait =
-    pickV2Photo(data.photosByYear, [2006, 2005, 2015, 2010]) ??
-    anyV2Photo(data.photosByYear, wide ? [wide.year] : []);
+  const wide = ACTION.aroundTheMark;
+  const portrait = ACTION.sky;
 
   return (
     <section style={{ background: "var(--sabah-black)" }} className="relative overflow-hidden">
@@ -122,8 +118,7 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
               clipPath: "polygon(72px 0, 100% 0, 100% 100%, 0 100%, 0 72px)",
             }}
           />
-          {wide && (
-            <ChamferPhoto
+          <ChamferPhoto
               src={wide.src}
               alt={wide.alt}
               ratio="4 / 3"
@@ -132,9 +127,7 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
               eager
               className="relative"
             />
-          )}
-          {portrait && (
-            <ChamferPhoto
+          <ChamferPhoto
               src={portrait.src}
               alt={portrait.alt}
               ratio="3 / 4"
@@ -144,7 +137,6 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
               outlineWidth={6}
               className="relative mt-4 w-1/2 md:absolute md:-bottom-16 md:-left-20 md:mt-0 md:w-[58%]"
             />
-          )}
         </div>
 
         <img

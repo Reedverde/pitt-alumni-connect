@@ -3,8 +3,6 @@ import type { CSSProperties } from "react";
 import { NotchedBox } from "@/components/media/NotchedBox";
 import type { NotchCorner } from "@/components/media/notch";
 
-const DUOTONE = "grayscale(1) contrast(0.95) sepia(0.3) hue-rotate(185deg) saturate(2.4)";
-
 type ChamferPhotoProps = {
   src: string;
   alt: string;
@@ -15,7 +13,6 @@ type ChamferPhotoProps = {
   notch?: number;
   /** Only the hero photograph loads eagerly. */
   eager?: boolean;
-  fullColor?: boolean;
   outline?: string;
   outlineWidth?: number;
   className?: string;
@@ -26,6 +23,8 @@ type ChamferPhotoProps = {
  * A photograph cut with deep 45 degree chamfers. Same geometry engine as the
  * board, pushed much harder: the notch is a hero-scale bevel, and the corner
  * set alternates from module to module so the grid never reads as cards.
+ * Photographs always render in their original colour: no duotone, no tint,
+ * no grade. Legibility is handled by composition, not by recolouring.
  */
 export function ChamferPhoto({
   src,
@@ -34,7 +33,6 @@ export function ChamferPhoto({
   corners = ["tl", "br"],
   notch = 64,
   eager = false,
-  fullColor = false,
   outline,
   outlineWidth = 2,
   className,
@@ -63,7 +61,6 @@ export function ChamferPhoto({
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            filter: fullColor ? undefined : DUOTONE,
           }}
         />
       </NotchedBox>
