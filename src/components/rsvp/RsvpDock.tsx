@@ -420,8 +420,8 @@ function Panel({
             style={{
               width: 44,
               height: 44,
-              marginTop: -6,
-              marginRight: 18,
+              marginTop: 12,
+              marginRight: 24,
               borderRadius: 999,
               border: "1px solid var(--chalk)",
               background: "var(--pure-white)",
