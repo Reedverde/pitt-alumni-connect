@@ -357,6 +357,7 @@ function WeekendPage() {
           void navigate({ to: "/", hash: personId ? `person-${personId}` : undefined });
         }}
       />
+      <SiteFooter />
     </div>
   );
 }
