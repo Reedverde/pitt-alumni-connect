@@ -41,8 +41,8 @@ const linkButton = {
 /** The three weekend photographs: one shared ratio and one shared
  *  rounded-chamfer silhouette, so the row scans as a single set of cuts. */
 const DAY_RATIO = "4 / 3";
-const DAY_NOTCH = 44;
-const DAY_RADIUS = 18;
+const DAY_NOTCH = 72;
+const DAY_RADIUS = 14;
 
 const DAYS = [
   {
