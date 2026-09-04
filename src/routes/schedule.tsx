@@ -15,9 +15,8 @@ import {
   todayInNewYork,
   type EditionSummary,
 } from "@/lib/edition-format";
-import { SiteNav } from "@/components/SiteNav";
-import { SiteFooter } from "@/components/SiteFooter";
 import { Seal } from "@/components/board/Seal";
+import { PageShell } from "@/components/layout/PageShell";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { LabelRow } from "@/components/board/LabelRow";
 import { ActionRail } from "@/components/board/ActionRail";
@@ -203,8 +202,7 @@ function WeekendPage() {
   const DAYS = buildDays(edition);
 
   return (
-    <div style={{ background: "var(--field-white)" }} className="min-h-screen">
-      <SiteNav />
+    <PageShell bare>
 
       <main className="mx-auto w-full max-w-[1080px] px-5 pb-24">
         <header className="pt-10 pb-6 md:pt-14">
@@ -368,8 +366,7 @@ function WeekendPage() {
           void navigate({ to: "/", hash: personId ? `person-${personId}` : undefined });
         }}
       />
-      <SiteFooter />
-    </div>
+    </PageShell>
   );
 }
 
@@ -432,8 +429,7 @@ function OffSeason({
 }) {
   const expected = nextOctoberYear();
   return (
-    <div style={{ background: "var(--field-white)" }} className="min-h-screen">
-      <SiteNav />
+    <PageShell bare>
       <main className="mx-auto w-full max-w-[1080px] px-5 pb-24">
         <header className="pt-10 pb-6 md:pt-14">
           <SlashEyebrow>Alumni Weekend · Between years</SlashEyebrow>
@@ -460,8 +456,7 @@ function OffSeason({
         <PastEditions editions={archive} />
       </main>
       <ActionRail />
-      <SiteFooter />
-    </div>
+    </PageShell>
   );
 }
 

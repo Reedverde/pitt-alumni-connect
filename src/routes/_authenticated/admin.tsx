@@ -118,7 +118,7 @@ function AdminInner() {
   if (isLoading)
     return (
       <main className="mx-auto max-w-[1180px] px-5 py-16">
-        <p style={{ fontSize: 13, color: "var(--sterling)" }}>Loading…</p>
+        <p style={{ fontSize: 13, color: "var(--sterling)" }}>Pulling the latest numbers…</p>
       </main>
     );
 

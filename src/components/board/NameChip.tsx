@@ -88,7 +88,9 @@ export function NameChip({
               : ". Update this answer"
           : ""
       }`}
-      className="group inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full transition-[opacity,border-color] duration-150"
+      // max-w-full keeps a long name plus its team and year tags inside a phone
+      // screen: the name itself truncates rather than pushing the page sideways.
+      className="group inline-flex max-w-full shrink-0 items-center gap-2 whitespace-nowrap rounded-full transition-[opacity,border-color] duration-150"
       style={{
         ...chipStyle(person.state),
         ...(noContact ? { border: "1.5px dashed var(--chalk)" } : null),
@@ -104,7 +106,12 @@ export function NameChip({
           style={{ width: 6, height: 6, background: dotColor(person.state) }}
         />
       )}
-      <span style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.1 }}>{display}</span>
+      <span
+        className="min-w-0 overflow-hidden text-ellipsis"
+        style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.1 }}
+      >
+        {display}
+      </span>
       {person.team_label && (
         <span style={{ fontSize: 10, letterSpacing: "0.1em", opacity: 0.55, textTransform: "uppercase" }}>
           {person.team_label}

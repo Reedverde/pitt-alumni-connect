@@ -3,10 +3,8 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
 
 import { getSchedule, type ScheduleEvent } from "@/lib/schedule.functions";
-import { SiteNav } from "@/components/SiteNav";
 import { PageShell } from "@/components/layout/PageShell";
 import { primaryButton } from "@/components/claim/ui";
-import { SiteFooter } from "@/components/SiteFooter";
 import { Seal } from "@/components/board/Seal";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
 import { PhotoSlot } from "@/components/media/PhotoSlot";
@@ -67,8 +65,7 @@ function EditionArchivePage() {
   const days = [...new Set(events.map((e) => e.day_number ?? 1))].sort((a, b) => a - b);
 
   return (
-    <div style={{ background: "var(--field-white)" }} className="min-h-screen">
-      <SiteNav />
+    <PageShell bare>
       <main className="mx-auto w-full max-w-[1080px] px-5 pb-24">
         <header className="pt-10 pb-6 md:pt-14">
           <SlashEyebrow>{editionEyebrow(edition)}</SlashEyebrow>
@@ -140,8 +137,7 @@ function EditionArchivePage() {
           </p>
         )}
       </main>
-      <SiteFooter />
-    </div>
+    </PageShell>
   );
 }
 

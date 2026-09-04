@@ -36,7 +36,6 @@ type PhotoSlotProps = {
 
 /** Photographs render in their own colours. Kept as an empty string so the
  *  fullColor prop stays a no op for callers that still pass it. */
-const DUOTONE = undefined;
 
 const labelStyle: CSSProperties = {
   fontFamily: '"Space Grotesk", sans-serif',
@@ -104,7 +103,6 @@ export function PhotoSlot({
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              filter: fullColor ? undefined : DUOTONE,
             }}
           />
         </figure>
@@ -135,7 +133,6 @@ export function PhotoSlot({
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              filter: fullColor ? undefined : DUOTONE,
             }}
           />
           {!bare && (
