@@ -14,6 +14,7 @@ import {
   removeStint,
   reportMemorial,
   saveStint,
+  setMyEventAnswer,
   setMyRsvp,
   setMyPartySize,
   setPrimaryEmail,
@@ -24,6 +25,7 @@ import {
   type MyProfile,
 } from "@/lib/account.functions";
 import { PartySizeStepper } from "@/components/claim/PartySizeStepper";
+import { EventAnswerToggle, type TriState } from "@/components/events/EventAnswerToggle";
 import { searchPeople } from "@/lib/rsvp.functions";
 import { personDisplayName as matchName, type PersonMatch } from "@/lib/rsvp-types";
 import { STATUS_LABELS, personDisplayName, type RsvpStatus } from "@/lib/rsvp-types";
@@ -314,6 +316,7 @@ function MePage() {
   const dropStint = useServerFn(removeStint);
   const putRsvp = useServerFn(setMyRsvp);
   const putPartySize = useServerFn(setMyPartySize);
+  const putEventAnswer = useServerFn(setMyEventAnswer);
   const loadPending = useServerFn(getPendingVerifications);
   const vouch = useServerFn(vouchForPerson);
   const suggest = useServerFn(suggestNewPerson);
@@ -604,6 +607,13 @@ function MePage() {
         onPartySize={(next) =>
           run(() => putPartySize({ data: { partySize: next } }), "Party size updated.")
         }
+        onEventAnswer={async (eventId, state, size) => {
+          const result = await putEventAnswer({
+            data: { eventId, state, partySize: size },
+          });
+          await refresh();
+          return { promotedToGoing: Boolean(result.promotedToGoing) };
+        }}
       />
 
       {profile.history.length > 0 && (
@@ -756,6 +766,11 @@ function AnnualCard({
   events: MyEventAnswer[];
   onAnswer: (status: RsvpStatus) => void;
   onPartySize: (next: number) => void;
+  onEventAnswer: (
+    eventId: string,
+    state: TriState,
+    partySize: number,
+  ) => Promise<{ promotedToGoing: boolean }>;
 }) {
   const closed = formatDeadline(editableUntil);
 
@@ -866,6 +881,79 @@ function AnnualCard({
   );
 }
 
+
+/** One event row inside the annual card. Saves on change and says so in place:
+ *  the toast is a courtesy, not the feedback. Party size is kept only while the
+ *  answer is yes, so a change away from yes can never leave planned heads
+ *  behind in the organizers' counts. */
+function EventAnswerRow({
+  row,
+  onSave,
+}: {
+  row: MyEventAnswer;
+  onSave: (
+    eventId: string,
+    state: TriState,
+    partySize: number,
+  ) => Promise<{ promotedToGoing: boolean }>;
+}) {
+  const initial: TriState = row.answer ?? "unanswered";
+  const [state, setState] = useState<TriState>(initial);
+  const [party, setParty] = useState(row.party_size);
+  const [phase, setPhase] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [promoted, setPromoted] = useState(false);
+
+  useEffect(() => {
+    setState(row.answer ?? "unanswered");
+    setParty(row.party_size);
+  }, [row.answer, row.party_size]);
+
+  const commit = async (next: TriState, heads: number) => {
+    setState(next);
+    setParty(next === "yes" ? heads : 1);
+    setPhase("saving");
+    try {
+      const result = await onSave(row.id, next, next === "yes" ? heads : 1);
+      setPromoted(result.promotedToGoing);
+      setPhase("saved");
+    } catch {
+      setPhase("error");
+    }
+  };
+
+  return (
+    <div>
+      <EventAnswerToggle
+        eventTitle={row.title}
+        state={state}
+        onStateChange={(next) => void commit(next, party)}
+        partySize={party}
+        onPartySizeChange={(next) => void commit("yes", next)}
+        describedBy={`event-status-${row.id}`}
+      />
+      <p
+        id={`event-status-${row.id}`}
+        role="status"
+        className="mt-2"
+        style={{
+          fontSize: 13,
+          color: phase === "error" ? "var(--pitt-royal)" : "var(--sterling)",
+          minHeight: 18,
+        }}
+      >
+        {phase === "saving"
+          ? "Saving…"
+          : phase === "error"
+            ? "That didn't save. Try that answer again."
+            : phase === "saved"
+              ? promoted
+                ? "Saved. Saying yes here also set your weekend answer to going."
+                : "Saved."
+              : ""}
+      </p>
+    </div>
+  );
+}
 
 function ProfileForm({
   person,
