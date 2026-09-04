@@ -11,12 +11,14 @@ import {
   ConfidencePanel,
   DivisionsPanel,
   DigestPanel,
+  DonateQrPanel,
   DripPanel,
   ExportPanel,
   GapsPanel,
   HeadcountPanel,
   EventHeadcountPanel,
 } from "@/components/admin/Panels";
+
 import { EditionsPanel } from "@/components/admin/EditionsPanel";
 import { PhotosPanel } from "@/components/admin/PhotosPanel";
 import { RsvpBreakdownPanel, SendsPanel, SourcesPanel } from "@/components/admin/SendsPanel";
@@ -172,6 +174,7 @@ function AdminPage() {
         <>
           <HeadcountPanel headcount={data.headcount} />
           <EventHeadcountPanel rows={data.eventHeadcounts} />
+          <DonateQrPanel />
           <Section eyebrow="Data confidence" title="What we actually know">
             <DivisionsPanel rows={data.divisions} onSaved={refresh} />
             <ConfidencePanel rows={data.teamNames} onSaved={refresh} />
