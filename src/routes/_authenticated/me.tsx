@@ -756,6 +756,7 @@ function AnnualCard({
   events,
   onAnswer,
   onPartySize,
+  onEventAnswer,
 }: {
   title: string;
   edition: MyProfile["edition"];
