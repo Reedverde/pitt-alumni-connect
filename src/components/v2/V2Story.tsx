@@ -274,11 +274,12 @@ export function V2Story() {
             </div>
             <div className="md:col-span-7">
               <ChamferPhoto
-                src={transition.src}
-                alt={transition.alt}
+                src={clemsonBye.url}
+                alt="Pitt players in blue and gold hoodies lying together on the grass during the Clemson bye week, a disc resting among them"
                 ratio="21 / 9"
                 corners={["tl", "tr", "br", "bl"]}
                 notch={40}
+                position="center 55%"
               />
             </div>
           </div>
