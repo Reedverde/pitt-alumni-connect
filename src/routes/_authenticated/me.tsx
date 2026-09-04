@@ -8,6 +8,8 @@ import {
   addMeAsPerson,
   amIPreapproved,
   claimPersonAsMe,
+  confirmMyProfile,
+  correctMyProfile,
   getMyProfile,
   getPendingVerifications,
   removeMyEmail,
@@ -28,6 +30,11 @@ import { searchPeople } from "@/lib/rsvp.functions";
 import { personDisplayName as matchName, type PersonMatch } from "@/lib/rsvp-types";
 import { STATUS_LABELS, personDisplayName, type RsvpStatus } from "@/lib/rsvp-types";
 import { SlashEyebrow } from "@/components/board/SlashEyebrow";
+import {
+  emailStateLabel,
+  profileReviewSentence,
+  type ProfileReviewSummary,
+} from "@/lib/profile-review";
 import { isStructurallyValidEmail } from "@/lib/email-typos";
 import {
   EmailSuggestion,
@@ -308,6 +315,8 @@ function MePage() {
   const navigate = useNavigate();
   const loadProfile = useServerFn(getMyProfile);
   const saveProfile = useServerFn(updateMyProfile);
+  const confirmProfile = useServerFn(confirmMyProfile);
+  const correctProfile = useServerFn(correctMyProfile);
   const addEmail = useServerFn(addMyEmail);
   const dropEmail = useServerFn(removeMyEmail);
   const makePrimary = useServerFn(setPrimaryEmail);
@@ -468,6 +477,17 @@ function MePage() {
         </p>
       </div>
 
+      <ProfileReviewCard
+        review={profile.review}
+        onConfirm={() => run(() => confirmProfile({}), "Thanks. Marked as confirmed by you.")}
+        onCorrect={(note) =>
+          run(
+            () => correctProfile({ data: { note } }),
+            "Sent to the organizers. It stays unconfirmed until they apply it.",
+          )
+        }
+      />
+
       <Section title="Name and city">
         <ProfileForm
           person={person}
@@ -500,8 +520,21 @@ function MePage() {
                 {row.email}
               </label>
               <span className="flex items-center gap-3">
-                <span className="label-caps" style={{ color: "var(--sterling)" }}>
-                  {row.is_primary ? "Primary" : row.verified ? "Verified" : "Unverified"}
+                {row.is_primary && (
+                  <span className="label-caps" style={{ color: "var(--sterling)" }}>
+                    Primary
+                  </span>
+                )}
+                <span
+                  className="label-caps"
+                  style={{ color: row.verified ? "var(--pitt-royal)" : "var(--sterling)" }}
+                  title={
+                    row.verified
+                      ? "A sign in link sent here was opened."
+                      : "This address is on the record. Nobody has proved they can read it."
+                  }
+                >
+                  {emailStateLabel({ onFile: true, verified: row.verified })}
                 </span>
                 {!row.is_primary && (
                   <button
