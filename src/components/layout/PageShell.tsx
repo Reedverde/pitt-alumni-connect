@@ -33,11 +33,13 @@ export function PageShell({
 
   return (
     <div style={{ background: "var(--field-white)" }} className="flex min-h-screen flex-col">
+      <SkipToContent />
       <SiteNav />
       {bare ? (
         children
       ) : (
         <main
+          id="main"
           className={`mx-auto w-full flex-1 px-5 py-12 md:px-10 md:py-16 ${measure} ${className}`}
         >
           {children}
@@ -45,5 +47,34 @@ export function PageShell({
       )}
       <SiteFooter />
     </div>
+  );
+}
+
+/**
+ * Invisible until it has keyboard focus, then the first thing a tab press
+ * reaches on every page. It targets #main, which every route's main region
+ * carries, so it lands on the content and not merely on the scroll position.
+ */
+export function SkipToContent() {
+  return (
+    <a
+      href="#main"
+      className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:inline-flex focus:items-center"
+      style={{
+        background: "var(--pitt-royal)",
+        color: "var(--pure-white)",
+        borderRadius: 7,
+        padding: "12px 18px",
+        minHeight: 44,
+        fontFamily: '"Space Grotesk", sans-serif',
+        fontSize: 13,
+        fontWeight: 700,
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        textDecoration: "none",
+      }}
+    >
+      Skip to content
+    </a>
   );
 }
