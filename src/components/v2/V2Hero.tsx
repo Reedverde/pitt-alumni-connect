@@ -53,11 +53,9 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
           kept faint enough that the headline never loses contrast. */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute select-none"
+        className="pointer-events-none absolute left-[6%] top-[72%] select-none md:left-[34%] md:top-[34%]"
         style={{
-          left: "1%",
-          right: "1%",
-          top: "52%",
+          zIndex: 5,
           transform: "rotate(-6deg)",
           fontFamily: '"Great Vibes", cursive',
           fontSize: "clamp(56px, 11vw, 190px)",
@@ -65,7 +63,7 @@ export function V2Hero({ season, clock, countdownLive }: HeroRenderArgs) {
           whiteSpace: "nowrap",
           textAlign: "center",
           color: "var(--pure-white)",
-          opacity: 0.09,
+          opacity: 0.16,
         }}
       >
         En Sabah Nur
