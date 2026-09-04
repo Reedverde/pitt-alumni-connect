@@ -54,7 +54,7 @@ export function LatestNews({ limit = 3 }: { limit?: number }) {
       </div>
       <p className="mt-3">
         <Link to="/news" style={{ fontSize: 15, color: "var(--pitt-royal)" }}>
-          View all news
+          See all weekend updates
         </Link>
       </p>
     </section>
