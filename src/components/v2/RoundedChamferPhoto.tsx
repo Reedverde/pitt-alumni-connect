@@ -33,10 +33,8 @@ function roundedPolygonPath(points: Pt[], radius: number): string {
     const outX = curr[0] + ((next[0] - curr[0]) / lenOut) * t;
     const outY = curr[1] + ((next[1] - curr[1]) / lenOut) * t;
 
-    segs.push({ from: [inX, inY], to: [outX, outY] });
     d.push(`${i === 0 ? "M" : "L"} ${inX} ${inY} Q ${curr[0]} ${curr[1]} ${outX} ${outY}`);
   }
-  void segs;
   return `${d.join(" ")} Z`;
 }
 
