@@ -176,7 +176,7 @@ export async function resolveAudience(sequenceKey: string): Promise<Recipient[]>
 
 type Built = { subject: string; text: string; html: string } | null;
 
-const BUILDER_KEYS = new Set([
+export const BUILDER_KEYS = new Set([
   "t_minus_45",
   "t_minus_28",
   "t_minus_21",
@@ -190,7 +190,7 @@ const BUILDER_KEYS = new Set([
   "rsvp_confirm_2026_09_04",
 ]);
 
-type Shared = {
+export type Shared = {
   schedule: string[];
   dates: string;
   editionYear: number;
@@ -201,7 +201,7 @@ type Shared = {
 /** Which prompt events each person still owes an answer on. Answering yes or no
  *  removes the event from their list for good, so a reminder never repeats for
  *  an event that has an answer of any kind. */
-async function loadPendingEvents(): Promise<Map<string, string[]>> {
+export async function loadPendingEvents(): Promise<Map<string, string[]>> {
   const events = await loadPromptEvents();
   const answered = await loadEventAnswersByPerson();
   const all = events.map((e) => e.label);
@@ -218,7 +218,7 @@ async function loadPendingEvents(): Promise<Map<string, string[]>> {
   return pending;
 }
 
-async function buildFor(
+export async function buildFor(
   key: string,
   person: { id: string; name: string; firstName: string },
   shared: Shared,
