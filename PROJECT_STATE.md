@@ -724,3 +724,36 @@ explains what changed and when, Discord handles real-time coordination.
   edition dates it reads "Already out in Pittsburgh? Drop into Discord and say
   where you are." Outside them it is a plain invite. It appears on /news and
   beside the current day on /schedule. Same invite, no new community.
+
+## Connected alumni redesign, Phase 3 claim flow and missing person (2026-09-04)
+
+Claiming a permanent record and answering the annual invitation are now two
+separate acts.
+
+- `src/lib/claim-types.ts` carries the shared shapes. `ClaimPerson` never
+  includes an email.
+- `submitClaimServer` in `src/lib/rsvp.server.ts` attaches an address, sends the
+  sign in link and writes a `profile_claimed` audit row. It writes no `rsvps`
+  row, so someone who stops after claiming stays genuinely unanswered and the
+  organizers' no response count is honest. Throttling, the verified owner guard
+  and the deceased/archived refusal are unchanged from the RSVP path.
+- `submitMissingPersonServer` files a `new_person` suggestion carrying first and
+  last name, played as, program or Not sure, first and last playing year or Not
+  sure, graduation year, email and a free note. It deliberately omits
+  `requested_status`, so approval creates a record and never an RSVP.
+- `submitRosterCorrectionServer` files an `edit` suggestion from the confirm
+  your facts step. Nothing is written to `people` from the public flow.
+- `ClaimDialog` steps: name, is this you, email, does this look right, then the
+  optional October question. "I'll answer later" is a real exit.
+- `submitRsvp` gained `skipConfirmationEmail`: the claim step already mailed a
+  sign in link, so the answer is saved without a second message. The skip is
+  logged as a blocked send with the reason.
+- `MissingPersonForm` looks up likely duplicates while they type and offers
+  "this is me" before anything is sent.
+- The organizer queue shows every submitted field (`SubmittedFields` in
+  `ReviewQueue.tsx`). Contact details stay admin only, never on the board.
+
+Carried into Phase 4: `/me` still opens on "Are you coming in October?" and has
+no separate view of the claim itself, and roster corrections filed from the
+claim flow appear in the queue as an unattributed edit (`submitted_by` is null,
+since the person is not signed in yet).

@@ -477,7 +477,7 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
             FIND YOUR YEAR
           </h2>
           <p className="mt-3 max-w-[560px] text-left" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
-            Every person who ever played. Search your name, then say whether you are coming.
+            Every person who ever played. Search your name and claim it. October is a separate question.
           </p>
           <p className="mt-2 max-w-[560px] text-left" style={{ fontSize: 14, color: "var(--steel-ink)" }}>
             Everyone sits under their last recorded playing season. Where we have no playing

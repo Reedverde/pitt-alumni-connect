@@ -236,7 +236,7 @@ function AlumniPage() {
 
         <ClosingCta
           title="Find your name"
-          body="Every player from 1978 on is on the board. Find yours and tell us if you are coming."
+          body="Every player from 1978 on is on the board. Find yours and claim it, then tell us about October if you know."
           action={{ kind: "rsvp", label: "Find your name", onOpen: () => setClaimOpen(true) }}
         />
       </main>

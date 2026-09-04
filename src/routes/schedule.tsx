@@ -353,7 +353,7 @@ function WeekendPage() {
 
         <ClosingCta
           title="Are you coming?"
-          body="Say yes, maybe, or not this year. That is the whole signup, there is no account to make."
+          body="Claim your name first, then say yes, maybe, or not this year. No password and no account to make."
           action={{ kind: "rsvp", label: "RSVP", onOpen: () => setClaimOpen(true) }}
         />
       </main>
