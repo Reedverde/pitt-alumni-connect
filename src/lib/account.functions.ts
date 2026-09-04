@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveMyPersonId } from "./account-resolve";
@@ -119,12 +120,10 @@ export const addMeAsPerson = createServerFn({ method: "POST" })
  *  ends and the answer stops moving: no grace period, and the page's read only
  *  state is a courtesy, not the boundary. */
 async function assertRsvpEditable(
-  client: { rpc: (fn: never, args: never) => Promise<{ data: unknown }> },
+  client: SupabaseClient,
   eventYear: number,
 ) {
-  const { data } = await client.rpc("rsvp_is_editable" as never, {
-    _event_year: eventYear,
-  } as never);
+  const { data } = await client.rpc("rsvp_is_editable", { _event_year: eventYear });
   if (data === false)
     throw new Error("That weekend is over, so the answer can no longer be changed.");
 }
