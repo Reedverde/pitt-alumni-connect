@@ -2396,12 +2396,24 @@ export async function updateEditionEvent(
   if (after.time_tbd && !changedPlace && !changedDay) return { ok: true, queuedNews: false };
 
   const title = String(after.title ?? "The schedule");
+  // An update is only useful if it carries the new concrete information.
+  const whenText =
+    !after.time_tbd && after.starts_at
+      ? new Intl.DateTimeFormat("en-US", {
+          timeZone: "America/New_York",
+          weekday: "long",
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(new Date(String(after.starts_at)))
+      : null;
   const bits: string[] = [];
-  if (changedTbd && !after.time_tbd) bits.push("has a confirmed time");
-  else if (changedTime) bits.push("moved to a new time");
-  if (changedDay) bits.push("moved to a different day");
+  if (changedTbd && !after.time_tbd)
+    bits.push(whenText ? `has a confirmed time, ${whenText}` : "has a confirmed time");
+  else if (changedTime) bits.push(whenText ? `moved to ${whenText}` : "moved to a new time");
+  if (changedDay && !whenText) bits.push("moved to a different day");
   if (changedPlace) bits.push(after.location ? `is now at ${after.location}` : "changed location");
   const summary = bits.length ? `${title} ${bits.join(" and ")}.` : "";
+
 
   // Stable per distinct material state, so retries collapse and a later real
   // change still gets its own entry.
