@@ -1,0 +1,1 @@
+UPDATE public.events SET prompt_rsvp = true WHERE published = true AND prompt_rsvp = false AND event_year = (SELECT event_year FROM public.editions WHERE is_current LIMIT 1);
