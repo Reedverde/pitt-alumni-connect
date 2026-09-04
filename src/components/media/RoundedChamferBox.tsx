@@ -59,6 +59,10 @@ export function RoundedChamferBox({
     return () => ro.disconnect();
   }, []);
 
+  // A caller that positions the box with a utility class already establishes
+  // its own containing block; do not overwrite it with position: relative.
+  const positioned = /(^|\s)(absolute|fixed|sticky)(\s|$)/.test(className ?? "");
+
   const token = CHAMFER[tier];
   const path = chamferPath({
     w: size.w,
@@ -73,9 +77,15 @@ export function RoundedChamferBox({
     <div
       ref={ref}
       aria-hidden={ariaHidden}
-      className={["relative", className].filter(Boolean).join(" ")}
-      // position defaults to relative but must not beat an absolute utility class
-      style={{ width: "100%", aspectRatio: ratio, ...style }}
+      className={className}
+      style={{
+        // Children are absolutely positioned, so the box needs a containing
+        // block, but callers that place the box itself absolutely must win.
+        position: positioned ? undefined : "relative",
+        width: "100%",
+        aspectRatio: ratio,
+        ...style,
+      }}
     >
       {path && (
         <svg aria-hidden="true" width={0} height={0} style={{ position: "absolute" }}>
