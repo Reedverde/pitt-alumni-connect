@@ -203,24 +203,20 @@ export function ConfidencePanel({ rows, onSaved }: { rows: TeamNameRow[]; onSave
   );
 }
 
-/** People who answered going, and the heads they are bringing. The two are
- *  deliberately shown side by side because they are different numbers. */
+/** How many people are coming to the weekend at all. Heads are no longer asked
+ *  for the weekend as a whole: they are asked on each event, where they mean
+ *  something a caterer can use, so per event totals live in the panel below. */
 export function HeadcountPanel({ headcount }: { headcount: Headcount }) {
   return (
-    <Section eyebrow="Capacity" title="Total heads expected">
+    <Section eyebrow="Attendance" title="Coming to the weekend">
       <div className="flex flex-wrap items-baseline gap-8">
         <p style={{ fontSize: 15, color: "var(--steel-ink)" }}>
           <Num>{headcount.going}</Num> going
         </p>
-        <p style={{ fontSize: 15, color: "var(--steel-ink)" }}>
-          <Num>{headcount.heads}</Num> total heads expected
-        </p>
       </div>
-      {headcount.heads > headcount.capacity && (
-        <p className="mt-3" style={{ fontSize: 13, color: "var(--steel-ink)" }}>
-          Above Schenley Overlook capacity. Thorne Barn holds more.
-        </p>
-      )}
+      <p className="mt-3" style={{ fontSize: 13, color: "var(--sterling)" }}>
+        Heads per event are counted below, where people said how many they are bringing.
+      </p>
     </Section>
   );
 }
