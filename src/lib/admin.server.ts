@@ -88,6 +88,12 @@ export type AdminEmail = {
   verified: boolean;
 };
 
+export type AdminRsvpHistoryRow = {
+  event_year: number;
+  status: string;
+  party_size: number;
+};
+
 export type AdminPerson = PersonRow & {
   emails: AdminEmail[];
   board_year: number | null;
@@ -97,7 +103,14 @@ export type AdminPerson = PersonRow & {
   state: "unclaimed" | "claimed" | "going" | "maybe" | "not_this_year" | "memorial";
   /** Per event answers for the current edition, joined from event_rsvps. */
   event_answers: { event_id: string; label: string; status: "yes" | "no"; party_size: number }[];
+  /** Every edition this person has answered, newest first. Read only. */
+  rsvp_history: AdminRsvpHistoryRow[];
+  /** Heads for the current edition, only meaningful while state is going. */
+  party_size: number | null;
+  /** False when neither a stint nor a grad year can place them on the board. */
+  placed: boolean;
 };
+
 
 type Context = {
   placement: Map<string, { board_year: number | null; board_division: string | null }>;
