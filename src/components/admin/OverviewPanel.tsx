@@ -21,11 +21,14 @@ export function OverviewPanel({
 
   const attendance = group([
     "going",
+    "going_alumni",
+    "going_current",
     "maybe",
     "not_this_year",
     "no_response",
     "claimed",
   ]);
+  const headTiles = group(["heads", "going_alumni_heads", "going_current_heads"]);
   const actions = group([
     "missing_event_answers",
     "new_person",
@@ -48,6 +51,15 @@ export function OverviewPanel({
       }
     >
       <Grid tiles={attendance} onOpen={onOpen} />
+      <h3 className="label-caps mt-8 mb-3" style={{ color: "var(--sterling)" }}>
+        Heads, including guests
+      </h3>
+      <Grid tiles={headTiles} onOpen={onOpen} />
+      <p className="mt-3" style={{ fontSize: 12, color: "var(--sterling)" }}>
+        People counts one record each. Heads counts the party each person said they are bringing.
+        Current players are anyone on a roster this season, taken from their seasons on record, not
+        from a graduation year.
+      </p>
       <div className="mt-10">
         <EventTallyPanel rows={events} onOpen={onOpenEvent} />
       </div>
