@@ -1630,9 +1630,9 @@ export type EventHeadcountRow = {
   heads: number;
 };
 
-/** Per event answers for the two prompt events (BBQ, Alumni Game). The
- *  unanswered figure is everyone going on the weekend RSVP minus the people
- *  who answered this event either way. */
+/** Per event answers for every event of the current edition. The unanswered
+ *  figure is everyone going on the weekend RSVP minus the people who answered
+ *  this event either way. */
 export async function eventHeadcounts(): Promise<EventHeadcountRow[]> {
   const { loadPromptEvents } = await import("./event-rsvp.server");
   const events = await loadPromptEvents();

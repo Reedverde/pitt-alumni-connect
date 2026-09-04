@@ -5,7 +5,6 @@ import { resolveMyPersonId } from "./account-resolve";
 
 export type PromptEventDto = {
   id: string;
-  key: "bbq" | "alumni_game";
   label: string;
   title: string;
   starts_at: string | null;

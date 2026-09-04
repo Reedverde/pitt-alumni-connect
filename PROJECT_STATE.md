@@ -571,7 +571,9 @@ Three migrations ran, plus code.
 
 **Migration 3, sequence offset.** `sequences.event_rsvp_prompt.offset_days` set to -24, chosen to clear the 7 day global throttle after t_minus_28. The sequence remains `active = false`. Timing is computed the only supported way, `editions.starts_on + offset_days` on the current edition, so it repeats every year with no hardcoded date.
 
-**Gating.** Per event questions are only ever asked of someone whose main rsvp status is `going` for the current edition. Maybe never triggers them. Inline: the claim dialog now shows a BBQ and Alumni Game step immediately after a going answer, skippable, and a failure there never affects the already saved weekend RSVP. Drip fallback: `event_rsvp_prompt` resolves prompt events by title match on the current edition and emails only the unanswered ones. A yes or a no both retire that event for that person for good.
+**Gating.** Per event questions are only ever asked of someone whose main rsvp status is `going` for the current edition. Maybe never triggers them. Inline: the claim dialog shows a per event step immediately after a going answer, skippable, and a failure there never affects the already saved weekend RSVP. Drip fallback: `event_rsvp_prompt` emails only the unanswered events. A yes or a no both retire that event for that person for good.
+
+**2026-09-04 scope change.** Prompt events are no longer a BBQ and Alumni Game allowlist. `loadPromptEvents` returns every event row of the current edition, placeholders included (Bar Crawl collects a soft interest signal even unhosted), and that list is the single write allowlist for `submitEventRsvpsServer`. The card toggles on `/weekend` and the homepage summary, the claim dialog step, the drip unanswered check, and the admin per event headcount panel all read the same list, currently 7 events.
 
 **Admin.** Event answers show inline in the People tab expanded row, joined per person from `event_rsvps`, no separate dashboard. The header copy now says six people share the page, not three.
 

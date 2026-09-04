@@ -2,25 +2,18 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 import { loadCurrentEdition } from "./editions.server";
 
-/** The two events we ask a "going" alumnus about individually. They are matched
- *  by title on the current edition rather than by a hardcoded id, so the pair
- *  survives an edition rollover with new event rows every year. */
-const PROMPT_MATCHERS: { key: "bbq" | "alumni_game"; test: RegExp; label: string }[] = [
-  { key: "bbq", test: /bbq/i, label: "BBQ" },
-  { key: "alumni_game", test: /alumni game/i, label: "Alumni Game" },
-];
-
+/** Every event of the current edition can collect its own answer. There is no
+ *  allowlist: a placeholder row without a locked time or place (Bar Crawl and
+ *  the like) still gathers a soft interest signal, and the same list is the
+ *  server side write allowlist, so eligibility has exactly one definition. */
 export type PromptEvent = {
   id: string;
-  key: "bbq" | "alumni_game";
   label: string;
   title: string;
   starts_at: string | null;
   location: string | null;
 };
 
-/** Never more than one event per key. If a division split ever reappears the
- *  first row by sort order wins, so the prompt cannot double up. */
 export async function loadPromptEvents(): Promise<PromptEvent[]> {
   const edition = await loadCurrentEdition();
   const { data } = await supabaseAdmin
@@ -29,20 +22,13 @@ export async function loadPromptEvents(): Promise<PromptEvent[]> {
     .eq("event_year", edition.event_year)
     .order("sort_order", { ascending: true });
 
-  const out: PromptEvent[] = [];
-  for (const matcher of PROMPT_MATCHERS) {
-    const hit = (data ?? []).find((e) => matcher.test.test(String(e.title ?? "")));
-    if (!hit) continue;
-    out.push({
-      id: hit.id as string,
-      key: matcher.key,
-      label: matcher.label,
-      title: hit.title as string,
-      starts_at: (hit.starts_at as string | null) ?? null,
-      location: (hit.location as string | null) ?? null,
-    });
-  }
-  return out;
+  return (data ?? []).map((e) => ({
+    id: e.id as string,
+    label: String(e.title ?? "Event"),
+    title: String(e.title ?? "Event"),
+    starts_at: (e.starts_at as string | null) ?? null,
+    location: (e.location as string | null) ?? null,
+  }));
 }
 
 export type EventAnswer = { eventId: string; status: "yes" | "no"; partySize?: number | null };
