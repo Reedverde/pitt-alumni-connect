@@ -66,15 +66,20 @@ export function timeIsUnknown(e: TimingShape): boolean {
   return !hasClockTime(e) && !e.relative_timing?.trim();
 }
 
+/** Mid-sentence the label starts lower case, but 9:00 AM keeps its case. */
+function lowerLead(label: string) {
+  return label.charAt(0).toLowerCase() + label.slice(1);
+}
+
 /** One sentence for emails and bulletins: "10:00 AM to 12:00 PM, doors 9:00 AM". */
 export function timingSentence(e: TimingShape): string {
   const doors = eventDoorsLabel(e);
   if (!hasClockTime(e)) {
     const relative = e.relative_timing?.trim();
     const base = relative || "Time still to be set";
-    return doors ? `${base}, ${doors.toLowerCase()}` : base;
+    return doors ? `${base}, ${lowerLead(doors)}` : base;
   }
   const start = formatClock(e.starts_at!, tzOf(e));
   const range = e.ends_at ? `${start} to ${formatClock(e.ends_at, tzOf(e))}` : start;
-  return doors ? `${range}, ${doors.toLowerCase()}` : range;
+  return doors ? `${range}, ${lowerLead(doors)}` : range;
 }
