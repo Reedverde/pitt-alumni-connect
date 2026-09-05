@@ -2204,6 +2204,12 @@ export type Database = {
         }
         Relationships: []
       }
+      current_people: {
+        Row: {
+          person_id: string | null
+        }
+        Relationships: []
+      }
       current_players: {
         Row: {
           division: string | null

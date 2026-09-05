@@ -158,15 +158,17 @@ type Context = {
   reachable: Set<string>;
   /** Latest explicit profile review per person. Absent means never reviewed. */
   reviews: Map<string, ProfileReviewSummary>;
-  /** On a roster this season as a player or captain. The same rule board_people
-   *  uses, so alumni and current players never split two different ways. */
+  /** Current, by the one shared database definition (the `current_people` view):
+   *  any stint in the newest roster season, or a working @pitt.edu address. The
+   *  same rule board_people uses, so alumni and current players never split two
+   *  different ways. */
   currentPlayers: Set<string>;
 };
 
 
 async function loadContext(): Promise<Context> {
   const currentYear = (await loadCurrentEdition()).event_year;
-  const [placeRes, stintRes, rsvpRes, identRes] = await Promise.all([
+  const [placeRes, stintRes, rsvpRes, identRes, currentRes] = await Promise.all([
     supabaseAdmin.from("person_board_placement").select("person_id, board_year, board_division"),
     supabaseAdmin.from("stints").select("person_id, role, year"),
     supabaseAdmin
@@ -178,6 +180,7 @@ async function loadContext(): Promise<Context> {
       .from("identities")
       .select("person_id, email, is_primary, verified_at")
       .order("is_primary", { ascending: false }),
+    supabaseAdmin.from("current_people").select("person_id"),
   ]);
   const placement = new Map<string, { board_year: number | null; board_division: string | null }>();
   for (const row of placeRes.data ?? [])
@@ -186,14 +189,13 @@ async function loadContext(): Promise<Context> {
       board_division: row.board_division as string | null,
     });
   const stints = new Map<string, number>();
-  const currentPlayers = new Set<string>();
-  const season = rosterSeasonYear();
+  // One definition of "current", read from the database rather than recomputed here.
+  const currentPlayers = new Set<string>(
+    (currentRes.data ?? []).map((row) => String((row as { person_id: string }).person_id)),
+  );
   for (const row of stintRes.data ?? []) {
     const pid = row.person_id as string;
     stints.set(pid, (stints.get(pid) ?? 0) + 1);
-    const role = String((row as { role?: string }).role ?? "");
-    const year = (row as { year?: number | null }).year;
-    if ((role === "player" || role === "captain") && Number(year) === season) currentPlayers.add(pid);
   }
   const rsvp = new Map<string, string>();
   const party = new Map<string, number>();
@@ -2182,9 +2184,9 @@ export async function overview(
   const tiles: OverviewTile[] = [
     { key: "going", label: "Going (people)", value: going, hint: "Everyone who answered yes: graduates and current players together.", tab: "people", filter: "going" },
     { key: "heads", label: "Expected heads (heads)", value: heads, hint: "Party sizes of everyone going, graduates and current players.", tab: "people", filter: "going" },
-    { key: "going_alumni", label: "Graduates going (people)", value: goingAlumni, hint: `Going, and not on a ${rosterSeasonYear()} roster. The organizer facing alumni number.`, tab: "people", filter: "going_alumni" },
+    { key: "going_alumni", label: "Graduates going (people)", value: goingAlumni, hint: "Going, and not current. The organizer facing alumni number.", tab: "people", filter: "going_alumni" },
     { key: "going_alumni_heads", label: "Graduates going (heads)", value: goingAlumniHeads, hint: "Party sizes of the graduates going.", tab: "people", filter: "going_alumni" },
-    { key: "going_current", label: "Current players going (people)", value: goingCurrent, hint: `On a ${rosterSeasonYear()} roster as a player or captain.`, tab: "people", filter: "going_current" },
+    { key: "going_current", label: "Current players going (people)", value: goingCurrent, hint: "On the newest roster, or reachable at a working pitt.edu address.", tab: "people", filter: "going_current" },
     { key: "going_current_heads", label: "Current players going (heads)", value: goingCurrentHeads, hint: "Party sizes of the current players going.", tab: "people", filter: "going_current" },
     { key: "maybe", label: "Maybe", value: maybe, hint: "Still deciding.", tab: "people", filter: "maybe" },
     { key: "not_this_year", label: "Not this year", value: notThisYear, hint: "Answered, but not coming.", tab: "people", filter: "not_this_year" },
