@@ -896,3 +896,11 @@ Copy correction
 - Cron, DST-safe and no polling: `news-automation-15min` (jobid 2) now runs `0 13,14 * * *` UTC. Exactly one of those is 9:00 Eastern year round; the other is 8:00 (early, silent) or 10:00 (missed, and only when the 9:00 run never claimed the day). `scheduled-campaign-tick-hourly` stays hourly on the hour, which lands on 13:00Z for the September 30 send.
 - Missed rather than late, everywhere: a missed morning is recorded (`news_automation.missed`) and a missed campaign is stamped `missed_at`. Neither is ever sent or posted afterwards by machine.
 - Unit tests: `bun run test` (`src/lib/__tests__/news-rules.test.ts`, `src/lib/__tests__/launch-timing.test.ts` — 08:59 / 09:00 / 09:01 / 09:15 / 10:00 plus both daylight-saving sides and both changeovers). 27 passing.
+
+## T-10 (September 22, 2026) email rule (2026-09-05)
+
+- `t_minus_10_headcount` (`eddabcf3-…`) is `active = false`. It cannot run automatically or by hand; the row and its send history are kept.
+- `event_rsvp_prompt` (`f3e1c9ca-…`) is now the T-10 sequence: `offset_days = -10`, `active = true`, audience `{going}`. With `editions.starts_on = 2026-10-02` the daily drip resolves it to **2026-09-22** (`src/lib/drip-cron.server.ts`, armed only while `outbound_email_mode = "drip_enabled"`).
+- Copy is unchanged: it lists only that person's unanswered prompt events, asks a yes or no for each, and has a single CTA to answer on the board. No party size, no generic signup. A person with nothing outstanding builds no body and is skipped.
+- `loadPromptEvents` now also requires `published = true` and `status <> 'cancelled'`, so an unpublished or cancelled event never asks anyone for an answer.
+- Open item: the same sequence already sent on 2026-09-04 (63 rows in `sends`). The once-per-campaign rule means a September 22 run of this key would send to nobody. A second send needs a new sequence key reusing the same builder — not yet approved.

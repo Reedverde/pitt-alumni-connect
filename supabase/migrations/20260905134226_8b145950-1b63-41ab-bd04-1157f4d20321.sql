@@ -1,0 +1,2 @@
+UPDATE public.sequences SET active = false WHERE id = 'eddabcf3-446f-446d-a20b-1ba45df333a1';
+UPDATE public.sequences SET active = true, offset_days = -10 WHERE id = 'f3e1c9ca-df63-444b-bd53-8890cff45193';

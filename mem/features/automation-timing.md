@@ -35,3 +35,6 @@ automation. An approved campaign carries a `ScopedSendAuthorization { kind,
 reason }` into `sendPlainEmail`; the mail choke point honours it for that one
 campaign kind, for the length of that one dispatch. No other request can ever
 observe a moment of unrestricted sending.
+
+## T-10 email (2026)
+The September 22 (T-10) message is the event RSVP reminder (`event_rsvp_prompt`, offset -10, audience going); `t_minus_10_headcount` is disabled but kept. Timing is always `editions.starts_on + offset_days`, never a hardcoded date.
