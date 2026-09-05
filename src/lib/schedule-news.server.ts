@@ -242,27 +242,103 @@ async function currentStateFor(eventId: string): Promise<EventRow | null> {
   return (data as unknown as EventRow | null) ?? null;
 }
 
-/** Records an event's current state as announced, without publishing anything.
- *  Two uses: after a bulletin goes out, and the organizer's "quiet correction"
- *  save, which is how a spelling fix stays out of the news without the software
- *  having to guess what a spelling fix looks like. */
+async function baselineFor(eventId: string): Promise<PublicState | null> {
+  const { data } = await supabaseAdmin
+    .from("event_announced_state")
+    .select("state")
+    .eq("event_id", eventId)
+    .maybeSingle();
+  if (!data) return null;
+  return readState((data as { state: unknown }).state);
+}
+
+async function writeBaseline(
+  eventId: string,
+  eventYear: number | null,
+  title: string,
+  state: PublicState,
+  newsId: string | null,
+) {
+  await supabaseAdmin.from("event_announced_state").upsert(
+    {
+      event_id: eventId,
+      event_year: eventYear,
+      title,
+      state: state as never,
+      announced_at: new Date().toISOString(),
+      news_id: newsId,
+    } as never,
+    { onConflict: "event_id" },
+  );
+}
+
+/**
+ * Records the exact snapshot the bulletin described as announced.
+ *
+ * The snapshot is passed in rather than re-read, so an edit made while the
+ * article was being written stays pending instead of being swallowed by a
+ * baseline that never appeared in print.
+ */
+export async function markEventAnnouncedState(
+  eventId: string,
+  state: PublicState | null,
+  newsId: string | null = null,
+) {
+  if (!state) {
+    await supabaseAdmin.from("event_announced_state").delete().eq("event_id", eventId);
+    return;
+  }
+  const row = await currentStateFor(eventId);
+  await writeBaseline(eventId, row?.event_year ?? null, state.title, state, newsId);
+}
+
+/** Records an event's *current* state as announced. Used where the caller has
+ *  no printed snapshot to hold to, such as an event's first save. */
 export async function markEventAnnounced(eventId: string, newsId: string | null = null) {
   const row = await currentStateFor(eventId);
   if (!row) {
     await supabaseAdmin.from("event_announced_state").delete().eq("event_id", eventId);
     return;
   }
-  await supabaseAdmin.from("event_announced_state").upsert(
-    {
-      event_id: eventId,
-      event_year: row.event_year,
-      title: row.title,
-      state: toState(row) as never,
-      announced_at: new Date().toISOString(),
-      news_id: newsId,
-    } as never,
-    { onConflict: "event_id" },
-  );
+  await writeBaseline(eventId, row.event_year, row.title, toState(row), newsId);
+}
+
+/**
+ * The organizer's quiet correction. It moves the announced baseline forward for
+ * the wording of the name and the venue only. Every material field keeps the
+ * value the public was last told, so a time change, a cancellation or a
+ * publication that was already owed a line stays owed one.
+ */
+export async function markCosmeticCorrection(eventId: string): Promise<{
+  moved: boolean;
+  stillPending: string[];
+  reason: string;
+}> {
+  const row = await currentStateFor(eventId);
+  if (!row) return { moved: false, stillPending: [], reason: "That event no longer exists." };
+
+  const baseline = await baselineFor(eventId);
+  if (!baseline)
+    return {
+      moved: false,
+      stillPending: ["published"],
+      reason: "This event has never been announced, so there is nothing to correct quietly yet.",
+    };
+
+  const current = toState(row);
+  const merged: PublicState = { ...baseline, title: current.title, location: current.location };
+  const stillPending = materialDiff(merged, current);
+
+  await writeBaseline(eventId, row.event_year, current.title, merged, null);
+
+  return {
+    moved: true,
+    stillPending,
+    reason:
+      stillPending.length > 0
+        ? "The wording is settled quietly. The other changes still go in the next bulletin."
+        : "Saved without a public update.",
+  };
 }
 
 /** Whether this one event currently differs from what the public was told. */
