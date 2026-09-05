@@ -7,7 +7,10 @@ import { dispatchSequence, type DispatchSkips } from "./drip.server";
  *  Deliberately separate from the daily drip tick: this path does not read the
  *  drip arming switch, because the authorization here is the scheduling record
  *  itself. It opens the send choke point for the length of one dispatch and
- *  forces it back to transactional_only afterwards, even on a throw.
+ *  puts the stored setting back exactly as it found it afterwards, even on a
+ *  throw. The live setting is "drip_enabled", which the mail layer treats as
+ *  paused for everything but sign-in links; that paused state survives this
+ *  campaign untouched.
  *
  *  Idempotency: dispatched_at is stamped before any mail leaves, so a second
  *  tick, a retry, or an overlapping cron run finds nothing to do. The
