@@ -183,6 +183,14 @@ type Built = { subject: string; text: string; html: string } | null;
 
 export const LOCKED_SCHEDULE_KEY = "locked_schedule_2026_09_30";
 
+/** The approved September 22 T-10 reminder. It reuses the September 4 copy and
+ *  builder exactly; only the campaign identity is new, so the once-per-campaign
+ *  rule from that earlier send does not suppress this one. */
+export const EVENT_RSVP_T10_KEY = "event_rsvp_prompt_t10_2026_09_22";
+
+/** Keys that build the personalized "your unanswered events" reminder. */
+export const EVENT_RSVP_PROMPT_KEYS = new Set(["event_rsvp_prompt", EVENT_RSVP_T10_KEY]);
+
 export const BUILDER_KEYS = new Set([
   "t_minus_45",
   "t_minus_28",
@@ -194,6 +202,7 @@ export const BUILDER_KEYS = new Set([
   "t_plus_3",
   "discord_invite",
   "event_rsvp_prompt",
+  EVENT_RSVP_T10_KEY,
   "rsvp_confirm_2026_09_04",
   LOCKED_SCHEDULE_KEY,
 ]);
@@ -249,6 +258,7 @@ export async function buildFor(
       if (!body) return null;
       return { subject: tMinus28Subject(cohort.year ?? shared.editionYear), ...body };
     }
+    case EVENT_RSVP_T10_KEY:
     case "event_rsvp_prompt": {
       const pending =
         shared.pendingEvents.get(person.id) ?? shared.pendingEvents.get("__all__") ?? [];
@@ -430,7 +440,7 @@ export async function dispatchSequence(opts: {
     schedule: needsSchedule ? await loadScheduleLines() : [],
     dates: editionDateRange(edition),
     editionYear: edition.event_year,
-    pendingEvents: key === "event_rsvp_prompt" ? await loadPendingEvents() : new Map(),
+    pendingEvents: EVENT_RSVP_PROMPT_KEYS.has(key) ? await loadPendingEvents() : new Map(),
   };
 
 
