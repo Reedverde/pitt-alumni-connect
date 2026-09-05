@@ -202,6 +202,13 @@ function doorsLabel(event: ScheduleEvent) {
   return `Doors ${clock(event.doors_at)}`;
 }
 
+/** The canonical end time, so a card never reads "10 AM" with no idea of when
+ *  it wraps up. Only shown for a real clock time. */
+function endsLabel(event: ScheduleEvent) {
+  if (event.time_tbd || !event.starts_at || !event.ends_at) return null;
+  return `Ends ${clock(event.ends_at)}`;
+}
+
 
 function WeekendPage() {
   const { data } = useSuspenseQuery(scheduleQuery);
@@ -558,6 +565,17 @@ function EventTile({
           }}
         >
           {doorsLabel(event)}
+        </p>
+      )}
+      {endsLabel(event) && (
+        <p
+          style={{
+            fontFamily: '"Space Mono", monospace',
+            fontSize: 13,
+            color: "var(--sterling)",
+          }}
+        >
+          {endsLabel(event)}
         </p>
       )}
 
