@@ -158,8 +158,10 @@ type Context = {
   reachable: Set<string>;
   /** Latest explicit profile review per person. Absent means never reviewed. */
   reviews: Map<string, ProfileReviewSummary>;
-  /** On a roster this season as a player or captain. The same rule board_people
-   *  uses, so alumni and current players never split two different ways. */
+  /** Current, by the one shared database definition (the `current_people` view):
+   *  any stint in the newest roster season, or a working @pitt.edu address. The
+   *  same rule board_people uses, so alumni and current players never split two
+   *  different ways. */
   currentPlayers: Set<string>;
 };
 
