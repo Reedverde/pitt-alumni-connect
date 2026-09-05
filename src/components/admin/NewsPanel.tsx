@@ -306,6 +306,7 @@ export function NewsPanel() {
       </Section>
 
       <SettingsForm
+        runs={data.runs ?? []}
         settings={data.settings}
         onSave={async (input) => {
           await saveSettings({ data: input });
@@ -431,10 +432,19 @@ function NewPostForm({
   );
 }
 
+const RUN_WORDS: Record<string, string> = {
+  published: "Posted the bulletin",
+  nothing_to_say: "Nothing to report, so nothing was posted",
+  missed: "Missed the morning window. Nothing was posted.",
+  failed: "Something went wrong. Nothing was posted.",
+};
+
 function SettingsForm({
   settings,
+  runs,
   onSave,
 }: {
+  runs: { at: string; outcome: string; detail: Record<string, unknown> }[];
   settings: { enabled: boolean; timezone: string; daily_digest_time: string; weekly_day: number; weekly_time: string; last_digest_date: string | null; last_weekly_date: string | null } | null;
   onSave: (input: { enabled: boolean; daily_digest_time: string; weekly_day: number; weekly_time: string }) => Promise<void>;
 }) {
@@ -472,6 +482,27 @@ function SettingsForm({
         <p style={mono}>
           Last digest: {settings?.last_digest_date ?? "never"} · Last roundup: {settings?.last_weekly_date ?? "never"}
         </p>
+        <div>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--sabah-black)" }}>Recent mornings</p>
+          {runs.length === 0 ? (
+            <p style={{ fontSize: 13, color: "var(--sterling)" }}>No automatic runs recorded yet.</p>
+          ) : (
+            <ul className="mt-1 flex flex-col gap-1">
+              {runs.map((r) => (
+                <li
+                  key={`${r.at}-${r.outcome}`}
+                  style={{
+                    fontSize: 12.5,
+                    color: r.outcome === "missed" || r.outcome === "failed" ? "var(--pitt-royal)" : "var(--sterling)",
+                  }}
+                >
+                  {String(r.detail["localDate"] ?? r.at.slice(0, 10))} ·{" "}
+                  {RUN_WORDS[r.outcome] ?? r.outcome}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <div>
           <button
             type="button"
