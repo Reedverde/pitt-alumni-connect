@@ -53,13 +53,16 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
   const run = async (fn: () => Promise<unknown>, ok: string) => {
     setBusy(true);
     try {
-      const result = (await fn()) as { queuedNews?: boolean } | null;
+      const result = (await fn()) as { queuedNews?: boolean; quietNote?: string | null } | null;
       toast.success(ok);
       // A public change must never quietly vanish: say so at the moment it lands.
       if (result?.queuedNews) {
-        toast.info("This goes in tomorrow's 9am bulletin. Use Save quietly to keep it out.", {
-          duration: 8000,
-        });
+        toast.info(
+          result.quietNote
+            ? `${result.quietNote} Only the name and the venue wording can be settled quietly.`
+            : "This goes in tomorrow's 9am bulletin. Use Save quietly to keep it out.",
+          { duration: 9000 },
+        );
       }
       onSaved();
     } catch (error) {
