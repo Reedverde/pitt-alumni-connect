@@ -2442,7 +2442,6 @@ export type Database = {
       }
       current_edition_year: { Args: never; Returns: number }
       current_person_id: { Args: never; Returns: string }
-      current_roster_year: { Args: never; Returns: number }
       is_admin: { Args: never; Returns: boolean }
       promote_verified_primary: {
         Args: { _identity_id: string }
