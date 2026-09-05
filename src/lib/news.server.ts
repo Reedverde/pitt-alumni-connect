@@ -272,10 +272,10 @@ export async function publishDigest(opts: {
 
   // Move each announced baseline forward only after the article exists, so a
   // crash mid-run leaves the change still owed rather than silently swallowed.
-  const { markEventAnnounced } = await import("./schedule-news.server");
-  for (const eventId of preview.eventIds) {
-    await markEventAnnounced(eventId, newsId).catch((err) =>
-      console.error("[news] baseline update failed", eventId, err),
+  const { markEventAnnouncedState } = await import("./schedule-news.server");
+  for (const snap of preview.snapshots) {
+    await markEventAnnouncedState(snap.eventId, snap.state as never, newsId).catch((err) =>
+      console.error("[news] baseline update failed", snap.eventId, err),
     );
   }
 
