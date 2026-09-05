@@ -833,10 +833,10 @@ function GoldDot() {
   );
 }
 
-/** The legend, folded away behind one line. It is reference material, not the
- *  first thing to read, and it keeps this year's answer separate from the
- *  permanent state of a record. Every swatch is paired with a word. */
+/** The legend, folded away behind one line on desktop. On phones the same
+ *  color meanings are visible by default so no tap is required. */
 function BoardKey() {
+  const [open, setOpen] = useState(false);
   const thisYear = [
     { label: "Coming", dot: "var(--sabah-black)", border: "1px solid transparent", bg: "var(--pitt-gold)", text: "var(--sabah-black)" },
     { label: "Maybe", dot: "var(--pitt-gold)", border: "1px solid var(--pitt-gold)", bg: "transparent", text: "var(--steel-ink)" },
@@ -847,11 +847,11 @@ function BoardKey() {
     { label: "In memoriam", dot: "var(--pure-white)", border: "1px solid transparent", bg: "var(--sabah-black)", text: "var(--pure-white)" },
   ];
   const row = (items: typeof thisYear) => (
-    <div className="mt-2 flex flex-wrap gap-2">
+    <div className="mt-1.5 flex flex-wrap gap-2">
       {items.map((item) => (
         <span
           key={item.label}
-          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5"
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1"
           style={{ background: item.bg, border: item.border, color: item.text, fontSize: 12, fontWeight: 500 }}
         >
           <span
@@ -864,28 +864,78 @@ function BoardKey() {
       ))}
     </div>
   );
+
+  const fullContent = (
+    <>
+      <p className="label-caps" style={{ color: "var(--sterling)" }}>
+        This year
+      </p>
+      {row(thisYear)}
+      <p className="label-caps mt-4" style={{ color: "var(--sterling)" }}>
+        Profile
+      </p>
+      {row(profile)}
+      <p className="mt-3" style={{ fontSize: 13, color: "var(--steel-ink)" }}>
+        In memoriam is a permanent, respectful category. It is never an answer about the weekend.
+      </p>
+    </>
+  );
+
+  const compactContent = (
+    <>
+      <p className="label-caps" style={{ color: "var(--sterling)" }}>
+        This year
+      </p>
+      {row(thisYear)}
+      <p className="label-caps mt-2" style={{ color: "var(--sterling)" }}>
+        Profile
+      </p>
+      {row(profile)}
+    </>
+  );
+
   return (
-    <details className="mt-5 max-w-[560px]">
-      <summary
-        className="label-caps cursor-pointer"
-        style={{ color: "var(--pitt-royal)", minHeight: 36, display: "flex", alignItems: "center" }}
-      >
-        What the colours mean
-      </summary>
-      <div className="mt-2 pb-1">
-        <p className="label-caps" style={{ color: "var(--sterling)" }}>
-          This year
-        </p>
-        {row(thisYear)}
-        <p className="label-caps mt-4" style={{ color: "var(--sterling)" }}>
-          Profile
-        </p>
-        {row(profile)}
-        <p className="mt-3" style={{ fontSize: 13, color: "var(--steel-ink)" }}>
-          In memoriam is a permanent, respectful category. It is never an answer about the weekend.
-        </p>
+    <>
+      <div className="mt-3 max-w-[560px] md:hidden">
+        {compactContent}
       </div>
-    </details>
+
+      <div className="mt-5 hidden max-w-[560px] md:block">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="label-caps flex cursor-pointer items-center gap-2"
+          style={{ color: "var(--pitt-royal)", minHeight: 36 }}
+        >
+          <span>What the colors mean</span>
+          <svg
+            aria-hidden="true"
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+            style={{
+              transform: open ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 150ms ease",
+            }}
+          >
+            <path
+              d="M1 4L6 9L11 4"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        {open && (
+          <div className="mt-2 pb-1">
+            {fullContent}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
