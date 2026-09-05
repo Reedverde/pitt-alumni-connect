@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+import { dedupeAddresses, normalizeEmail } from "./drip-dedupe";
 import { loadCurrentEdition } from "./editions.server";
 import { editionDateRange } from "./edition-format";
 import { partySizeLink } from "./party-token.server";
@@ -69,12 +70,6 @@ type SequenceRow = {
 };
 
 const RECENT_SEND_DAYS = 10;
-
-/** One mailbox, one spelling. Address comparison is never case sensitive. */
-function normalizeEmail(value: string | null | undefined): string {
-  return (value ?? "").trim().toLowerCase();
-}
-
 const SEND_INTERVAL_MS = 500;
 
 async function loadSequence(key: string): Promise<SequenceRow | null> {
@@ -413,16 +408,15 @@ export async function dispatchSequence(opts: {
       skips.recent_send++;
       return false;
     }
-    const address = normalizeEmail(r.email);
-    if (!address || alreadyEmailed.has(address)) {
-      skips.duplicate_email++;
-      return false;
-    }
-    // Claimed for this run as well, so two people sharing a mailbox get one
-    // copy between them rather than one each.
-    alreadyEmailed.add(address);
     return true;
   });
+
+  // One mailbox, one copy: across this run and across everything this campaign
+  // has already sent.
+  const deduped = dedupeAddresses(queue, alreadyEmailed);
+  skips.duplicate_email = deduped.skipped;
+  queue.length = 0;
+  queue.push(...deduped.keep);
 
   if (opts.anchorsFirst) queue.sort((a, b) => Number(b.isAnchor) - Number(a.isAnchor));
 
