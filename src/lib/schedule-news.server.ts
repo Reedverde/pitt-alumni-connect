@@ -107,6 +107,41 @@ function whenChanged(before: PublicState, after: PublicState) {
   );
 }
 
+/**
+ * The two fields an organizer is allowed to correct silently. Everything else
+ * is material: if it differs from what the public was last told, it owes the
+ * public a line, and no quiet save can absorb it.
+ */
+export const COSMETIC_FIELDS = ["title", "location"] as const;
+
+/** Which material fields differ between the announced baseline and now. */
+export function materialDiff(before: PublicState | null, after: PublicState | null): string[] {
+  if (!before || !after) return ["published"];
+  const out: string[] = [];
+  if (before.published !== after.published) out.push("published");
+  if (whenChanged(before, after)) out.push("when");
+  if (before.audience !== after.audience) out.push("audience");
+  if (before.division !== after.division) out.push("division");
+  if (before.status !== after.status) out.push("status");
+  if ((before.ticket_url ?? "").trim() !== (after.ticket_url ?? "").trim()) out.push("ticket_url");
+  return out;
+}
+
+function statusPhrase(status: string): string {
+  switch (status) {
+    case "confirmed":
+      return "is confirmed";
+    case "changed":
+      return "has changed";
+    case "tentative":
+      return "is back to tentative";
+    case "postponed":
+      return "is postponed";
+    default:
+      return `is marked ${status}`;
+  }
+}
+
 /** The public-facing sentence for one event's net change, or null when the
  *  difference is only formatting, internal or private. */
 export function describeChange(before: PublicState | null, after: PublicState | null): string | null {
@@ -122,7 +157,7 @@ export function describeChange(before: PublicState | null, after: PublicState | 
   // Newly public.
   if (!before || !before.published) {
     const where = after.location?.trim() ? ` at ${after.location.trim()}` : "";
-    return `${after.title} is on the schedule: ${timingSentence(after)}${where}.`;
+    return `${after.title} is on the schedule: ${timingSentenceWithDate(after)}${where}.`;
   }
 
   if (after.status === "cancelled" && before.status !== "cancelled")
@@ -130,7 +165,7 @@ export function describeChange(before: PublicState | null, after: PublicState | 
 
   const bits: string[] = [];
 
-  if (whenChanged(before, after)) bits.push(`is now ${timingSentence(after)}`);
+  if (whenChanged(before, after)) bits.push(`is now ${timingSentenceWithDate(after)}`);
 
   if (normalizeText(before.location) !== normalizeText(after.location))
     bits.push(after.location?.trim() ? `is now at ${after.location.trim()}` : "has a new location");
@@ -138,10 +173,12 @@ export function describeChange(before: PublicState | null, after: PublicState | 
   if (before.audience !== after.audience || before.division !== after.division)
     bits.push(`is for ${audienceLabel(after.audience, after.division).toLowerCase()}`);
 
-  if (before.status !== after.status && after.status === "confirmed") bits.push("is confirmed");
-  if (before.status !== after.status && after.status === "changed") bits.push("has changed");
+  if (before.status !== after.status) bits.push(statusPhrase(after.status));
 
-  if (!before.ticket_url?.trim() && after.ticket_url?.trim()) bits.push("has tickets available");
+  const hadTickets = Boolean(before.ticket_url?.trim());
+  const hasTickets = Boolean(after.ticket_url?.trim());
+  if (!hadTickets && hasTickets) bits.push("has tickets available");
+  if (hadTickets && !hasTickets) bits.push("no longer has a ticket link");
 
   const titleChanged =
     normalizeText(before.title) !== normalizeText(after.title) && before.title !== after.title;
