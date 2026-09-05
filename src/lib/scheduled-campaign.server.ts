@@ -15,8 +15,13 @@ import { dispatchSequence, type DispatchSkips } from "./drip.server";
 
 const SAFE_MODE = "transactional_only";
 const RUN_LIMIT = 2000;
-/** How late a scheduled send may still go out on its own. */
-const MISSED_GRACE_HOURS = 6;
+/**
+ * How late a scheduled send may still go out on its own. The tick runs hourly,
+ * so this is one attempt plus a little slack. An approved date is part of the
+ * approval: past this the campaign is left unsent for an organizer to decide
+ * about, rather than turning up hours after the moment it was written for.
+ */
+export const MISSED_GRACE_MINUTES = 90;
 
 export type ScheduledRow = {
   id: string;
@@ -48,6 +53,16 @@ export type ScheduledTickResult = {
   /** Campaigns whose approved moment passed unsent. They need an organizer. */
   missed: string[];
 };
+
+async function readOutboundMode(): Promise<string> {
+  const { data } = await supabaseAdmin
+    .from("app_settings")
+    .select("value")
+    .eq("key", "outbound_email_mode")
+    .maybeSingle();
+  const value = (data as { value?: string } | null)?.value;
+  return typeof value === "string" && value ? value : SAFE_MODE;
+}
 
 async function setOutboundMode(mode: string) {
   await supabaseAdmin
@@ -118,7 +133,7 @@ export async function runScheduledCampaignTick(): Promise<ScheduledTickResult> {
   // A campaign whose moment slipped by more than the grace window is not sent
   // late and quietly: an approved date is part of the approval. It is flagged
   // for an organizer instead.
-  const graceMs = MISSED_GRACE_HOURS * 3600_000;
+  const graceMs = MISSED_GRACE_MINUTES * 60_000;
   const due: ScheduledRow[] = [];
   const missed: string[] = [];
   for (const row of all) {
@@ -158,12 +173,17 @@ export async function runScheduledCampaignTick(): Promise<ScheduledTickResult> {
       error: null,
     };
 
+    // Whatever the mode was before this campaign is what it goes back to. The
+    // daily drip's own arming switch is not ours to turn off.
+    const priorMode = await readOutboundMode();
+
     try {
       await setOutboundMode("all");
       const result = await dispatchSequence({
         sequenceKey: row.key,
         limit: RUN_LIMIT,
         dryRun: false,
+        allowOneTime: true,
       });
       outcome.sent = result.sent;
       outcome.failed = result.failed;
@@ -173,7 +193,7 @@ export async function runScheduledCampaignTick(): Promise<ScheduledTickResult> {
     } catch (err) {
       outcome.error = err instanceof Error ? err.message : String(err);
     } finally {
-      await setOutboundMode(SAFE_MODE);
+      await setOutboundMode(priorMode === "all" ? SAFE_MODE : priorMode);
       // A one-time campaign is switched off the instant it has run.
       await supabaseAdmin.from("sequences").update({ active: false } as never).eq("id", row.id);
     }
