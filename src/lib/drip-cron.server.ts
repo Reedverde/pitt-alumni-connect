@@ -58,12 +58,6 @@ async function readOutboundMode(): Promise<string | null> {
   return typeof value === "string" ? value : null;
 }
 
-async function setOutboundMode(mode: string) {
-  await supabaseAdmin
-    .from("app_settings")
-    .upsert({ key: "outbound_email_mode", value: mode } as never, { onConflict: "key" });
-}
-
 
 async function recordAttempt(o: SequenceOutcome & { runDate: string }) {
   await supabaseAdmin.from("audit_log").insert({
@@ -87,8 +81,9 @@ async function recordAttempt(o: SequenceOutcome & { runDate: string }) {
 
 /** One daily tick. Nothing happens unless outbound_email_mode reads
  *  "drip_enabled". When it does, every active sequence whose target date has
- *  arrived runs one at a time, with the send choke point opened only for the
- *  length of that single dispatch and forced back to the armed value after. */
+ *  arrived runs one at a time, each carrying a permission scoped to that one
+ *  sequence's kind. The stored setting is only ever read here, never written,
+ *  so nothing else can observe a moment of unrestricted sending. */
 export async function runDripCronTick(): Promise<CronTickResult> {
   const runDate = easternToday();
   const edition = await loadCurrentEdition();
@@ -118,52 +113,49 @@ export async function runDripCronTick(): Promise<CronTickResult> {
   const sequences = (rows ?? []) as { id: string; key: string; offset_days: number }[];
   const outcomes: SequenceOutcome[] = [];
 
-  try {
-    for (const seq of sequences) {
-      const targetDate = addDays(eventDate, seq.offset_days);
-      if (runDate < targetDate) continue;
+  for (const seq of sequences) {
+    const targetDate = addDays(eventDate, seq.offset_days);
+    if (runDate < targetDate) continue;
 
-      const outcome: SequenceOutcome = {
+    const outcome: SequenceOutcome = {
+      sequenceKey: seq.key,
+      sequenceId: seq.id,
+      offsetDays: seq.offset_days,
+      targetDate,
+      sent: 0,
+      failed: 0,
+      skips: null,
+      refusalReason: null,
+      error: null,
+    };
+
+    try {
+      const result = await dispatchSequence({
         sequenceKey: seq.key,
-        sequenceId: seq.id,
-        offsetDays: seq.offset_days,
-        targetDate,
-        sent: 0,
-        failed: 0,
-        skips: null,
-        refusalReason: null,
-        error: null,
-      };
-
-      try {
-        await setOutboundMode("all");
-        const result = await dispatchSequence({
-          sequenceKey: seq.key,
-          limit: RUN_LIMIT,
-          anchorsFirst: false,
-          dryRun: false,
-        });
-        outcome.sent = result.sent;
-        outcome.failed = result.failed;
-        outcome.skips = result.skips;
-        outcome.refusalReason = result.ok ? null : result.reason;
-      } catch (err) {
-        outcome.error = err instanceof Error ? err.message : String(err);
-      } finally {
-        await setOutboundMode(ARMED_MODE);
-      }
-
-      outcomes.push(outcome);
-      try {
-        await recordAttempt({ ...outcome, runDate });
-      } catch (err) {
-        console.error("[drip-cron] audit write failed", err);
-      }
+        limit: RUN_LIMIT,
+        anchorsFirst: false,
+        dryRun: false,
+        // Scoped to this sequence only, for the length of this dispatch.
+        authorization: {
+          kind: `drip:${seq.key}`,
+          reason: `daily drip armed by outbound_email_mode="${ARMED_MODE}"; sequence "${seq.key}" due on ${targetDate}`,
+        },
+      });
+      outcome.sent = result.sent;
+      outcome.failed = result.failed;
+      outcome.skips = result.skips;
+      outcome.refusalReason = result.ok ? null : result.reason;
+    } catch (err) {
+      outcome.error = err instanceof Error ? err.message : String(err);
     }
-  } finally {
-    await setOutboundMode(ARMED_MODE);
-  }
 
+    outcomes.push(outcome);
+    try {
+      await recordAttempt({ ...outcome, runDate });
+    } catch (err) {
+      console.error("[drip-cron] audit write failed", err);
+    }
+  }
 
   return {
     ok: true,
