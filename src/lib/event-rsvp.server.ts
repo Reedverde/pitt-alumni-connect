@@ -23,6 +23,9 @@ export async function loadPromptEvents(): Promise<PromptEvent[]> {
     .select("id, title, starts_at, location, sort_order")
     .eq("event_year", edition.event_year)
     .eq("prompt_rsvp", true)
+    // Only a published, uncancelled event may ask anyone for an answer.
+    .eq("published", true)
+    .neq("status", "cancelled")
     .order("sort_order", { ascending: true });
 
   return (data ?? []).map((e) => ({
