@@ -258,6 +258,7 @@ export async function buildFor(
       if (!body) return null;
       return { subject: tMinus28Subject(cohort.year ?? shared.editionYear), ...body };
     }
+    case EVENT_RSVP_T10_KEY:
     case "event_rsvp_prompt": {
       const pending =
         shared.pendingEvents.get(person.id) ?? shared.pendingEvents.get("__all__") ?? [];
@@ -439,7 +440,7 @@ export async function dispatchSequence(opts: {
     schedule: needsSchedule ? await loadScheduleLines() : [],
     dates: editionDateRange(edition),
     editionYear: edition.event_year,
-    pendingEvents: key === "event_rsvp_prompt" ? await loadPendingEvents() : new Map(),
+    pendingEvents: EVENT_RSVP_PROMPT_KEYS.has(key) ? await loadPendingEvents() : new Map(),
   };
 
 
