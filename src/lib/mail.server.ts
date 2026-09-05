@@ -1753,6 +1753,8 @@ export function buildLockedScheduleBody(opts: { name: string; schedule: string[]
   const after =
     "Anything that shifts after today goes on the schedule page and in the news feed. On the days themselves, Discord is where people actually find each other.";
   const meUrl = `${SITE_ORIGIN}/me?src=email`;
+  const scheduleUrl = `${SITE_ORIGIN}/schedule?src=email`;
+  const scheduleUrlHtml = escapeHtml(scheduleUrl);
 
   const text = [
     `${opts.name},`,
@@ -1764,7 +1766,7 @@ export function buildLockedScheduleBody(opts: { name: string; schedule: string[]
     maybe,
     "",
     `Your answers, including the individual events: ${meUrl}`,
-    `The schedule: ${SITE_ORIGIN}/schedule?src=email`,
+    `The schedule: ${scheduleUrl}`,
     `Discord for the day: ${DISCORD_INVITE_URL}`,
     "",
     after,
@@ -1783,6 +1785,7 @@ export function buildLockedScheduleBody(opts: { name: string; schedule: string[]
       emailButton(meUrl, "Review your answers"),
       emailPlainUrl(meUrl),
       emailParagraph(after),
+      `<p style="margin:0 0 20px;font-family:${FONT_STACK};font-size:15px;line-height:1.5;word-break:break-all;color:${INK};">The schedule page, always current: <a href="${scheduleUrlHtml}" style="color:#003594;text-decoration:underline">${scheduleUrlHtml}</a></p>`,
       emailSocialBlock(DISCORD_INVITE_URL),
       emailFooter([
         "Pitt Club Ultimate Alumni",
