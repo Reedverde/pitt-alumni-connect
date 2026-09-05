@@ -83,3 +83,46 @@ export function timingSentence(e: TimingShape): string {
   const range = e.ends_at ? `${start} to ${formatClock(e.ends_at, tzOf(e))}` : start;
   return doors ? `${range}, ${lowerLead(doors)}` : range;
 }
+
+/** "EDT" / "EST". Read from the calendar rather than an offset we maintain. */
+export function tzAbbrev(iso: string, tz = DEFAULT_TZ): string {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "short" }).formatToParts(
+    new Date(iso),
+  );
+  return parts.find((p) => p.type === "timeZoneName")?.value ?? "";
+}
+
+/** "Sunday, October 4". Only ever from a real instant, never from day_number. */
+export function eventDateLabel(e: TimingShape): string | null {
+  const iso = e.starts_at ?? e.doors_at ?? null;
+  if (!iso) return null;
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: tzOf(e),
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(iso));
+}
+
+/**
+ * The bulletin sentence. Unlike timingSentence it always names the date and the
+ * time zone, because a news line is read out of context, often on a phone, by
+ * someone deciding whether to change a flight.
+ */
+export function timingSentenceWithDate(e: TimingShape): string {
+  const date = eventDateLabel(e);
+  const zone = e.starts_at ? tzAbbrev(e.starts_at, tzOf(e)) : "";
+  if (!hasClockTime(e)) {
+    const relative = e.relative_timing?.trim();
+    const doors = eventDoorsLabel(e);
+    const base = relative || "at a time still to be set";
+    const withDate = date ? `${date}, ${base}` : base;
+    return doors ? `${withDate}, ${lowerLead(doors)}${zone ? ` ${zone}` : ""}` : withDate;
+  }
+  const start = formatClock(e.starts_at!, tzOf(e));
+  const range = e.ends_at ? `${start} to ${formatClock(e.ends_at, tzOf(e))}` : start;
+  const doors = eventDoorsLabel(e);
+  let clock = zone ? `${range} ${zone}` : range;
+  if (doors) clock = `${clock}, ${lowerLead(doors)}`;
+  return date ? `${date}, ${clock}` : clock;
+}

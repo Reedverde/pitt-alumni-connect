@@ -2853,7 +2853,8 @@ export async function updateEditionEvent(
   const before = beforeRow as Record<string, unknown>;
 
   const patch = buildEventPatch(input, before);
-  if (Object.keys(patch).length === 0) return { ok: true, queuedNews: false, warnings: [] as string[] };
+  if (Object.keys(patch).length === 0)
+    return { ok: true, queuedNews: false, quietNote: null as string | null, warnings: [] as string[] };
 
   const after = { ...before, ...patch };
   const heads = await expectedHeads(input.id);
@@ -2866,13 +2867,19 @@ export async function updateEditionEvent(
 
   const news = await import("./schedule-news.server");
   if (input.quiet) {
-    await news.markEventAnnounced(input.id);
-    return { ok: true, queuedNews: false, warnings: eventWarnings(after as never, heads) };
+    const quiet = await news.markCosmeticCorrection(input.id);
+    return {
+      ok: true,
+      queuedNews: quiet.stillPending.length > 0 || !quiet.moved,
+      quietNote: quiet.reason,
+      warnings: eventWarnings(after as never, heads),
+    };
   }
 
   return {
     ok: true,
     queuedNews: await news.eventHasPendingChange(input.id),
+    quietNote: null as string | null,
     warnings: eventWarnings(after as never, heads),
   };
 }

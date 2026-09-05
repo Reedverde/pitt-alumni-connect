@@ -57,11 +57,20 @@ export type NewsSettings = {
   last_weekly_date: string | null;
 };
 
+/** One automated attempt at the daily bulletin, kept so a missed or failed
+ *  morning is visible rather than silent. */
+export type AutomationRunSummary = {
+  at: string;
+  outcome: string;
+  detail: Record<string, string | number | boolean | null>;
+};
+
 export type NewsAdminPayload = {
   isAdmin: boolean;
   pending: PendingUpdate[];
   published: NewsItem[];
   settings: NewsSettings | null;
+  runs: AutomationRunSummary[];
 };
 
 export type AutomationResult = {

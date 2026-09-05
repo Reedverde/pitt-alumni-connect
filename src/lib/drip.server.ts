@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+import { dedupeAddresses, normalizeEmail } from "./drip-dedupe";
 import { loadCurrentEdition } from "./editions.server";
 import { editionDateRange } from "./edition-format";
 import { partySizeLink } from "./party-token.server";
@@ -65,6 +66,7 @@ type SequenceRow = {
   audience_states: string[] | null;
   anchors_only: boolean;
   active: boolean;
+  one_time: boolean;
 };
 
 const RECENT_SEND_DAYS = 10;
@@ -73,7 +75,7 @@ const SEND_INTERVAL_MS = 500;
 async function loadSequence(key: string): Promise<SequenceRow | null> {
   const { data } = await supabaseAdmin
     .from("sequences")
-    .select("id, key, audience_states, anchors_only, active")
+    .select("id, key, audience_states, anchors_only, active, one_time")
     .eq("key", key)
     .maybeSingle();
   return (data as SequenceRow | null) ?? null;
@@ -293,6 +295,9 @@ export type DispatchSkips = {
   recent_send: number;
   no_body: number;
   over_limit: number;
+  /** Two people sharing one address, or one address already written to for
+   *  this campaign. The mailbox, not the record, is what receives the mail. */
+  duplicate_email: number;
 };
 
 export type DispatchResult = {
@@ -321,7 +326,7 @@ function empty(sequenceKey: string, dryRun: boolean, reason: string): DispatchRe
     audience: 0,
     sequenceActive: false,
     wouldSend: [],
-    skips: { already_sent: 0, recent_send: 0, no_body: 0, over_limit: 0 },
+    skips: { already_sent: 0, recent_send: 0, no_body: 0, over_limit: 0, duplicate_email: 0 },
     sample: null,
     sent: 0,
     failed: 0,
@@ -334,6 +339,9 @@ export async function dispatchSequence(opts: {
   limit?: number;
   anchorsFirst?: boolean;
   dryRun?: boolean;
+  /** Only the one-time scheduler sets this. Without it a one-time campaign
+   *  cannot be sent by the daily drip or by hand, early or late. */
+  allowOneTime?: boolean;
 }): Promise<DispatchResult> {
   const dryRun = opts.dryRun !== false;
   const key = opts.sequenceKey;
@@ -345,6 +353,14 @@ export async function dispatchSequence(opts: {
   // campaign before switching it on. A dry run is allowed to walk an inactive
   // sequence; only a real send is refused.
   if (!seq.active && !dryRun) return empty(key, dryRun, `Sequence "${key}" is not active.`);
+  // A one-time campaign goes out at its approved moment, through its own
+  // scheduler, or not at all. Every other caller may only preview it.
+  if (seq.one_time && !dryRun && !opts.allowOneTime)
+    return empty(
+      key,
+      dryRun,
+      `"${key}" is a one-time campaign and only goes out at its scheduled moment.`,
+    );
   if (!BUILDER_KEYS.has(key)) return empty(key, dryRun, `No email copy exists for "${key}".`);
 
   const edition = await loadCurrentEdition();
@@ -352,22 +368,33 @@ export async function dispatchSequence(opts: {
 
   const { data: sendRows } = await supabaseAdmin
     .from("sends")
-    .select("person_id, sequence_id, outcome, created_at");
+    .select("person_id, sequence_id, outcome, created_at, to_email");
 
   const alreadySent = new Set<string>();
   const recentlySent = new Set<string>();
+  // Addresses this campaign has already written to. Two records can share a
+  // mailbox, and a resumed run must not write to it twice.
+  const alreadyEmailed = new Set<string>();
   const cutoff = Date.now() - RECENT_SEND_DAYS * 86400000;
   for (const row of sendRows ?? []) {
-    const pid = row.person_id as string | null;
-    if (!pid || row.outcome !== "sent") continue;
+    if (row.outcome !== "sent") continue;
     const seqId = row.sequence_id as string | null;
-    if (!seqId) continue;
+    const address = normalizeEmail(row.to_email as string | null);
+    if (seqId === seq.id && address) alreadyEmailed.add(address);
+    const pid = row.person_id as string | null;
+    if (!pid || !seqId) continue;
     if (seqId === seq.id) alreadySent.add(pid);
     const at = Date.parse(String(row.created_at ?? ""));
     if (Number.isFinite(at) && at >= cutoff) recentlySent.add(pid);
   }
 
-  const skips: DispatchSkips = { already_sent: 0, recent_send: 0, no_body: 0, over_limit: 0 };
+  const skips: DispatchSkips = {
+    already_sent: 0,
+    recent_send: 0,
+    no_body: 0,
+    over_limit: 0,
+    duplicate_email: 0,
+  };
   const queue = audience.filter((r) => {
     if (alreadySent.has(r.personId)) {
       skips.already_sent++;
@@ -383,6 +410,13 @@ export async function dispatchSequence(opts: {
     }
     return true;
   });
+
+  // One mailbox, one copy: across this run and across everything this campaign
+  // has already sent.
+  const deduped = dedupeAddresses(queue, alreadyEmailed);
+  skips.duplicate_email = deduped.skipped;
+  queue.length = 0;
+  queue.push(...deduped.keep);
 
   if (opts.anchorsFirst) queue.sort((a, b) => Number(b.isAnchor) - Number(a.isAnchor));
 

@@ -8,14 +8,15 @@ export const getNewsAdmin = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<NewsAdminPayload> => {
     const admin = await import("./admin.server");
     const actor = await admin.adminActor(context.supabase);
-    if (!actor) return { isAdmin: false, pending: [], published: [], settings: null };
+    if (!actor) return { isAdmin: false, pending: [], published: [], settings: null, runs: [] };
     const news = await import("./news.server");
-    const [pending, published, settings] = await Promise.all([
+    const [pending, published, settings, runs] = await Promise.all([
       news.listPending(true),
       news.listAllNews(100),
       news.loadSettings(),
+      news.listAutomationRuns(8),
     ]);
-    return { isAdmin: true, pending, published, settings };
+    return { isAdmin: true, pending, published, settings, runs };
   });
 
 export const adminPreviewDigest = createServerFn({ method: "POST" })

@@ -111,6 +111,8 @@ export async function runDripCronTick(): Promise<CronTickResult> {
     .from("sequences")
     .select("id, key, offset_days, active")
     .eq("active", true)
+    // One-time campaigns belong to their own scheduler and its approved moment.
+    .eq("one_time", false)
     .order("offset_days", { ascending: true });
 
   const sequences = (rows ?? []) as { id: string; key: string; offset_days: number }[];

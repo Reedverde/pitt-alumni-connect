@@ -177,11 +177,30 @@ export async function deliverNewsToDiscord(newsId: string): Promise<DiscordDeliv
       return { attempted: false, ok: false, status: "failed", reason: "Discord webhook is not configured." };
     }
 
+    // Claim the post before making it. Whoever wins this conditional update owns
+    // the delivery; a concurrent run, a retry or a second automation tick sees
+    // the row already stamped and stops. A claim that then fails to post clears
+    // the stamp again, so a deliberate retry is still possible.
+    const { data: claimed } = await supabaseAdmin
+      .from("news_items")
+      .update({
+        discord_posted_at: new Date().toISOString(),
+        discord_delivery_status: "sent",
+        discord_delivery_error: null,
+      } as never)
+      .eq("id", newsId)
+      .is("discord_posted_at", null)
+      .neq("discord_delivery_status", "sent")
+      .select("id");
+    if ((claimed ?? []).length === 0)
+      return { attempted: false, ok: true, status: "sent", reason: "Already posted." };
+
     const result = await postToWebhook(buildPayload(item));
     if (!result.ok) {
       await markDelivery(newsId, {
         discord_delivery_status: "failed",
         discord_delivery_error: result.reason,
+        discord_posted_at: null,
       });
       return { attempted: true, ok: false, status: "failed", reason: result.reason };
     }
@@ -198,6 +217,7 @@ export async function deliverNewsToDiscord(newsId: string): Promise<DiscordDeliv
     await markDelivery(newsId, {
       discord_delivery_status: "failed",
       discord_delivery_error: reason,
+      discord_posted_at: null,
     }).catch(() => undefined);
     return { attempted: true, ok: false, status: "failed", reason };
   }
