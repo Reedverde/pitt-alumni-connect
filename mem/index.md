@@ -7,4 +7,4 @@ Never temporarily write a global "send everything" email mode; authorize one cam
 Website/Data work never changes email schedules, audiences, copy or sending.
 
 ## Memories
-- [Automation timing rules](mem://features/automation-timing) — exact 9:00 launch minute, DST-safe cron, missed-not-late, scoped send authorization
+- [Automation timing rules](mem://features/automation-timing) — exact 9:00 launch minute, DST-safe cron, missed-not-late, scoped send authorization; T-10 = event RSVP reminder, headcount sequence disabled
