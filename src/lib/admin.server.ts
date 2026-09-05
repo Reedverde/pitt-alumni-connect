@@ -168,7 +168,7 @@ type Context = {
 
 async function loadContext(): Promise<Context> {
   const currentYear = (await loadCurrentEdition()).event_year;
-  const [placeRes, stintRes, rsvpRes, identRes] = await Promise.all([
+  const [placeRes, stintRes, rsvpRes, identRes, currentRes] = await Promise.all([
     supabaseAdmin.from("person_board_placement").select("person_id, board_year, board_division"),
     supabaseAdmin.from("stints").select("person_id, role, year"),
     supabaseAdmin
@@ -180,6 +180,7 @@ async function loadContext(): Promise<Context> {
       .from("identities")
       .select("person_id, email, is_primary, verified_at")
       .order("is_primary", { ascending: false }),
+    supabaseAdmin.from("current_people").select("person_id"),
   ]);
   const placement = new Map<string, { board_year: number | null; board_division: string | null }>();
   for (const row of placeRes.data ?? [])
@@ -188,14 +189,13 @@ async function loadContext(): Promise<Context> {
       board_division: row.board_division as string | null,
     });
   const stints = new Map<string, number>();
-  const currentPlayers = new Set<string>();
-  const season = rosterSeasonYear();
+  // One definition of "current", read from the database rather than recomputed here.
+  const currentPlayers = new Set<string>(
+    (currentRes.data ?? []).map((row) => String((row as { person_id: string }).person_id)),
+  );
   for (const row of stintRes.data ?? []) {
     const pid = row.person_id as string;
     stints.set(pid, (stints.get(pid) ?? 0) + 1);
-    const role = String((row as { role?: string }).role ?? "");
-    const year = (row as { year?: number | null }).year;
-    if ((role === "player" || role === "captain") && Number(year) === season) currentPlayers.add(pid);
   }
   const rsvp = new Map<string, string>();
   const party = new Map<string, number>();
