@@ -47,19 +47,57 @@ function clampPartySize(status: "yes" | "no", raw: unknown) {
   return Math.min(20, Math.max(1, n));
 }
 
+/** Ownership check for the anonymous claim path.
+ *
+ *  A record whose email is already verified belongs to that person: only one of
+ *  its own verified addresses may write its event answers. A record with no
+ *  verified owner yet is still being claimed, so the address that just claimed
+ *  it may answer. This mirrors submitRsvpServer/submitClaimServer exactly, so a
+ *  publicly visible person id is never enough on its own. */
+export async function callerOwnsPersonByEmail(
+  personId: string,
+  rawEmail: string,
+): Promise<boolean> {
+  const email = String(rawEmail ?? "").trim().toLowerCase();
+  if (!personId || !email) return false;
+
+  const { data: verifiedIdentities } = await supabaseAdmin
+    .from("identities")
+    .select("email, verified_at")
+    .eq("person_id", personId)
+    .not("verified_at", "is", null);
+
+  const rows = verifiedIdentities ?? [];
+  if (rows.length === 0) {
+    // No verified owner yet: the address must at least be an identity on this
+    // record (written by the claim that just happened).
+    const { data: any } = await supabaseAdmin
+      .from("identities")
+      .select("email")
+      .eq("person_id", personId);
+    return (any ?? []).some(
+      (i) => String((i as { email: string }).email).trim().toLowerCase() === email,
+    );
+  }
+
+  return rows.some(
+    (i) => String((i as { email: string }).email).trim().toLowerCase() === email,
+  );
+}
+
 /** Writes a person's per event answers.
  *
- *  This runs on the anonymous claim path, so it carries its own authorisation
- *  rather than leaning on row level security:
- *   - the person must be going for the current edition. Nothing else is ever
- *     asked, so nothing else may be written.
- *   - the event must be one of the prompt events on the current edition.
- *  A verified owner can still change their own answers through the same path
- *  because the answer set is not sensitive and is overwritten, never appended. */
+ *  Authorisation happens before this is called: the caller is either the
+ *  signed-in owner of the record (person id resolved from their auth identity)
+ *  or an anonymous claimer who proved one of the record's own addresses. This
+ *  function carries the remaining business rules:
+ *   - the person must not be deceased or archived.
+ *   - the event must be one of the prompt events on the current edition. */
 export async function submitEventRsvpsServer(input: {
   personId: string;
   answers: EventAnswer[];
 }): Promise<{ ok: boolean; written: number }> {
+
   const edition = await loadCurrentEdition();
 
   const { data: person } = await supabaseAdmin
