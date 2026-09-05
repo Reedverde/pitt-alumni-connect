@@ -489,8 +489,67 @@ function localParts(tz: string, now = new Date()) {
   return { date, time, dow };
 }
 
-function atOrPast(nowHHMM: string, targetHHMM: string) {
-  return nowHHMM >= targetHHMM;
+function minutesOf(hhmm: string): number {
+  const [h, m] = hhmm.split(":");
+  return Number(h ?? 0) * 60 + Number(m ?? 0);
+}
+
+/**
+ * How long after the configured hour the bulletin may still post itself.
+ * The job runs every fifteen minutes, so this leaves three attempts. Past it
+ * the slot is recorded as missed and stays unsent: a bulletin that turns up in
+ * the evening reads as news when it is not, and an organizer can always post
+ * one by hand.
+ */
+export const PUBLISH_WINDOW_MINUTES = 45;
+
+export type WindowVerdict = "early" | "due" | "missed";
+
+/** Pure, so the timing rule can be reasoned about and tested on its own. */
+export function windowVerdict(nowHHMM: string, targetHHMM: string, windowMinutes = PUBLISH_WINDOW_MINUTES): WindowVerdict {
+  const now = minutesOf(nowHHMM);
+  const target = minutesOf(targetHHMM);
+  if (now < target) return "early";
+  if (now <= target + windowMinutes) return "due";
+  return "missed";
+}
+
+/** Missed and failed runs are written down rather than disappearing, so an
+ *  organizer can see that the machine did not post and why. */
+async function recordAutomationRun(outcome: string, detail: Record<string, unknown>) {
+  try {
+    await supabaseAdmin.from("audit_log").insert({
+      actor_person_id: null,
+      action: `news_automation.${outcome}`,
+      table_name: "news_settings",
+      record_id: null,
+      before: null as never,
+      after: detail as never,
+    });
+  } catch (err) {
+    console.error("[news] automation run log failed", err);
+  }
+}
+
+export type AutomationRun = {
+  at: string;
+  outcome: string;
+  detail: Record<string, unknown>;
+};
+
+/** The last few automated attempts, newest first, for the organizer screen. */
+export async function listAutomationRuns(limit = 10): Promise<AutomationRun[]> {
+  const { data } = await supabaseAdmin
+    .from("audit_log")
+    .select("action, after, created_at")
+    .like("action", "news_automation.%")
+    .order("created_at", { ascending: false })
+    .limit(Math.min(50, Math.max(1, limit)));
+  return ((data ?? []) as { action: string; after: unknown; created_at: string }[]).map((r) => ({
+    at: r.created_at,
+    outcome: r.action.replace("news_automation.", ""),
+    detail: (r.after as Record<string, unknown>) ?? {},
+  }));
 }
 
 /**
