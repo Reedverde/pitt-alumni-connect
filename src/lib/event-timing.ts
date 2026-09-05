@@ -119,7 +119,10 @@ export function timingSentenceWithDate(e: TimingShape): string {
     const withDate = date ? `${date}, ${base}` : base;
     return doors ? `${withDate}, ${lowerLead(doors)}${zone ? ` ${zone}` : ""}` : withDate;
   }
-  const clock = timingSentence(e);
-  const zoned = zone ? `${clock} ${zone}` : clock;
-  return date ? `${date}, ${zoned}` : zoned;
+  const start = formatClock(e.starts_at!, tzOf(e));
+  const range = e.ends_at ? `${start} to ${formatClock(e.ends_at, tzOf(e))}` : start;
+  const doors = eventDoorsLabel(e);
+  let clock = zone ? `${range} ${zone}` : range;
+  if (doors) clock = `${clock}, ${lowerLead(doors)}`;
+  return date ? `${date}, ${clock}` : clock;
 }
