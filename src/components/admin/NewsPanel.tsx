@@ -444,7 +444,7 @@ function SettingsForm({
   runs,
   onSave,
 }: {
-  runs: { at: string; outcome: string; detail: Record<string, unknown> }[];
+  runs: { at: string; outcome: string; detail: Record<string, string | number | boolean | null> }[];
   settings: { enabled: boolean; timezone: string; daily_digest_time: string; weekly_day: number; weekly_time: string; last_digest_date: string | null; last_weekly_date: string | null } | null;
   onSave: (input: { enabled: boolean; daily_digest_time: string; weekly_day: number; weekly_time: string }) => Promise<void>;
 }) {

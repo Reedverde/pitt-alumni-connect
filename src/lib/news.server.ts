@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { SITE_ORIGIN } from "./site-url";
 import { loadCurrentEdition } from "./editions.server";
+import type { PublicState } from "./schedule-news.server";
 import type {
   AutomationResult,
   NewsCategory,
@@ -165,7 +166,7 @@ export type BulletinPreview = {
   eventIds: string[];
   /** The exact snapshot each line describes, so the baseline recorded after
    *  publication is the state that actually appeared in the article. */
-  snapshots: { eventId: string; state: unknown }[];
+  snapshots: { eventId: string; state: PublicState | null }[];
   count: number;
   title: string;
   summary: string;
@@ -274,7 +275,7 @@ export async function publishDigest(opts: {
   // crash mid-run leaves the change still owed rather than silently swallowed.
   const { markEventAnnouncedState } = await import("./schedule-news.server");
   for (const snap of preview.snapshots) {
-    await markEventAnnouncedState(snap.eventId, snap.state as never, newsId).catch((err) =>
+    await markEventAnnouncedState(snap.eventId, snap.state, newsId).catch((err) =>
       console.error("[news] baseline update failed", snap.eventId, err),
     );
   }
@@ -516,7 +517,9 @@ export function windowVerdict(nowHHMM: string, targetHHMM: string, windowMinutes
 
 /** Missed and failed runs are written down rather than disappearing, so an
  *  organizer can see that the machine did not post and why. */
-async function recordAutomationRun(outcome: string, detail: Record<string, unknown>) {
+type RunDetail = Record<string, string | number | boolean | null>;
+
+async function recordAutomationRun(outcome: string, detail: RunDetail) {
   try {
     await supabaseAdmin.from("audit_log").insert({
       actor_person_id: null,
@@ -534,7 +537,7 @@ async function recordAutomationRun(outcome: string, detail: Record<string, unkno
 export type AutomationRun = {
   at: string;
   outcome: string;
-  detail: Record<string, unknown>;
+  detail: RunDetail;
 };
 
 /** The last few automated attempts, newest first, for the organizer screen. */
@@ -548,7 +551,7 @@ export async function listAutomationRuns(limit = 10): Promise<AutomationRun[]> {
   return ((data ?? []) as { action: string; after: unknown; created_at: string }[]).map((r) => ({
     at: r.created_at,
     outcome: r.action.replace("news_automation.", ""),
-    detail: (r.after as Record<string, unknown>) ?? {},
+    detail: (r.after as RunDetail) ?? {},
   }));
 }
 
@@ -684,7 +687,7 @@ export async function runNewsAutomation(now = new Date()): Promise<AutomationRes
       localDate: date,
       localTime: time,
       newsId: result.newsId,
-      sections: ran,
+      sections: ran.join(", "),
     });
   } else {
     skipped.push(result.reason);

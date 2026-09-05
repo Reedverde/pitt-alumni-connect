@@ -62,7 +62,7 @@ export type NewsSettings = {
 export type AutomationRunSummary = {
   at: string;
   outcome: string;
-  detail: Record<string, unknown>;
+  detail: Record<string, string | number | boolean | null>;
 };
 
 export type NewsAdminPayload = {
