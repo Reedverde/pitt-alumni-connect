@@ -71,11 +71,11 @@ export async function callerOwnsPersonByEmail(
   if (rows.length === 0) {
     // No verified owner yet: the address must at least be an identity on this
     // record (written by the claim that just happened).
-    const { data: any } = await supabaseAdmin
+    const { data: allIdentities } = await supabaseAdmin
       .from("identities")
       .select("email")
       .eq("person_id", personId);
-    return (any ?? []).some(
+    return (allIdentities ?? []).some(
       (i) => String((i as { email: string }).email).trim().toLowerCase() === email,
     );
   }
