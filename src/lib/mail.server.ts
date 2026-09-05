@@ -1785,6 +1785,7 @@ export function buildLockedScheduleBody(opts: { name: string; schedule: string[]
       emailButton(meUrl, "Review your answers"),
       emailPlainUrl(meUrl),
       emailParagraph(after),
+      `<p style="margin:0 0 20px;font-family:${FONT_STACK};font-size:15px;line-height:1.5;word-break:break-all;color:${INK};">The schedule page, always current: <a href="${scheduleUrlHtml}" style="color:#003594;text-decoration:underline">${scheduleUrlHtml}</a></p>`,
       emailSocialBlock(DISCORD_INVITE_URL),
       emailFooter([
         "Pitt Club Ultimate Alumni",
