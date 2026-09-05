@@ -55,9 +55,11 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
     try {
       const result = (await fn()) as { queuedNews?: boolean } | null;
       toast.success(ok);
-      // A public change must never quietly vanish: say so at the moment it queues.
+      // A public change must never quietly vanish: say so at the moment it lands.
       if (result?.queuedNews) {
-        toast.info("Queued a public update. Publish it from the News tab.", { duration: 8000 });
+        toast.info("This goes in tomorrow's 9am bulletin. Use Save quietly to keep it out.", {
+          duration: 8000,
+        });
       }
       onSaved();
     } catch (error) {
@@ -408,7 +410,7 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
                       divisions={DIVISIONS}
                       onChange={(next) => setEditEvent((s) => ({ ...s, [ev.id]: next }))}
                     />
-                    <div className="mt-2 flex gap-2">
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         style={primaryButton}
@@ -429,6 +431,30 @@ export function EditionsPanel({ rows, onSaved }: { rows: EditionRow[]; onSaved: 
                       >
                         Save event
                       </button>
+                      {/* A tidy-up an organizer knows nobody needs to hear about.
+                          Saved the same way, but the bulletin stays quiet. */}
+                      <button
+                        type="button"
+                        style={secondaryButton}
+                        disabled={busy}
+                        title="Save without it appearing in the daily bulletin"
+                        onClick={() => {
+                          const payload = toPayload(editEvent[ev.id]);
+                          void run(
+                            () => updateEvent({ data: { id: ev.id, quiet: true, ...payload } }),
+                            "Saved quietly.",
+                          ).then(() =>
+                            setEditEvent((s) => {
+                              const next = { ...s };
+                              delete next[ev.id];
+                              return next;
+                            }),
+                          );
+                        }}
+                      >
+                        Save quietly
+                      </button>
+
                       <button
                         type="button"
                         style={secondaryButton}

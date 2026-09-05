@@ -11,6 +11,10 @@ export type CalendarEvent = {
   day_number: number | null;
   starts_at: string | null;
   ends_at: string | null;
+  /** When the doors or the facility open, if that is earlier than the start. */
+  doors_at: string | null;
+  /** Plain-language timing an organizer typed, e.g. "After the Pitt game". */
+  relative_timing: string | null;
   time_tbd: boolean;
   location: string | null;
   notes: string | null;
@@ -37,7 +41,7 @@ export async function loadEvents(year: number, id?: string): Promise<CalendarEve
   let query = publicClient()
     .from("events")
     .select(
-      "id, title, day_number, starts_at, ends_at, time_tbd, location, notes, division, sort_order, map_url, ticket_url, status, audience, timezone",
+      "id, title, day_number, starts_at, ends_at, doors_at, relative_timing, time_tbd, location, notes, division, sort_order, map_url, ticket_url, status, audience, timezone",
     )
     .eq("event_year", year)
     // Unpublished events are organizer drafts. The public reads, the calendar
@@ -86,7 +90,7 @@ function fold(line: string) {
 }
 
 const TBD_NOTE =
-  "The exact time for this one is not set yet. We will email you as soon as it locks.";
+  "The exact time for this one is not set yet. Watch the schedule page, and Discord on the day.";
 
 export function buildIcs(events: CalendarEvent[], edition: EditionSummary): string {
   const year = edition.event_year;
@@ -104,13 +108,24 @@ export function buildIcs(events: CalendarEvent[], edition: EditionSummary): stri
   for (const event of events) {
     // A cancelled event does not belong in anyone's calendar.
     if (event.status === "cancelled") continue;
+    const doorsNote =
+      event.doors_at && event.starts_at && event.doors_at < event.starts_at
+        ? `Doors open at ${new Intl.DateTimeFormat("en-US", {
+            timeZone: event.timezone || TZ,
+            hour: "numeric",
+            minute: "2-digit",
+          }).format(new Date(event.doors_at))}.`
+        : "";
     const description = [
       event.notes ?? "",
+      doorsNote,
+      // Timing nobody has put a clock on yet, in the organizer's own words.
+      event.time_tbd && event.relative_timing ? event.relative_timing : "",
       // Any event flagged time to be confirmed is written as an all-day entry
       // below, so it always needs the note explaining why. Keying this off
       // starts_at meant an event that still carried a provisional timestamp
       // landed in the calendar as a bare all-day block with no explanation.
-      event.time_tbd ? TBD_NOTE : "",
+      event.time_tbd && !event.relative_timing ? TBD_NOTE : "",
       SITE_URL,
     ]
       .filter(Boolean)

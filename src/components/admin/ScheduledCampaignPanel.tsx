@@ -14,7 +14,12 @@ type Row = {
   eligible: number;
   skips: { already_sent: number; recent_send: number; no_body: number } | null;
   subject: string | null;
+  bodyText: string | null;
+  audience: number;
+  missedAt: string | null;
+  scheduledLabel: string | null;
 };
+
 
 function eastern(iso: string | null) {
   if (!iso) return "not scheduled";
@@ -49,7 +54,8 @@ export function ScheduledCampaignPanel() {
         <Empty>Nothing is scheduled.</Empty>
       ) : (
         rows.map((row) => {
-          const pending = !row.dispatchedAt && !row.cancelledAt && row.scheduledAt;
+          const pending =
+            !row.dispatchedAt && !row.cancelledAt && !row.missedAt && row.scheduledAt;
           return (
             <div key={row.key} style={{ border: hairline, padding: "14px 16px", marginBottom: 12 }}>
               <p style={{ fontSize: 15, fontWeight: 700, color: "var(--sabah-black)" }}>
@@ -60,9 +66,17 @@ export function ScheduledCampaignPanel() {
                   ? `Sent ${eastern(row.dispatchedAt)}`
                   : row.cancelledAt
                     ? `Cancelled ${eastern(row.cancelledAt)}`
-                    : `Goes out ${eastern(row.scheduledAt)} Eastern`}
-                {pending ? ` · ${row.eligible} eligible right now` : ""}
+                    : row.missedAt
+                      ? `Missed. Nothing went out.`
+                      : `Goes out ${row.scheduledLabel ?? eastern(row.scheduledAt)}`}
+                {pending ? ` · ${row.eligible} eligible right now, ${row.audience} in the audience` : ""}
               </p>
+              {row.missedAt ? (
+                <p style={{ fontSize: 13, color: "var(--pitt-royal)", marginTop: 4 }}>
+                  The moment for this one passed without it going out, so it was left unsent rather
+                  than arriving late. Reschedule it if you still want it.
+                </p>
+              ) : null}
               {pending && row.skips ? (
                 <p style={{ fontSize: 12, color: "var(--sterling)", marginTop: 4 }}>
                   Skipping {row.skips.already_sent} already sent this campaign,{" "}
@@ -70,6 +84,27 @@ export function ScheduledCampaignPanel() {
                   personal link. The list is checked again at send time.
                 </p>
               ) : null}
+              {pending && row.bodyText ? (
+                <details className="mt-3">
+                  <summary style={{ fontSize: 13, cursor: "pointer", color: "var(--pitt-royal)" }}>
+                    Read it exactly as it will arrive
+                  </summary>
+                  <pre
+                    className="mt-2"
+                    style={{
+                      whiteSpace: "pre-wrap",
+                      fontSize: 12.5,
+                      lineHeight: 1.6,
+                      color: "var(--steel-ink)",
+                      border: hairline,
+                      padding: 12,
+                    }}
+                  >
+                    {row.bodyText}
+                  </pre>
+                </details>
+              ) : null}
+
               {pending ? (
                 <button
                   type="button"

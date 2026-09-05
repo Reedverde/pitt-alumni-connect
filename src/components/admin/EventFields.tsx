@@ -27,6 +27,8 @@ export type EventFormValue = {
   time_tbd: boolean;
   starts_at: string;
   ends_at: string;
+  doors_at: string;
+  relative_timing: string;
   timezone: string;
   prompt_rsvp: boolean;
   ask_party_size: boolean;
@@ -55,6 +57,8 @@ export function emptyEventForm(): EventFormValue {
     time_tbd: true,
     starts_at: "",
     ends_at: "",
+    doors_at: "",
+    relative_timing: "",
     timezone: "America/New_York",
     // Everything on the schedule asks the question unless an organizer says no.
     prompt_rsvp: true,
@@ -83,6 +87,8 @@ export function formFromRow(row: EditionEventRow): EventFormValue {
     time_tbd: row.time_tbd,
     starts_at: local(row.starts_at),
     ends_at: local(row.ends_at),
+    doors_at: local(row.doors_at),
+    relative_timing: row.relative_timing ?? "",
     timezone: row.timezone ?? "America/New_York",
     prompt_rsvp: row.prompt_rsvp,
     ask_party_size: row.ask_party_size,
@@ -115,6 +121,8 @@ export function toPayload(form: EventFormValue) {
     time_tbd: form.time_tbd,
     starts_at: form.time_tbd || !form.starts_at ? null : new Date(form.starts_at).toISOString(),
     ends_at: form.time_tbd || !form.ends_at ? null : new Date(form.ends_at).toISOString(),
+    doors_at: form.time_tbd || !form.doors_at ? null : new Date(form.doors_at).toISOString(),
+    relative_timing: form.relative_timing.trim() || null,
     timezone: form.timezone || "America/New_York",
     prompt_rsvp: form.prompt_rsvp,
     ask_party_size: form.ask_party_size,
@@ -288,6 +296,14 @@ export function EventFields({
                 onChange={(e) => set("starts_at", e.target.value)}
               />
             </Field>
+            <Field label="Doors open">
+              <input
+                type="datetime-local"
+                style={inputStyle}
+                value={value.doors_at}
+                onChange={(e) => set("doors_at", e.target.value)}
+              />
+            </Field>
             <Field label="Ends">
               <input
                 type="datetime-local"
@@ -298,6 +314,15 @@ export function EventFields({
             </Field>
           </>
         )}
+
+        <Field label="Timing in words">
+          <input
+            style={inputStyle}
+            placeholder="After the Pitt game"
+            value={value.relative_timing}
+            onChange={(e) => set("relative_timing", e.target.value)}
+          />
+        </Field>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-4">

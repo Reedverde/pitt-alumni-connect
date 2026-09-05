@@ -318,7 +318,7 @@ export const adminDeleteEditionEvent = createServerFn({ method: "POST" })
 export const adminUpdateEditionEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (input: import("./admin.server").EditionEventInput & { id: string }) => input,
+    (input: import("./admin.server").EditionEventInput & { id: string; quiet?: boolean }) => input,
   )
   .handler(async ({ data, context }) => {
     const mod = await import("./admin.server");

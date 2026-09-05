@@ -856,8 +856,17 @@ export async function loadScheduleLines(): Promise<string[]> {
 
   return events.map((e) => {
     const day = dayName(editionDay(edition, e.day_number ?? 1));
-    const time = e.time_tbd || !e.starts_at ? "TBD" : fmt.format(new Date(e.starts_at));
-    return [day, time, e.title, e.location].filter(Boolean).join(", ");
+    // Timing in the organizer's own words beats a bare TBD, and doors are said
+    // separately from the start so nobody turns up at the wrong hour.
+    const time = e.time_tbd || !e.starts_at
+      ? (e.relative_timing?.trim() || "TBD")
+      : fmt.format(new Date(e.starts_at));
+    const doors =
+      !e.time_tbd && e.starts_at && e.doors_at && e.doors_at < e.starts_at
+        ? `doors ${fmt.format(new Date(e.doors_at))}`
+        : null;
+    const cancelled = e.status === "cancelled" ? "CANCELLED" : null;
+    return [day, time, e.title, e.location, doors, cancelled].filter(Boolean).join(", ");
   });
 }
 
@@ -1701,6 +1710,66 @@ export function buildRsvpConfirmBody(opts: {
       ]),
     ].join("\n"),
     RSVP_CONFIRM_PREHEADER,
+  );
+
+  return { text, html };
+}
+
+/** ---------------------------------------------------------------------------
+ *  locked_schedule: the one final email before the weekend.
+ *
+ *  Goes to people marked going or maybe, so the copy never assumes anyone has
+ *  committed. Every schedule fact is read live at dispatch through
+ *  loadScheduleLines(); nothing about times, venues or doors is written here.
+ *  ------------------------------------------------------------------------ */
+
+export const LOCKED_SCHEDULE_SUBJECT = "The Alumni Weekend schedule is locked";
+
+export function buildLockedScheduleBody(opts: { name: string; schedule: string[] }) {
+  if (opts.schedule.length === 0) return null;
+  const lead = "Here is the schedule as it will run. This is the last email we will send about it.";
+  const maybe =
+    "If you are still deciding, that is fine. Nothing here needs a commitment, and you can change your answer any time.";
+  const after =
+    "Anything that shifts after today goes on the schedule page and in the news feed. On the days themselves, Discord is where people actually find each other.";
+  const meUrl = `${SITE_ORIGIN}/me?src=email`;
+
+  const text = [
+    `${opts.name},`,
+    "",
+    lead,
+    "",
+    ...opts.schedule,
+    "",
+    maybe,
+    "",
+    `Your answers, including the individual events: ${meUrl}`,
+    `The schedule: ${SITE_ORIGIN}/schedule?src=email`,
+    `Discord for the day: ${DISCORD_INVITE_URL}`,
+    "",
+    after,
+    "",
+    "Pitt Club Ultimate Alumni",
+  ].join("\n");
+
+  const html = emailShell(
+    [
+      emailParagraph(`${opts.name},`),
+      emailParagraph(lead),
+      `<p style="margin:0 0 20px;font-family:${FONT_STACK};font-size:15px;line-height:26px;color:${INK};">${opts.schedule
+        .map((l) => escapeHtml(l))
+        .join("<br />")}</p>`,
+      emailParagraph(maybe),
+      emailButton(meUrl, "Review your answers"),
+      emailPlainUrl(meUrl),
+      emailParagraph(after),
+      emailSocialBlock(DISCORD_INVITE_URL),
+      emailFooter([
+        "Pitt Club Ultimate Alumni",
+        "You are receiving this because you answered going or maybe for Alumni Weekend.",
+      ]),
+    ].join("\n"),
+    "The final Alumni Weekend schedule.",
   );
 
   return { text, html };

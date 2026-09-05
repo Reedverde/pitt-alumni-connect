@@ -178,15 +178,30 @@ function Tickets({ href }: { href: string }) {
   );
 }
 
-function timeLabel(event: ScheduleEvent) {
-  if (event.time_tbd || !event.starts_at) return "TBD";
+function clock(iso: string) {
   return new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
     hour: "numeric",
     minute: "2-digit",
     timeZoneName: "short",
-  }).format(new Date(event.starts_at));
+  }).format(new Date(iso));
 }
+
+/** The headline time on a card. Words beat a bare TBD whenever an organizer
+ *  has told us how the event hangs off something else. */
+function timeLabel(event: ScheduleEvent) {
+  if (event.time_tbd || !event.starts_at) return event.relative_timing?.trim() || "TBD";
+  return clock(event.starts_at);
+}
+
+/** Doors are a separate fact from the start, and only worth saying when they
+ *  are actually earlier. */
+function doorsLabel(event: ScheduleEvent) {
+  if (event.time_tbd || !event.starts_at || !event.doors_at) return null;
+  if (event.doors_at >= event.starts_at) return null;
+  return `Doors ${clock(event.doors_at)}`;
+}
+
 
 function WeekendPage() {
   const { data } = useSuspenseQuery(scheduleQuery);
@@ -250,7 +265,9 @@ function WeekendPage() {
         >
           <div className="px-6 py-7">
           <p className="max-w-[640px]" style={{ fontSize: 16 }}>
-            Times marked TBD are still being set. RSVP now and we'll email you when they lock.
+            Some times are still being set. We send one final email with the locked schedule a few
+            days before the weekend. After that, this page is the source of truth, News says what
+            changed, and Discord handles the day itself.
           </p>
           <p className="mt-3 max-w-[640px]" style={{ fontSize: 16, opacity: 0.86 }}>
             Currents versus alumni. Play if you want to, watch if you don't. We just want you there.
@@ -526,11 +543,24 @@ function EventTile({
           fontSize: 14,
           fontWeight: 700,
           fontVariantNumeric: "tabular-nums",
-          color: timeLabel(event) === "TBD" ? "var(--sterling)" : "var(--sabah-black)",
+          color:
+            event.time_tbd || !event.starts_at ? "var(--sterling)" : "var(--sabah-black)",
         }}
       >
         {timeLabel(event)}
       </p>
+      {doorsLabel(event) && (
+        <p
+          style={{
+            fontFamily: '"Space Mono", monospace',
+            fontSize: 13,
+            color: "var(--sterling)",
+          }}
+        >
+          {doorsLabel(event)}
+        </p>
+      )}
+
       <h3 className="mt-2" style={{ fontFamily: '"Archivo", sans-serif', fontWeight: 800, fontSize: 22, letterSpacing: "-0.025em", color: "var(--sabah-black)" }}>
         {event.title}
       </h3>

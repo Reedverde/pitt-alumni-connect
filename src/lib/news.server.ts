@@ -156,47 +156,95 @@ function bulletLine(p: PendingUpdate) {
   return `• ${p.title.trim()}${tail}`;
 }
 
-/** What the digest would say right now. Never writes. */
-export async function previewDigest(): Promise<{
+export type BulletinPreview = {
+  /** Net public schedule changes since each event was last announced. */
+  changeLines: string[];
+  /** Manually queued organizer items still awaiting a bulletin. */
+  items: PendingUpdate[];
+  /** Event ids whose announced baseline this bulletin would move forward. */
+  eventIds: string[];
   count: number;
   title: string;
   summary: string;
   body: string;
-  items: PendingUpdate[];
-}> {
-  const items = (await listPending(false)).filter((p) => p.status === "pending");
-  const count = items.length;
+};
+
+/**
+ * What the next bulletin would say right now. Never writes.
+ *
+ * Schedule lines are the *net* difference between the live schedule and what
+ * the public was last told, so several edits to one event collapse into one
+ * line and an edit that was undone produces nothing.
+ */
+export async function previewDigest(): Promise<BulletinPreview> {
+  const { computeNetChanges } = await import("./schedule-news.server");
+  const [changes, pending] = await Promise.all([
+    computeNetChanges(),
+    listPending(false).then((rows) => rows.filter((p) => p.status === "pending")),
+  ]);
+
+  const changeLines = changes.map((c) => c.line);
+  const lines = [...changeLines, ...pending.map(bulletLine)];
+  const count = lines.length;
+
   const title =
     count === 0
       ? "Nothing to report"
       : count === 1
-        ? items[0].title.trim()
+        ? (changeLines[0] ?? pending[0]!.title.trim())
         : `${count} weekend updates`;
   const summary =
     count === 0
       ? ""
       : count === 1
-        ? items[0].summary.trim() || items[0].title.trim()
-        : `${count} things changed since the last update.`;
-  const body = items.map(bulletLine).join("\n");
-  return { count, title, summary, body, items };
+        ? (changeLines[0] ?? (pending[0]!.summary.trim() || pending[0]!.title.trim()))
+        : `${count} things changed on the Alumni Weekend schedule.`;
+
+  return {
+    changeLines,
+    items: pending,
+    eventIds: changes.map((c) => c.eventId),
+    count,
+    title: title.slice(0, 160),
+    summary: summary.slice(0, 400),
+    body: lines.map((l) => (l.startsWith("•") ? l : `• ${l}`)).join("\n"),
+  };
 }
 
-/** Creates at most one digest. Publishes nothing when nothing is pending. */
+/**
+ * Creates at most one bulletin. Publishes nothing when nothing net-new has
+ * happened. `dedupeKey` is unique in the database, so a retry, a second cron
+ * tick or two overlapping runs can only ever produce one article, and Discord
+ * delivery is keyed off that single row.
+ */
 export async function publishDigest(opts: {
   actorPersonId?: string | null;
   author?: string | null;
+  /** Extra section appended to the same article, never a second post. */
+  extraSection?: { heading: string; lines: string[] } | null;
+  dedupeKey?: string | null;
 }): Promise<{ created: boolean; newsId: string | null; reason: string }> {
   const preview = await previewDigest();
-  if (preview.count === 0) return { created: false, newsId: null, reason: "Nothing pending." };
+  const extra = opts.extraSection && opts.extraSection.lines.length > 0 ? opts.extraSection : null;
+  if (preview.count === 0 && !extra)
+    return { created: false, newsId: null, reason: "Nothing new to report." };
+
+  const bodyParts = [preview.body].filter(Boolean);
+  if (extra) bodyParts.push(`${extra.heading}\n${extra.lines.join("\n")}`);
+
+  const title = preview.count === 0 && extra ? extra.heading : preview.title;
+  const summary =
+    preview.count === 0 && extra
+      ? `${extra.lines.length} more on the board for Alumni Weekend.`
+      : preview.summary;
 
   const edition = await loadCurrentEdition().catch(() => null);
   const { data, error } = await supabaseAdmin
     .from("news_items")
     .insert({
-      title: preview.title,
-      summary: preview.summary,
-      body: preview.body,
+      title,
+      summary,
+      body: bodyParts.join("\n\n"),
       category: "Weekend",
       post_type: "daily_digest",
       status: "published",
@@ -205,21 +253,40 @@ export async function publishDigest(opts: {
       author: opts.author ?? null,
       event_year: edition?.event_year ?? null,
       created_by: opts.actorPersonId ?? null,
+      dedupe_key: opts.dedupeKey ?? null,
     } as never)
     .select("id")
     .single();
-  if (error || !data) return { created: false, newsId: null, reason: error?.message ?? "Insert failed." };
+  if (error || !data) {
+    // 23505 means another run already published this slot. Not a failure.
+    if (error?.code === "23505")
+      return { created: false, newsId: null, reason: "Already published for this slot." };
+    return { created: false, newsId: null, reason: error?.message ?? "Insert failed." };
+  }
 
   const newsId = (data as { id: string }).id;
-  await supabaseAdmin
-    .from("news_pending_updates")
-    .update({ status: "consumed", consumed_at: new Date().toISOString(), consumed_news_id: newsId } as never)
-    .in("id", preview.items.map((i) => i.id));
+
+  // Move each announced baseline forward only after the article exists, so a
+  // crash mid-run leaves the change still owed rather than silently swallowed.
+  const { markEventAnnounced } = await import("./schedule-news.server");
+  for (const eventId of preview.eventIds) {
+    await markEventAnnounced(eventId, newsId).catch((err) =>
+      console.error("[news] baseline update failed", eventId, err),
+    );
+  }
+
+  if (preview.items.length > 0) {
+    await supabaseAdmin
+      .from("news_pending_updates")
+      .update({ status: "consumed", consumed_at: new Date().toISOString(), consumed_news_id: newsId } as never)
+      .in("id", preview.items.map((i) => i.id));
+  }
 
   await deliverPublishedItem(newsId);
 
   return { created: true, newsId, reason: `Published ${preview.count} updates.` };
 }
+
 
 // ----------------------------------------------------------- weekly going
 
@@ -347,6 +414,62 @@ export async function publishWeeklyRoundup(opts: {
   return { created: true, newsId, names, reason: `Listed ${names.length} people.` };
 }
 
+/**
+ * The roundup as a *section*, for folding into the single daily bulletin.
+ * Reads only. Names are recorded as listed by recordRoundupMembers once the
+ * one article actually exists, so nobody is ever listed twice.
+ */
+export async function collectRoundup(now = new Date()): Promise<{
+  eventYear: number;
+  personIds: string[];
+  lines: string[];
+}> {
+  const edition = await loadCurrentEdition();
+  const { iso: cutoff } = await weeklyRoundupCutoff(now);
+
+  const goingQuery = supabaseAdmin
+    .from("rsvps")
+    .select("person_id, responded_at, status")
+    .eq("event_year", edition.event_year)
+    .eq("status", "going");
+
+  const [recentRes, seenRes] = await Promise.all([
+    cutoff ? goingQuery.gte("responded_at", cutoff) : goingQuery,
+    supabaseAdmin.from("news_roundup_members").select("person_id").eq("event_year", edition.event_year),
+  ]);
+
+  const seen = new Set((seenRes.data ?? []).map((r) => r.person_id as string));
+  const candidates = [...new Set((recentRes.data ?? []).map((r) => r.person_id as string))].filter(
+    (id) => !seen.has(id),
+  );
+  if (candidates.length === 0) return { eventYear: edition.event_year, personIds: [], lines: [] };
+
+  const { data } = await supabaseAdmin
+    .from("board_people")
+    .select("id, first_name, last_name, played_as, board_year, state")
+    .eq("state", "going")
+    .in("id", candidates);
+
+  const sorted = [...((data ?? []) as Record<string, unknown>[])].sort(
+    (a, b) =>
+      Number(a.board_year ?? 9999) - Number(b.board_year ?? 9999) ||
+      String(a.last_name ?? "").localeCompare(String(b.last_name ?? "")),
+  );
+
+  return {
+    eventYear: edition.event_year,
+    personIds: sorted.map((r) => r.id as string),
+    lines: sorted.map((r) => `${displayName(r as never)}${r.board_year ? ` ${r.board_year}` : ""}`),
+  };
+}
+
+async function recordRoundupMembers(eventYear: number, personIds: string[], newsId: string | null) {
+  if (personIds.length === 0) return;
+  await supabaseAdmin
+    .from("news_roundup_members")
+    .insert(personIds.map((person_id) => ({ event_year: eventYear, person_id, news_id: newsId })) as never);
+}
+
 // -------------------------------------------------------------- automation
 
 function localParts(tz: string, now = new Date()) {
@@ -367,8 +490,21 @@ function atOrPast(nowHHMM: string, targetHHMM: string) {
 }
 
 /**
- * The scheduled entry point. Safe to call as often as you like: the last run
- * dates make a second call on the same local day a no op.
+ * The scheduled entry point, called every fifteen minutes.
+ *
+ * Exactly one automated bulletin per local calendar day, at the configured
+ * hour (9:00 AM America/New_York), and only when there is something net-new to
+ * say. There is no evening or intraday post: the weekly attendance roundup is
+ * folded into the same single article on its day rather than becoming a second
+ * one. An empty day publishes nothing.
+ *
+ * Timing follows the named timezone through Intl, so daylight saving is
+ * handled by the calendar rather than by an offset we would have to maintain.
+ *
+ * Concurrency: the day is claimed with a conditional update on
+ * last_digest_date before anything is built. A second tick, a retry or two
+ * overlapping cron runs find the day already claimed and do nothing, and the
+ * unique dedupe key on the article is the second guard behind that.
  */
 export async function runNewsAutomation(now = new Date()): Promise<AutomationResult> {
   const settings = await loadSettings();
@@ -381,45 +517,72 @@ export async function runNewsAutomation(now = new Date()): Promise<AutomationRes
     return { ran, skipped: ["automation disabled"], createdIds, localTime: time, localDate: date };
   }
 
-  // Daily digest: at most one per local calendar day, and only if due.
-  if (settings.last_digest_date === date) skipped.push("digest already ran today");
-  else if (!atOrPast(time, settings.daily_digest_time)) skipped.push("digest not due yet");
-  else {
-    const result = await publishDigest({ author: "Automation" });
-    await supabaseAdmin
-      .from("news_settings")
-      .update({ last_digest_date: date } as never)
-      .eq("id", true);
-    if (result.created) {
-      ran.push("daily_digest");
-      if (result.newsId) createdIds.push(result.newsId);
-    } else skipped.push(`digest: ${result.reason}`);
+  if (settings.last_digest_date === date) {
+    skipped.push("already ran today");
+    return { ran, skipped, createdIds, localTime: time, localDate: date };
+  }
+  if (!atOrPast(time, settings.daily_digest_time)) {
+    skipped.push("not due yet");
+    return { ran, skipped, createdIds, localTime: time, localDate: date };
   }
 
-  // Weekly roundup: right day, right time, and not already run this week.
+  // Claim the day before building anything. Only one caller wins this update.
+  const { data: claim } = await supabaseAdmin
+    .from("news_settings")
+    .update({ last_digest_date: date } as never)
+    .eq("id", true)
+    .or(`last_digest_date.is.null,last_digest_date.neq.${date}`)
+    .select("id");
+  if ((claim ?? []).length === 0) {
+    skipped.push("another run claimed today");
+    return { ran, skipped, createdIds, localTime: time, localDate: date };
+  }
+
+  // The roundup rides along inside today's single article when it is due.
   const daysSinceWeekly = settings.last_weekly_date
     ? Math.floor(
         (Date.parse(`${date}T00:00:00Z`) - Date.parse(`${settings.last_weekly_date}T00:00:00Z`)) /
           86400000,
       )
     : 999;
-  if (dow !== settings.weekly_day) skipped.push("roundup not scheduled today");
-  else if (!atOrPast(time, settings.weekly_time)) skipped.push("roundup not due yet");
-  else if (daysSinceWeekly < 6) skipped.push("roundup already ran this week");
-  else {
-    const result = await publishWeeklyRoundup({});
-    await supabaseAdmin
-      .from("news_settings")
-      .update({ last_weekly_date: date } as never)
-      .eq("id", true);
-    if (result.created) {
+  const roundupDue = dow === settings.weekly_day && daysSinceWeekly >= 6;
+  const roundup = roundupDue
+    ? await collectRoundup(now)
+    : { eventYear: 0, personIds: [], lines: [] as string[] };
+  if (!roundupDue) skipped.push("roundup not scheduled today");
+
+  const extraSection =
+    roundup.lines.length > 0
+      ? {
+          heading:
+            roundup.lines.length === 1
+              ? "One more person is coming"
+              : `${roundup.lines.length} more people are coming`,
+          lines: roundup.lines,
+        }
+      : null;
+
+  const result = await publishDigest({
+    author: "Automation",
+    extraSection,
+    dedupeKey: `auto:${date}`,
+  });
+
+  if (result.created) {
+    ran.push("daily_bulletin");
+    if (result.newsId) createdIds.push(result.newsId);
+    if (roundup.lines.length > 0) {
+      await recordRoundupMembers(roundup.eventYear, roundup.personIds, result.newsId);
+      await supabaseAdmin.from("news_settings").update({ last_weekly_date: date } as never).eq("id", true);
       ran.push("weekly_going");
-      if (result.newsId) createdIds.push(result.newsId);
-    } else skipped.push(`roundup: ${result.reason}`);
+    }
+  } else {
+    skipped.push(result.reason);
   }
 
   return { ran, skipped, createdIds, localTime: time, localDate: date };
 }
+
 
 // --------------------------------------------------------------------- rss
 

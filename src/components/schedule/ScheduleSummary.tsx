@@ -152,7 +152,8 @@ export function ScheduleSummary({
         THREE DAYS
       </h2>
       <p className="mt-3 max-w-[560px]" style={{ fontSize: 16, color: "var(--steel-ink)" }}>
-        Times marked TBD are still being set. RSVP now and we'll email you when they lock.
+        Some times are still being set. One final email goes out with the locked schedule; after
+        that, this page is the source of truth and Discord handles the day itself.
       </p>
       <p className="mt-2 max-w-[560px]" style={{ fontSize: 16, color: "var(--sterling)" }}>
         Currents versus alumni. Play if you want to, watch if you don't. We just want you there.

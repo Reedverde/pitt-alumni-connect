@@ -407,6 +407,47 @@ export type Database = {
         }
         Relationships: []
       }
+      event_announced_state: {
+        Row: {
+          announced_at: string
+          created_at: string
+          event_id: string
+          event_year: number | null
+          news_id: string | null
+          state: Json
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          announced_at?: string
+          created_at?: string
+          event_id: string
+          event_year?: number | null
+          news_id?: string | null
+          state: Json
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          announced_at?: string
+          created_at?: string
+          event_id?: string
+          event_year?: number | null
+          news_id?: string | null
+          state?: Json
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_announced_state_news_id_fkey"
+            columns: ["news_id"]
+            isOneToOne: false
+            referencedRelation: "news_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_changes: {
         Row: {
           actor_person_id: string | null
@@ -536,6 +577,7 @@ export type Database = {
           critical_mass: number | null
           day_number: number | null
           division: string | null
+          doors_at: string | null
           ends_at: string | null
           event_year: number
           id: string
@@ -546,6 +588,7 @@ export type Database = {
           organizer_notes: string | null
           prompt_rsvp: boolean
           published: boolean
+          relative_timing: string | null
           sort_order: number
           starts_at: string | null
           status: string
@@ -565,6 +608,7 @@ export type Database = {
           critical_mass?: number | null
           day_number?: number | null
           division?: string | null
+          doors_at?: string | null
           ends_at?: string | null
           event_year: number
           id?: string
@@ -575,6 +619,7 @@ export type Database = {
           organizer_notes?: string | null
           prompt_rsvp?: boolean
           published?: boolean
+          relative_timing?: string | null
           sort_order?: number
           starts_at?: string | null
           status?: string
@@ -594,6 +639,7 @@ export type Database = {
           critical_mass?: number | null
           day_number?: number | null
           division?: string | null
+          doors_at?: string | null
           ends_at?: string | null
           event_year?: number
           id?: string
@@ -604,6 +650,7 @@ export type Database = {
           organizer_notes?: string | null
           prompt_rsvp?: boolean
           published?: boolean
+          relative_timing?: string | null
           sort_order?: number
           starts_at?: string | null
           status?: string
@@ -1658,6 +1705,7 @@ export type Database = {
           dispatched_at: string | null
           id: string
           key: string
+          missed_at: string | null
           offset_days: number
           one_time: boolean
           scheduled_at: string | null
@@ -1670,6 +1718,7 @@ export type Database = {
           dispatched_at?: string | null
           id?: string
           key: string
+          missed_at?: string | null
           offset_days: number
           one_time?: boolean
           scheduled_at?: string | null
@@ -1682,6 +1731,7 @@ export type Database = {
           dispatched_at?: string | null
           id?: string
           key?: string
+          missed_at?: string | null
           offset_days?: number
           one_time?: boolean
           scheduled_at?: string | null
