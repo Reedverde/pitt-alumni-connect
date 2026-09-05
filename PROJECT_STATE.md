@@ -869,7 +869,7 @@ Email program: the one approved send
   uses the usual sender, wrapper, footer and one-click unsubscribe.
 - The ten day cooldown is waived for this key only. Suppression, memorial and
   archived checks, the audience and the once-per-campaign rule are untouched.
-- Missed rather than late: if the moment passes by more than six hours unsent,
+- Missed rather than late: if the approved minute passes unsent,
   `sequences.missed_at` is stamped, the campaign stays unsent, and the
   organizer panel says so.
 - Organizer preview shows subject, the exact body with private links masked,
@@ -885,11 +885,14 @@ Copy correction
 
 ## Bulletin timing and send guards (2026-09-05)
 
-- The daily bulletin posts only between the configured hour and 45 minutes later (`windowVerdict` in `src/lib/news.server.ts`). A tick after that records the slot as missed and posts nothing; there is no later catch-up. Missed, failed and published mornings are written to `audit_log` as `news_automation.*` and listed in the organizer News tab.
+- The daily bulletin launches in the 9:00 minute America/New_York and in no other (`windowVerdict` in `src/lib/news.server.ts`: early before, due only when the local HH:MM equals the configured time, missed after). Seconds inside that minute and the time the work then takes are fine; 9:01, 9:15, 9:30 and 10:00 are missed. There is no window and no catch-up. Missed, failed and published mornings are written to `audit_log` as `news_automation.*` and listed in the organizer News tab.
 - Announced baselines are written from the exact snapshot the article printed (`markEventAnnouncedState`), so an edit made during publication stays pending.
 - "Save quietly" now only settles the wording of the name and the venue (`markCosmeticCorrection`). Any material difference from the announced baseline (time, day, status, audience, division, tickets, publication) stays owed a bulletin line and the organizer is told so.
 - Bulletin lines name the date and time zone, and cover cancellation, un-cancellation, postponement, tickets appearing and tickets disappearing.
-- One-time campaigns can only be dispatched by their own scheduler (`allowOneTime`); the daily drip skips them outright. The scheduler's late-send grace is 90 minutes, and it restores the previous outbound mode rather than forcing `transactional_only`.
+- One-time campaigns can only be dispatched by their own scheduler (`allowOneTime`); the daily drip skips them outright. The scheduler has no grace: `launchVerdict` in `src/lib/launch-window.ts` is due only inside the approved minute (delta 0 to 59.999s), and a later tick stamps `sequences.missed_at` and leaves the campaign unsent for an organizer.
+- Nothing temporarily writes a global `all` outbound mode any more. Both the drip cron and the one-time scheduler pass a `ScopedSendAuthorization { kind, reason }` into `sendPlainEmail`; the choke point in `src/lib/mail.server.ts` honours it for that one campaign kind only, for the length of that dispatch. `app_settings.outbound_email_mode` is read, never written, so no other request can observe an unrestricted moment.
 - One mailbox receives one copy per campaign (`src/lib/drip-dedupe.ts`), across shared addresses and resumed runs.
 - Discord delivery claims the row before posting, so retries and overlapping runs cannot produce a second message; a failed claim is released for a deliberate retry.
-- Unit tests: `bun run test` (`src/lib/__tests__/news-rules.test.ts`).
+- Cron, DST-safe and no polling: `news-automation-15min` (jobid 2) now runs `0 13,14 * * *` UTC. Exactly one of those is 9:00 Eastern year round; the other is 8:00 (early, silent) or 10:00 (missed, and only when the 9:00 run never claimed the day). `scheduled-campaign-tick-hourly` stays hourly on the hour, which lands on 13:00Z for the September 30 send.
+- Missed rather than late, everywhere: a missed morning is recorded (`news_automation.missed`) and a missed campaign is stamped `missed_at`. Neither is ever sent or posted afterwards by machine.
+- Unit tests: `bun run test` (`src/lib/__tests__/news-rules.test.ts`, `src/lib/__tests__/launch-timing.test.ts` — 08:59 / 09:00 / 09:01 / 09:15 / 10:00 plus both daylight-saving sides and both changeovers). 27 passing.

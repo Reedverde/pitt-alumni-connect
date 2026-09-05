@@ -103,8 +103,21 @@ export function outboundEmailModeSentence(mode: OutboundEmailMode) {
     : "Outbound email: paused. Only sign-in links are being sent.";
 }
 
+/** A scoped, single-use permission to send one campaign kind while the global
+ *  switch is paused. It is not a mode: nothing global is written, nothing else
+ *  is unblocked, and it disappears when the dispatch returns. The authorizing
+ *  record (the approved schedule row) is named in `reason` and lands on the
+ *  send log. */
+export type ScopedSendAuthorization = {
+  /** Must equal the kind of the message being sent. Anything else is refused. */
+  kind: string;
+  /** Why this is allowed: the approval record, in plain words. */
+  reason: string;
+};
+
 type DeliverInput = {
   kind: string;
+  authorization?: ScopedSendAuthorization | null;
   to: string;
   personId: string | null;
   subject: string;
@@ -121,7 +134,10 @@ async function resendDeliver(
   const { apiKey, fromAddress, fromName, replyTo } = mailConfig();
   const mode = await outboundEmailMode();
 
-  if (mode !== "all" && !TRANSACTIONAL_KINDS.has(input.kind)) {
+  const scoped =
+    input.authorization && input.authorization.kind === input.kind ? input.authorization : null;
+
+  if (mode !== "all" && !TRANSACTIONAL_KINDS.has(input.kind) && !scoped) {
     const reason = `outbound email is paused (transactional_only); "${input.kind}" is not permitted while paused`;
     await logSend({
       personId: input.personId,
@@ -1531,6 +1547,9 @@ export async function sendPlainEmail(opts: {
   html: string;
   /** Only the drip dispatcher sets this; it lands on the sends row. */
   sequenceId?: string | null;
+  /** Scoped permission for one approved campaign kind while sending is paused.
+   *  Never widens anything else and never writes a global setting. */
+  authorization?: ScopedSendAuthorization | null;
 }): Promise<MagicLinkResult> {
   const to = opts.to.trim().toLowerCase();
   const { apiKey, fromAddress } = mailConfig();
@@ -1582,6 +1601,7 @@ export async function sendPlainEmail(opts: {
 
     const delivery = await resendDeliver({
       kind: opts.kind,
+      authorization: opts.authorization ?? null,
       to,
       personId: opts.personId,
       subject: opts.subject,

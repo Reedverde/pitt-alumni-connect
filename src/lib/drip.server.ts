@@ -31,6 +31,7 @@ import {
   loadCohortGoing,
   loadScheduleLines,
   sendPlainEmail,
+  type ScopedSendAuthorization,
   tMinus28Subject,
   RSVP_CONFIRM_SUBJECT,
 } from "./mail.server";
@@ -342,6 +343,9 @@ export async function dispatchSequence(opts: {
   /** Only the one-time scheduler sets this. Without it a one-time campaign
    *  cannot be sent by the daily drip or by hand, early or late. */
   allowOneTime?: boolean;
+  /** Scoped permission for this campaign only, used while the global switch
+   *  stays paused. Nothing global is written. */
+  authorization?: ScopedSendAuthorization | null;
 }): Promise<DispatchResult> {
   const dryRun = opts.dryRun !== false;
   const key = opts.sequenceKey;
@@ -452,6 +456,7 @@ export async function dispatchSequence(opts: {
     if (dryRun) continue;
 
     const result = await sendPlainEmail({
+      authorization: opts.authorization ?? null,
       to: r.email,
       personId: r.personId,
       kind: `drip:${key}`,

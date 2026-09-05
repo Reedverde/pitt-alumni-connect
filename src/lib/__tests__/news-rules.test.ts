@@ -89,19 +89,21 @@ describe("what a quiet save may absorb", () => {
   });
 });
 
-describe("the morning window", () => {
-  it("does not post before the hour", () => {
+describe("the morning launch minute", () => {
+  it("does not post before the minute", () => {
     expect(windowVerdict("08:45", "09:00")).toBe("early");
+    expect(windowVerdict("08:59", "09:00")).toBe("early");
   });
 
-  it("posts at the hour and shortly after", () => {
+  it("posts in the nine o'clock minute and in no other", () => {
     expect(windowVerdict("09:00", "09:00")).toBe("due");
-    expect(windowVerdict("09:30", "09:00")).toBe("due");
-    expect(windowVerdict("09:45", "09:00")).toBe("due");
+    expect(windowVerdict("09:01", "09:00")).toBe("missed");
+    expect(windowVerdict("09:15", "09:00")).toBe("missed");
+    expect(windowVerdict("09:30", "09:00")).toBe("missed");
   });
 
   it("never catches up later in the day", () => {
-    expect(windowVerdict("09:46", "09:00")).toBe("missed");
+    expect(windowVerdict("10:00", "09:00")).toBe("missed");
     expect(windowVerdict("17:00", "09:00")).toBe("missed");
     expect(windowVerdict("23:59", "09:00")).toBe("missed");
   });

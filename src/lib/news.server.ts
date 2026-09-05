@@ -496,22 +496,25 @@ function minutesOf(hhmm: string): number {
 }
 
 /**
- * How long after the configured hour the bulletin may still post itself.
- * The job runs every fifteen minutes, so this leaves three attempts. Past it
- * the slot is recorded as missed and stays unsent: a bulletin that turns up in
- * the evening reads as news when it is not, and an organizer can always post
- * one by hand.
+ * The bulletin launches in the configured minute and in no other. 9:00 AM
+ * America/New_York means 9:00, not "some time after nine": a 9:15 or 9:30
+ * article reads as a later, separate decision to post. Seconds inside that
+ * minute, and however long the work then takes, are fine — it is the launch
+ * that is pinned, not the finish.
+ *
+ * A tick outside the minute never catches up. Before it, nothing happens; after
+ * it, the slot is written down as missed and stays unsent.
  */
-export const PUBLISH_WINDOW_MINUTES = 45;
+export const PUBLISH_WINDOW_MINUTES = 0;
 
 export type WindowVerdict = "early" | "due" | "missed";
 
 /** Pure, so the timing rule can be reasoned about and tested on its own. */
-export function windowVerdict(nowHHMM: string, targetHHMM: string, windowMinutes = PUBLISH_WINDOW_MINUTES): WindowVerdict {
+export function windowVerdict(nowHHMM: string, targetHHMM: string): WindowVerdict {
   const now = minutesOf(nowHHMM);
   const target = minutesOf(targetHHMM);
   if (now < target) return "early";
-  if (now <= target + windowMinutes) return "due";
+  if (now === target) return "due";
   return "missed";
 }
 
@@ -556,17 +559,19 @@ export async function listAutomationRuns(limit = 10): Promise<AutomationRun[]> {
 }
 
 /**
- * The scheduled entry point, called every fifteen minutes.
+ * The scheduled entry point.
  *
- * Exactly one automated bulletin per local calendar day, inside a short window
- * that opens at the configured hour (9:00 AM America/New_York) and closes
- * forty-five minutes later, and only when there is something net-new to say.
- * A tick that arrives after the window does not catch up: the slot is written
- * down as missed and left unsent, because a bulletin arriving at teatime reads
- * as news when it is not. An organizer can still post one by hand.
+ * Exactly one automated bulletin per local calendar day, launched in the
+ * configured minute (9:00 AM America/New_York) and only when there is
+ * something net-new to say. A tick that arrives in any later minute does not
+ * catch up: the slot is written down as missed and left unsent, because a
+ * bulletin arriving later reads as a fresh decision to post. An organizer can
+ * still post one by hand.
  *
- * Timing follows the named timezone through Intl, so daylight saving is
- * handled by the calendar rather than by an offset we would have to maintain.
+ * The cron fires at both 13:00 and 14:00 UTC so that one of the two is 9:00
+ * local on either side of daylight saving; the other is 8:00 or 10:00 local and
+ * is turned away here. Timing follows the named timezone through Intl, so the
+ * calendar decides, not an offset we would have to maintain.
  *
  * Concurrency: the day is claimed with a conditional update on
  * last_digest_date before anything is built. A second tick, a retry or two
@@ -617,10 +622,9 @@ export async function runNewsAutomation(now = new Date()): Promise<AutomationRes
         localDate: date,
         localTime: time,
         due: settings.daily_digest_time,
-        windowMinutes: PUBLISH_WINDOW_MINUTES,
       });
     }
-    skipped.push("missed today's window; nothing was posted");
+    skipped.push("past the launch minute; nothing was posted");
     return done();
   }
 
