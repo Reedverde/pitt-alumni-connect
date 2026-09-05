@@ -882,3 +882,14 @@ Copy correction
 - Schedule and ScheduleSummary no longer promise an email whenever times move.
   They say one final email goes out with the locked schedule, then Schedule is
   the source of truth, News says what changed, and Discord handles the day.
+
+## Bulletin timing and send guards (2026-09-05)
+
+- The daily bulletin posts only between the configured hour and 45 minutes later (`windowVerdict` in `src/lib/news.server.ts`). A tick after that records the slot as missed and posts nothing; there is no later catch-up. Missed, failed and published mornings are written to `audit_log` as `news_automation.*` and listed in the organizer News tab.
+- Announced baselines are written from the exact snapshot the article printed (`markEventAnnouncedState`), so an edit made during publication stays pending.
+- "Save quietly" now only settles the wording of the name and the venue (`markCosmeticCorrection`). Any material difference from the announced baseline (time, day, status, audience, division, tickets, publication) stays owed a bulletin line and the organizer is told so.
+- Bulletin lines name the date and time zone, and cover cancellation, un-cancellation, postponement, tickets appearing and tickets disappearing.
+- One-time campaigns can only be dispatched by their own scheduler (`allowOneTime`); the daily drip skips them outright. The scheduler's late-send grace is 90 minutes, and it restores the previous outbound mode rather than forcing `transactional_only`.
+- One mailbox receives one copy per campaign (`src/lib/drip-dedupe.ts`), across shared addresses and resumed runs.
+- Discord delivery claims the row before posting, so retries and overlapping runs cannot produce a second message; a failed claim is released for a deliberate retry.
+- Unit tests: `bun run test` (`src/lib/__tests__/news-rules.test.ts`).
