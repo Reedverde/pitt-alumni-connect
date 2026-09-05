@@ -826,3 +826,59 @@ Email, read only
 - `ActionRail` hides while the footer is in view so it cannot sit on top of footer links.
 - Schedule Directions and Get tickets links are 44px tall.
 - Verified: no horizontal overflow, exactly one `main`, exactly one RSVP affordance per page, no console errors on `/`, `/schedule`, `/news`, `/alumni`, `/donate`, `/auth`, 404.
+
+## Automatic daily bulletin and the one locked-schedule email (2026-09-05)
+
+Confirmed schedule facts
+- Alumni Game: Sunday October 4 2026 at the Bubble. Doors 9:00, play 10:00 to
+  12:00, America/New_York, status confirmed. Doors are stored in their own
+  `events.doors_at` column so they are never confused with the start.
+- Bar Crawl: no invented hour. `events.relative_timing` reads
+  "After the Pitt game" and Schedule, the calendar file and the emails all read
+  that one field.
+- Event ids, event answers and audit history untouched.
+
+News, now automatic
+- One run, at most one public bulletin, at 09:00 America/New_York, and only
+  when there is a real net public change. No evening or intraday posts.
+- `src/lib/schedule-news.server.ts` compares the live schedule against
+  `event_announced_state`, the record of what the public was last told. Several
+  edits to one event coalesce into one line; a change that is undone before the
+  cutoff produces nothing. Case, punctuation, whitespace, internal labels,
+  sorting and private notes never register.
+- Ambiguous text edits are the organizer's call, not software's: the event
+  editor has "Save event" and "Save quietly". Quiet moves the announced
+  baseline forward without saying anything.
+- The weekly attendance roundup is folded into the same single article on its
+  day. It is never a second post.
+- Idempotent: the day is claimed on `news_settings.last_digest_date` before
+  anything is built, and `news_items.dedupe_key` is unique. Discord delivery is
+  keyed off the one article row.
+- The old per-save `news_pending_updates` trigger path is retired. Two leftover
+  pending rows were suppressed so nothing is announced twice. Manual organizer
+  items still ride along in the same daily bulletin.
+- A News or Schedule change still never sends email. Published history is
+  untouched, including the catch-up article published 2026-09-04.
+
+Email program: the one approved send
+- Sequence `locked_schedule_2026_09_30`, one_time, scheduled 2026-09-30 09:00
+  America/New_York (13:00Z), audience going and maybe, currently inactive.
+- Replaces `t_minus_2`, which is deactivated so nothing duplicates.
+- Copy reads the live schedule at dispatch: no hardcoded times or venues. It
+  never assumes a maybe is coming, links to /me, /schedule and Discord, and
+  uses the usual sender, wrapper, footer and one-click unsubscribe.
+- The ten day cooldown is waived for this key only. Suppression, memorial and
+  archived checks, the audience and the once-per-campaign rule are untouched.
+- Missed rather than late: if the moment passes by more than six hours unsent,
+  `sequences.missed_at` is stamped, the campaign stays unsent, and the
+  organizer panel says so.
+- Organizer preview shows subject, the exact body with private links masked,
+  the scheduled moment written in Eastern, audience size and every exclusion.
+- Cron: `scheduled-campaign-tick-hourly`, hourly on the hour, hits
+  /api/public/hooks/scheduled-campaign-tick with the shared secret. Hourly is
+  enough for a 9:00 send and keeps the database quieter than a 15 minute poll.
+
+Copy correction
+- Schedule and ScheduleSummary no longer promise an email whenever times move.
+  They say one final email goes out with the locked schedule, then Schedule is
+  the source of truth, News says what changed, and Discord handles the day.
