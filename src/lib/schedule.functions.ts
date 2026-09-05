@@ -8,6 +8,10 @@ export type ScheduleEvent = {
   day_number: number | null;
   starts_at: string | null;
   ends_at: string | null;
+  /** Doors or facility opening, when that is earlier than the start. */
+  doors_at: string | null;
+  /** Timing in words when there is no clock time, e.g. "After the Pitt game". */
+  relative_timing: string | null;
   time_tbd: boolean;
   location: string | null;
   notes: string | null;

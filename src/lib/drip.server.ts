@@ -20,6 +20,8 @@ import {
   buildTMinus10Body,
   buildTMinus14Body,
   buildTMinus28Body,
+  buildLockedScheduleBody,
+  LOCKED_SCHEDULE_SUBJECT,
   buildTMinus2Body,
   buildTMinus45Body,
   buildTMinus7Body,
@@ -176,6 +178,8 @@ export async function resolveAudience(sequenceKey: string): Promise<Recipient[]>
 
 type Built = { subject: string; text: string; html: string } | null;
 
+export const LOCKED_SCHEDULE_KEY = "locked_schedule_2026_09_30";
+
 export const BUILDER_KEYS = new Set([
   "t_minus_45",
   "t_minus_28",
@@ -188,7 +192,12 @@ export const BUILDER_KEYS = new Set([
   "discord_invite",
   "event_rsvp_prompt",
   "rsvp_confirm_2026_09_04",
+  LOCKED_SCHEDULE_KEY,
 ]);
+
+/** The one approved final send. Named here because two rules key off it: the
+ *  copy below, and the narrow cooldown exemption in dispatchSequence. */
+
 
 export type Shared = {
   schedule: string[];
@@ -254,6 +263,11 @@ export async function buildFor(
       });
       if (!body) return null;
       return { subject: RSVP_CONFIRM_SUBJECT, ...body };
+    }
+    case LOCKED_SCHEDULE_KEY: {
+      const body = buildLockedScheduleBody({ name, schedule: shared.schedule });
+      if (!body) return null;
+      return { subject: LOCKED_SCHEDULE_SUBJECT, ...body };
     }
     case "t_minus_7":
       return { subject: T_MINUS_7_SUBJECT, ...buildTMinus7Body({ name }) };
@@ -359,7 +373,11 @@ export async function dispatchSequence(opts: {
       skips.already_sent++;
       return false;
     }
-    if (recentlySent.has(r.personId)) {
+    // The locked schedule email has an approved date, so the ten day quiet
+    // period does not get to move it. Nothing else is relaxed: suppression,
+    // memorial and archived checks, the audience and the once-per-campaign
+    // rule above all still apply.
+    if (recentlySent.has(r.personId) && key !== LOCKED_SCHEDULE_KEY) {
       skips.recent_send++;
       return false;
     }
@@ -368,7 +386,8 @@ export async function dispatchSequence(opts: {
 
   if (opts.anchorsFirst) queue.sort((a, b) => Number(b.isAnchor) - Number(a.isAnchor));
 
-  const needsSchedule = key === "t_minus_14" || key === "t_minus_2";
+  const needsSchedule =
+    key === "t_minus_14" || key === "t_minus_2" || key === LOCKED_SCHEDULE_KEY;
   const shared: Shared = {
     schedule: needsSchedule ? await loadScheduleLines() : [],
     dates: editionDateRange(edition),

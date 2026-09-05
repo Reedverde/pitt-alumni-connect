@@ -2471,6 +2471,8 @@ export type EditionEventRow = {
   location: string | null;
   starts_at: string | null;
   ends_at: string | null;
+  doors_at: string | null;
+  relative_timing: string | null;
   notes: string | null;
   admin_key: string | null;
   admin_name: string | null;
@@ -2502,7 +2504,7 @@ export async function listEditions(): Promise<EditionRow[]> {
     supabaseAdmin
       .from("events")
       .select(
-        "id, event_year, title, day_number, division, time_tbd, is_placeholder, location, starts_at, ends_at, notes, admin_key, admin_name, timezone, status, audience, organizer_notes, map_url, ticket_url, prompt_rsvp, ask_party_size, critical_mass, capacity, published, created_at, updated_at",
+        "id, event_year, title, day_number, division, time_tbd, is_placeholder, location, starts_at, ends_at, doors_at, relative_timing, notes, admin_key, admin_name, timezone, status, audience, organizer_notes, map_url, ticket_url, prompt_rsvp, ask_party_size, critical_mass, capacity, published, created_at, updated_at",
       )
       .order("day_number")
       .order("sort_order"),
@@ -2521,6 +2523,8 @@ export async function listEditions(): Promise<EditionRow[]> {
       location: (row.location as string | null) ?? null,
       starts_at: (row.starts_at as string | null) ?? null,
       ends_at: (row.ends_at as string | null) ?? null,
+      doors_at: ((row as { doors_at?: string | null }).doors_at) ?? null,
+      relative_timing: ((row as { relative_timing?: string | null }).relative_timing) ?? null,
       notes: (row.notes as string | null) ?? null,
       admin_key: (row.admin_key as string | null) ?? null,
       admin_name: (row.admin_name as string | null) ?? null,
@@ -2565,6 +2569,8 @@ export type EditionEventInput = {
   time_tbd?: boolean;
   starts_at?: string | null;
   ends_at?: string | null;
+  doors_at?: string | null;
+  relative_timing?: string | null;
   timezone?: string | null;
   status?: string;
   audience?: string;
@@ -2595,22 +2601,6 @@ async function expectedHeads(eventId: string): Promise<number> {
     .eq("event_id", eventId)
     .eq("status", "yes");
   return (data ?? []).reduce((sum, row) => sum + Number((row as { party_size?: number }).party_size ?? 1), 0);
-}
-
-/** The trigger writes pending news keyed by event id. Asking the table is how
- *  the admin screen learns whether this save produced a public update. */
-async function queuedNewsFor(eventId: string, sinceIso: string): Promise<boolean> {
-  const { count } = await supabaseAdmin
-    .from("news_pending_updates")
-    .select("id", { count: "exact", head: true })
-    .like("dedupe_key", `evt:${eventId}:%`)
-    .gte("created_at", sinceIso);
-  return (count ?? 0) > 0;
-}
-
-/** A moment safely before the write, allowing for clock drift. */
-function watermark() {
-  return new Date(Date.now() - 10_000).toISOString();
 }
 
 function buildEventPatch(input: EditionEventInput, before?: Record<string, unknown>) {
@@ -2651,6 +2641,11 @@ function buildEventPatch(input: EditionEventInput, before?: Record<string, unkno
   }
   if (input.ends_at !== undefined) patch.ends_at = input.ends_at || null;
   if (patch.time_tbd === true) patch.ends_at = null;
+  if (input.doors_at !== undefined) patch.doors_at = input.doors_at || null;
+  // Plain-language timing an organizer typed. Only meaningful without a clock
+  // time, and never invented on anyone's behalf.
+  if (input.relative_timing !== undefined)
+    patch.relative_timing = text(input.relative_timing, 80);
   return patch;
 }
 
@@ -2658,7 +2653,6 @@ function buildEventPatch(input: EditionEventInput, before?: Record<string, unkno
  *  A real, dated event disappearing is a cancellation the public needs to see,
  *  and the database trigger is what says so. */
 export async function deleteEditionEvent(actor: string | null, id: string) {
-  const since = watermark();
   const { data: beforeRow } = await supabaseAdmin
     .from("events")
     .select("id, title, location, starts_at, time_tbd, is_placeholder, published")
@@ -2667,7 +2661,8 @@ export async function deleteEditionEvent(actor: string | null, id: string) {
   const { error } = await supabaseAdmin.from("events").delete().eq("id", id);
   if (error) throw new Error(error.message);
   await audit(actor, "edition.delete_event", "events", id, (beforeRow as Json) ?? null, null);
-  return { ok: true, queuedNews: await queuedNewsFor(id, since) };
+  const { eventHasPendingChange } = await import("./schedule-news.server");
+  return { ok: true, queuedNews: await eventHasPendingChange(id) };
 }
 
 export function defaultEditionDates(eventYear: number) {
@@ -2813,7 +2808,6 @@ export async function createEditionEvent(
   const blockers = eventBlockers(row as never, null);
   if (blockers.length > 0) throw new Error(blockers[0]);
 
-  const since = watermark();
   const { data, error } = await supabaseAdmin.from("events").insert(row as never).select("id").single();
   if (error) throw new Error(error.message);
   const id = (data?.id as string) ?? null;
@@ -2821,7 +2815,7 @@ export async function createEditionEvent(
   return {
     ok: true,
     id,
-    queuedNews: id ? await queuedNewsFor(id, since) : false,
+    queuedNews: id ? await (await import("./schedule-news.server")).eventHasPendingChange(id) : false,
     warnings: eventWarnings(row as never, 0),
   };
 }
@@ -2838,10 +2832,18 @@ export async function listEditionEvents(eventYear: number) {
 
 /**
  * Editing an existing event. The write is all this does: the database trigger
- * records the before and after, and queues a public update when the change is
- * one the public can see. Quiet corrections stay quiet.
+ * records the before and after in the durable history, and the daily bulletin
+ * works out on its own whether the *net* result differs from what the public
+ * was last told.
+ *
+ * `quiet` is the organizer's own call. Rather than have software guess whether
+ * a text edit is a spelling fix or a real correction, a quiet save moves the
+ * announced baseline forward without saying anything publicly.
  */
-export async function updateEditionEvent(actor: string | null, input: EditionEventInput & { id: string }) {
+export async function updateEditionEvent(
+  actor: string | null,
+  input: EditionEventInput & { id: string; quiet?: boolean },
+) {
   const { data: beforeRow } = await supabaseAdmin
     .from("events")
     .select("*")
@@ -2858,17 +2860,23 @@ export async function updateEditionEvent(actor: string | null, input: EditionEve
   const blockers = eventBlockers(after as never, heads);
   if (blockers.length > 0) throw new Error(blockers[0]);
 
-  const since = watermark();
   const { error } = await supabaseAdmin.from("events").update(patch as never).eq("id", input.id);
   if (error) throw new Error(error.message);
   await audit(actor, "edition.update_event", "events", input.id, before as Json, patch as Json);
 
+  const news = await import("./schedule-news.server");
+  if (input.quiet) {
+    await news.markEventAnnounced(input.id);
+    return { ok: true, queuedNews: false, warnings: eventWarnings(after as never, heads) };
+  }
+
   return {
     ok: true,
-    queuedNews: await queuedNewsFor(input.id, since),
+    queuedNews: await news.eventHasPendingChange(input.id),
     warnings: eventWarnings(after as never, heads),
   };
 }
+
 
 /** The durable change history, newest first. Every add, edit and deletion,
  *  however it reached the database. */
@@ -3114,6 +3122,14 @@ export type ScheduledCampaignRow = {
   eligible: number;
   skips: { already_sent: number; recent_send: number; no_body: number } | null;
   subject: string | null;
+  /** The exact body a recipient would read. Signed links are stripped. */
+  bodyText: string | null;
+  /** People matching the audience before any skip rules. */
+  audience: number;
+  /** Set when the moment passed without a dispatch. Never auto-resent. */
+  missedAt: string | null;
+  /** The scheduled moment written in the timezone the decision was made in. */
+  scheduledLabel: string | null;
 };
 
 export async function listScheduledCampaignsForAdmin(): Promise<ScheduledCampaignRow[]> {
@@ -3125,6 +3141,8 @@ export async function listScheduledCampaignsForAdmin(): Promise<ScheduledCampaig
     let eligible = 0;
     let skips: ScheduledCampaignRow["skips"] = null;
     let subject: string | null = null;
+    let bodyText: string | null = null;
+    let audience = 0;
     if (!row.dispatched_at && !row.cancelled_at) {
       const preview = await dispatchSequence({ sequenceKey: row.key, dryRun: true });
       eligible = preview.wouldSend.length;
@@ -3134,6 +3152,9 @@ export async function listScheduledCampaignsForAdmin(): Promise<ScheduledCampaig
         no_body: preview.skips.no_body,
       };
       subject = preview.sample?.subject ?? null;
+      // Private per-person links must never appear on an organizer screen.
+      bodyText = (preview.sample?.text ?? null)?.replace(/(https?:\/\/\S*?[?&](?:t|token|sig)=)\S+/gi, "$1[private link]") ?? null;
+      audience = preview.audience;
     }
     out.push({
       key: row.key,
@@ -3144,6 +3165,16 @@ export async function listScheduledCampaignsForAdmin(): Promise<ScheduledCampaig
       eligible,
       skips,
       subject,
+      bodyText,
+      audience,
+      missedAt: row.missed_at ?? null,
+      scheduledLabel: row.scheduled_at
+        ? `${new Intl.DateTimeFormat("en-US", {
+            timeZone: "America/New_York",
+            dateStyle: "full",
+            timeStyle: "short",
+          }).format(new Date(row.scheduled_at))} America/New_York`
+        : null,
     });
   }
   return out;

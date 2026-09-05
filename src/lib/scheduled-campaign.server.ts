@@ -15,6 +15,8 @@ import { dispatchSequence, type DispatchSkips } from "./drip.server";
 
 const SAFE_MODE = "transactional_only";
 const RUN_LIMIT = 2000;
+/** How late a scheduled send may still go out on its own. */
+const MISSED_GRACE_HOURS = 6;
 
 export type ScheduledRow = {
   id: string;
@@ -23,6 +25,8 @@ export type ScheduledRow = {
   dispatched_at: string | null;
   cancelled_at: string | null;
   active: boolean;
+  /** Stamped when the moment passed unsent. A missed campaign stays unsent. */
+  missed_at?: string | null;
 };
 
 export type ScheduledOutcome = {
@@ -41,6 +45,8 @@ export type ScheduledTickResult = {
   ranAt: string;
   due: number;
   outcomes: ScheduledOutcome[];
+  /** Campaigns whose approved moment passed unsent. They need an organizer. */
+  missed: string[];
 };
 
 async function setOutboundMode(mode: string) {
@@ -53,7 +59,7 @@ async function setOutboundMode(mode: string) {
 export async function listScheduledCampaigns(): Promise<ScheduledRow[]> {
   const { data } = await supabaseAdmin
     .from("sequences")
-    .select("id, key, scheduled_at, dispatched_at, cancelled_at, active")
+    .select("id, key, scheduled_at, dispatched_at, cancelled_at, active, missed_at")
     .eq("one_time", true)
     .order("scheduled_at", { ascending: true });
   return (data ?? []) as ScheduledRow[];
@@ -99,14 +105,35 @@ export async function runScheduledCampaignTick(): Promise<ScheduledTickResult> {
   const ranAt = new Date().toISOString();
   const { data } = await supabaseAdmin
     .from("sequences")
-    .select("id, key, scheduled_at, dispatched_at, cancelled_at")
+    .select("id, key, scheduled_at, dispatched_at, cancelled_at, missed_at")
     .eq("one_time", true)
     .is("dispatched_at", null)
     .is("cancelled_at", null)
+    .is("missed_at", null)
     .not("scheduled_at", "is", null)
     .lte("scheduled_at", ranAt);
 
-  const due = (data ?? []) as ScheduledRow[];
+  const all = (data ?? []) as ScheduledRow[];
+
+  // A campaign whose moment slipped by more than the grace window is not sent
+  // late and quietly: an approved date is part of the approval. It is flagged
+  // for an organizer instead.
+  const graceMs = MISSED_GRACE_HOURS * 3600_000;
+  const due: ScheduledRow[] = [];
+  const missed: string[] = [];
+  for (const row of all) {
+    const at = Date.parse(row.scheduled_at ?? "");
+    if (Number.isFinite(at) && Date.parse(ranAt) - at > graceMs) {
+      await supabaseAdmin
+        .from("sequences")
+        .update({ missed_at: ranAt, active: false } as never)
+        .eq("id", row.id);
+      missed.push(row.key);
+      continue;
+    }
+    due.push(row);
+  }
+
   const outcomes: ScheduledOutcome[] = [];
 
   for (const row of due) {
@@ -166,5 +193,5 @@ export async function runScheduledCampaignTick(): Promise<ScheduledTickResult> {
     }
   }
 
-  return { ok: true, ranAt, due: due.length, outcomes };
+  return { ok: true, ranAt, due: due.length, outcomes, missed };
 }
