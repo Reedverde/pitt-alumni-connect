@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
-import { getPromptEvents, submitEventRsvps, type PromptEventDto } from "@/lib/event-rsvp.functions";
+import { getPromptEvents, submitEventRsvpsForClaim, type PromptEventDto } from "@/lib/event-rsvp.functions";
 import { EventAnswerToggle, type TriState } from "@/components/events/EventAnswerToggle";
 import { primaryButton, secondaryButton } from "./ui";
 
@@ -15,13 +15,15 @@ import { primaryButton, secondaryButton } from "./ui";
  */
 export function EventSubPrompts({
   personId,
+  email,
   onDone,
 }: {
   personId: string;
+  email: string;
   onDone: () => void;
 }) {
   const loadEvents = useServerFn(getPromptEvents);
-  const save = useServerFn(submitEventRsvps);
+  const save = useServerFn(submitEventRsvpsForClaim);
 
   const [events, setEvents] = useState<PromptEventDto[] | null>(null);
   const [answers, setAnswers] = useState<Record<string, TriState>>({});
@@ -64,6 +66,7 @@ export function EventSubPrompts({
       await save({
         data: {
           personId,
+          email,
           answers: Object.entries(answers)
             .filter((entry): entry is [string, "yes" | "no"] => entry[1] !== "unanswered")
             .map(([eventId, status]) => ({

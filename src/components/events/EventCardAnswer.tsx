@@ -66,7 +66,7 @@ export function EventCardAnswer({ eventId, eventTitle }: { eventId: string; even
       setBusy(true);
       try {
         const result = await save({
-          data: { personId, answers: [{ eventId, status, partySize: size }] },
+          data: { answers: [{ eventId, status, partySize: size }] },
         });
         if (!result?.ok) {
           setNote("That did not save. Try again in a moment.");
