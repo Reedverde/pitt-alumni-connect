@@ -50,18 +50,47 @@ export const getPromptEvents = createServerFn({ method: "GET" }).handler(
   },
 );
 
+/** The signed-in viewer writes their own event answers. The person id is taken
+ *  from the auth identity, never from the caller: a board person id is public,
+ *  so trusting it would let anyone rewrite another alumnus's answers. */
 export const submitEventRsvps = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: {
+      answers: { eventId: string; status: "yes" | "no"; partySize?: number | null }[];
+    }) => ({
+      answers: Array.isArray(input?.answers) ? input.answers.slice(0, 10) : [],
+    }),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: boolean; written: number }> => {
+    const personId = await resolveMyPersonId(context.supabase, context.userId);
+    if (!personId) return { ok: false, written: 0 };
+    const { submitEventRsvpsServer } = await import("./event-rsvp.server");
+    return submitEventRsvpsServer({ personId, answers: data.answers });
+  });
+
+/** The anonymous claim path: someone who just claimed a record answers its
+ *  event questions in the same sitting. Ownership is proved by the email on the
+ *  record, the same rule the claim and RSVP endpoints use. */
+export const submitEventRsvpsForClaim = createServerFn({ method: "POST" })
   .inputValidator(
     (input: {
       personId: string;
+      email: string;
       answers: { eventId: string; status: "yes" | "no"; partySize?: number | null }[];
     }) => ({
       personId: String(input?.personId ?? ""),
+      email: String(input?.email ?? "").trim().toLowerCase(),
       answers: Array.isArray(input?.answers) ? input.answers.slice(0, 10) : [],
     }),
   )
   .handler(async ({ data }): Promise<{ ok: boolean; written: number }> => {
-    if (!data.personId) return { ok: false, written: 0 };
-    const { submitEventRsvpsServer } = await import("./event-rsvp.server");
-    return submitEventRsvpsServer(data);
+    if (!data.personId || !data.email) return { ok: false, written: 0 };
+    const { callerOwnsPersonByEmail, submitEventRsvpsServer } = await import(
+      "./event-rsvp.server"
+    );
+    const owns = await callerOwnsPersonByEmail(data.personId, data.email);
+    if (!owns) return { ok: false, written: 0 };
+    return submitEventRsvpsServer({ personId: data.personId, answers: data.answers });
   });
+
