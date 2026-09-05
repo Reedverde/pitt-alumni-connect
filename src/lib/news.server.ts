@@ -555,11 +555,12 @@ export async function listAutomationRuns(limit = 10): Promise<AutomationRun[]> {
 /**
  * The scheduled entry point, called every fifteen minutes.
  *
- * Exactly one automated bulletin per local calendar day, at the configured
- * hour (9:00 AM America/New_York), and only when there is something net-new to
- * say. There is no evening or intraday post: the weekly attendance roundup is
- * folded into the same single article on its day rather than becoming a second
- * one. An empty day publishes nothing.
+ * Exactly one automated bulletin per local calendar day, inside a short window
+ * that opens at the configured hour (9:00 AM America/New_York) and closes
+ * forty-five minutes later, and only when there is something net-new to say.
+ * A tick that arrives after the window does not catch up: the slot is written
+ * down as missed and left unsent, because a bulletin arriving at teatime reads
+ * as news when it is not. An organizer can still post one by hand.
  *
  * Timing follows the named timezone through Intl, so daylight saving is
  * handled by the calendar rather than by an offset we would have to maintain.
@@ -567,7 +568,8 @@ export async function listAutomationRuns(limit = 10): Promise<AutomationRun[]> {
  * Concurrency: the day is claimed with a conditional update on
  * last_digest_date before anything is built. A second tick, a retry or two
  * overlapping cron runs find the day already claimed and do nothing, and the
- * unique dedupe key on the article is the second guard behind that.
+ * unique dedupe key on the article is the second guard behind that. A run that
+ * fails inside the window hands the day back so the next tick can try again.
  */
 export async function runNewsAutomation(now = new Date()): Promise<AutomationResult> {
   const settings = await loadSettings();
@@ -575,31 +577,61 @@ export async function runNewsAutomation(now = new Date()): Promise<AutomationRes
   const ran: string[] = [];
   const skipped: string[] = [];
   const createdIds: string[] = [];
+  const done = () => ({ ran, skipped, createdIds, localTime: time, localDate: date });
 
   if (!settings.enabled) {
-    return { ran, skipped: ["automation disabled"], createdIds, localTime: time, localDate: date };
+    skipped.push("automation disabled");
+    return done();
   }
 
   if (settings.last_digest_date === date) {
     skipped.push("already ran today");
-    return { ran, skipped, createdIds, localTime: time, localDate: date };
+    return done();
   }
-  if (!atOrPast(time, settings.daily_digest_time)) {
+
+  const verdict = windowVerdict(time, settings.daily_digest_time);
+  if (verdict === "early") {
     skipped.push("not due yet");
-    return { ran, skipped, createdIds, localTime: time, localDate: date };
+    return done();
   }
 
   // Claim the day before building anything. Only one caller wins this update.
-  const { data: claim } = await supabaseAdmin
-    .from("news_settings")
-    .update({ last_digest_date: date } as never)
-    .eq("id", true)
-    .or(`last_digest_date.is.null,last_digest_date.neq.${date}`)
-    .select("id");
-  if ((claim ?? []).length === 0) {
-    skipped.push("another run claimed today");
-    return { ran, skipped, createdIds, localTime: time, localDate: date };
+  const claimDay = async () => {
+    const { data } = await supabaseAdmin
+      .from("news_settings")
+      .update({ last_digest_date: date } as never)
+      .eq("id", true)
+      .or(`last_digest_date.is.null,last_digest_date.neq.${date}`)
+      .select("id");
+    return (data ?? []).length > 0;
+  };
+
+  if (verdict === "missed") {
+    // Claim it anyway, so the missed slot is recorded once rather than on every
+    // remaining tick of the day.
+    if (await claimDay()) {
+      await recordAutomationRun("missed", {
+        localDate: date,
+        localTime: time,
+        due: settings.daily_digest_time,
+        windowMinutes: PUBLISH_WINDOW_MINUTES,
+      });
+    }
+    skipped.push("missed today's window; nothing was posted");
+    return done();
   }
+
+  if (!(await claimDay())) {
+    skipped.push("another run claimed today");
+    return done();
+  }
+
+  const handBackTheDay = async () => {
+    await supabaseAdmin
+      .from("news_settings")
+      .update({ last_digest_date: settings.last_digest_date } as never)
+      .eq("id", true);
+  };
 
   // The roundup rides along inside today's single article when it is due.
   const daysSinceWeekly = settings.last_weekly_date
@@ -625,11 +657,20 @@ export async function runNewsAutomation(now = new Date()): Promise<AutomationRes
         }
       : null;
 
-  const result = await publishDigest({
-    author: "Automation",
-    extraSection,
-    dedupeKey: `auto:${date}`,
-  });
+  let result: { created: boolean; newsId: string | null; reason: string };
+  try {
+    result = await publishDigest({
+      author: "Automation",
+      extraSection,
+      dedupeKey: `auto:${date}`,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await handBackTheDay();
+    await recordAutomationRun("failed", { localDate: date, localTime: time, error: message });
+    skipped.push(`failed: ${message}`);
+    return done();
+  }
 
   if (result.created) {
     ran.push("daily_bulletin");
@@ -639,11 +680,25 @@ export async function runNewsAutomation(now = new Date()): Promise<AutomationRes
       await supabaseAdmin.from("news_settings").update({ last_weekly_date: date } as never).eq("id", true);
       ran.push("weekly_going");
     }
+    await recordAutomationRun("published", {
+      localDate: date,
+      localTime: time,
+      newsId: result.newsId,
+      sections: ran,
+    });
   } else {
     skipped.push(result.reason);
+    const quiet =
+      result.reason === "Nothing new to report." || result.reason === "Already published for this slot.";
+    if (quiet) {
+      await recordAutomationRun("nothing_to_say", { localDate: date, localTime: time, reason: result.reason });
+    } else {
+      await handBackTheDay();
+      await recordAutomationRun("failed", { localDate: date, localTime: time, error: result.reason });
+    }
   }
 
-  return { ran, skipped, createdIds, localTime: time, localDate: date };
+  return done();
 }
 
 
