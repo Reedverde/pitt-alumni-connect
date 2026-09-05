@@ -278,6 +278,66 @@ export type Database = {
           },
         ]
       }
+      current_status_overrides: {
+        Row: {
+          created_at: string
+          is_current: boolean
+          person_id: string
+          reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          is_current?: boolean
+          person_id: string
+          reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          is_current?: boolean
+          person_id?: string
+          reason?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "current_status_overrides_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "current_status_overrides_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "current_status_overrides_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "current_status_overrides_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "current_status_overrides_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
       divisions: {
         Row: {
           code: string
