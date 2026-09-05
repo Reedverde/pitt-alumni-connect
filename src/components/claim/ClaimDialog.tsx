@@ -357,7 +357,7 @@ export function ClaimDialog({
               You're in. Two quick things.
             </h2>
             <div className="mt-4">
-              <EventSubPrompts personId={claimed.id} onDone={() => setStep("stamp")} />
+              <EventSubPrompts personId={claimed.id} email={email} onDone={() => setStep("stamp")} />
             </div>
           </div>
         ) : step === "stamp" && claimed ? (
