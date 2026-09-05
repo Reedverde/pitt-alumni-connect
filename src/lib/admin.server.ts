@@ -2866,13 +2866,19 @@ export async function updateEditionEvent(
 
   const news = await import("./schedule-news.server");
   if (input.quiet) {
-    await news.markEventAnnounced(input.id);
-    return { ok: true, queuedNews: false, warnings: eventWarnings(after as never, heads) };
+    const quiet = await news.markCosmeticCorrection(input.id);
+    return {
+      ok: true,
+      queuedNews: quiet.stillPending.length > 0 || !quiet.moved,
+      quietNote: quiet.reason,
+      warnings: eventWarnings(after as never, heads),
+    };
   }
 
   return {
     ok: true,
     queuedNews: await news.eventHasPendingChange(input.id),
+    quietNote: null as string | null,
     warnings: eventWarnings(after as never, heads),
   };
 }
