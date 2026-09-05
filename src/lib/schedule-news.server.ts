@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-import { timingSentence } from "./event-timing";
+import { timingSentenceWithDate } from "./event-timing";
 import { audienceLabel } from "./event-model";
 
 /**
