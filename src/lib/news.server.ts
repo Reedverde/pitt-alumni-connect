@@ -163,6 +163,9 @@ export type BulletinPreview = {
   items: PendingUpdate[];
   /** Event ids whose announced baseline this bulletin would move forward. */
   eventIds: string[];
+  /** The exact snapshot each line describes, so the baseline recorded after
+   *  publication is the state that actually appeared in the article. */
+  snapshots: { eventId: string; state: unknown }[];
   count: number;
   title: string;
   summary: string;
@@ -204,6 +207,7 @@ export async function previewDigest(): Promise<BulletinPreview> {
     changeLines,
     items: pending,
     eventIds: changes.map((c) => c.eventId),
+    snapshots: changes.map((c) => ({ eventId: c.eventId, state: c.state })),
     count,
     title: title.slice(0, 160),
     summary: summary.slice(0, 400),

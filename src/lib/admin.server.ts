@@ -2853,7 +2853,8 @@ export async function updateEditionEvent(
   const before = beforeRow as Record<string, unknown>;
 
   const patch = buildEventPatch(input, before);
-  if (Object.keys(patch).length === 0) return { ok: true, queuedNews: false, warnings: [] as string[] };
+  if (Object.keys(patch).length === 0)
+    return { ok: true, queuedNews: false, quietNote: null as string | null, warnings: [] as string[] };
 
   const after = { ...before, ...patch };
   const heads = await expectedHeads(input.id);
