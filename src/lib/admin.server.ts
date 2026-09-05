@@ -2184,9 +2184,9 @@ export async function overview(
   const tiles: OverviewTile[] = [
     { key: "going", label: "Going (people)", value: going, hint: "Everyone who answered yes: graduates and current players together.", tab: "people", filter: "going" },
     { key: "heads", label: "Expected heads (heads)", value: heads, hint: "Party sizes of everyone going, graduates and current players.", tab: "people", filter: "going" },
-    { key: "going_alumni", label: "Graduates going (people)", value: goingAlumni, hint: `Going, and not on a ${rosterSeasonYear()} roster. The organizer facing alumni number.`, tab: "people", filter: "going_alumni" },
+    { key: "going_alumni", label: "Graduates going (people)", value: goingAlumni, hint: "Going, and not current. The organizer facing alumni number.", tab: "people", filter: "going_alumni" },
     { key: "going_alumni_heads", label: "Graduates going (heads)", value: goingAlumniHeads, hint: "Party sizes of the graduates going.", tab: "people", filter: "going_alumni" },
-    { key: "going_current", label: "Current players going (people)", value: goingCurrent, hint: `On a ${rosterSeasonYear()} roster as a player or captain.`, tab: "people", filter: "going_current" },
+    { key: "going_current", label: "Current players going (people)", value: goingCurrent, hint: "On the newest roster, or reachable at a working pitt.edu address.", tab: "people", filter: "going_current" },
     { key: "going_current_heads", label: "Current players going (heads)", value: goingCurrentHeads, hint: "Party sizes of the current players going.", tab: "people", filter: "going_current" },
     { key: "maybe", label: "Maybe", value: maybe, hint: "Still deciding.", tab: "people", filter: "maybe" },
     { key: "not_this_year", label: "Not this year", value: notThisYear, hint: "Answered, but not coming.", tab: "people", filter: "not_this_year" },
