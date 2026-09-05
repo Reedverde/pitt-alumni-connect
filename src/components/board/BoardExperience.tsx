@@ -350,12 +350,10 @@ export function BoardExperience({ renderHero, story, renderNav }: BoardExperienc
 
   // Searching ranks by tier: direct, then nickname equivalence, then fuzzy.
   // Tiers never interleave; the usual ordering applies inside each tier.
-  const ranked = searching
-    ? rankMatches(
-        searchQuery,
-        [...people, ...data.coaches].filter((p) => !isHidden(p)),
-      )
-    : [];
+  // People who both played and coached now appear in people AND coaches;
+  // dedupe by id so a search never lists the same person twice.
+  const searchPool = [...people, ...data.coaches.filter((c) => !people.some((p) => p.id === c.id))];
+  const ranked = searching ? rankMatches(searchQuery, searchPool.filter((p) => !isHidden(p))) : [];
   const flatPeople = !flatMode
     ? []
     : searching
