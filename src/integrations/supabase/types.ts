@@ -2268,7 +2268,43 @@ export type Database = {
         Row: {
           person_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "stints_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
+        ]
       }
       current_players: {
         Row: {
