@@ -1656,6 +1656,7 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           error: string | null
+          event_year: number | null
           id: string
           kind: string
           opened_at: string | null
@@ -1677,6 +1678,7 @@ export type Database = {
           created_at?: string
           delivered_at?: string | null
           error?: string | null
+          event_year?: number | null
           id?: string
           kind?: string
           opened_at?: string | null
@@ -1698,6 +1700,7 @@ export type Database = {
           created_at?: string
           delivered_at?: string | null
           error?: string | null
+          event_year?: number | null
           id?: string
           kind?: string
           opened_at?: string | null
@@ -2264,6 +2267,51 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_send_counts: {
+        Row: {
+          campaign_sends: number | null
+          event_year: number | null
+          last_campaign_at: string | null
+          person_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
+        ]
+      }
       current_people: {
         Row: {
           person_id: string | null
@@ -2536,8 +2584,34 @@ export type Database = {
           status: string
         }[]
       }
+      claim_campaign_send: {
+        Args: {
+          _cap?: number
+          _cooldown_days?: number
+          _event_year: number
+          _kind: string
+          _person_id: string
+          _sequence_id: string
+          _skip_cooldown?: boolean
+          _to_email: string
+        }
+        Returns: {
+          outcome: string
+          send_id: string
+        }[]
+      }
       current_edition_year: { Args: never; Returns: number }
       current_person_id: { Args: never; Returns: string }
+      finalize_campaign_send: {
+        Args: {
+          _error: string
+          _message_id: string
+          _provider: string
+          _send_id: string
+          _status: string
+        }
+        Returns: string
+      }
       is_admin: { Args: never; Returns: boolean }
       promote_verified_primary: {
         Args: { _identity_id: string }

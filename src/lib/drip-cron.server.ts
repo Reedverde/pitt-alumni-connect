@@ -1,9 +1,15 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+import type { CampaignOutcomeCounts } from "./campaign-guards";
 import { dispatchSequence, type DispatchSkips } from "./drip.server";
 import { loadCurrentEdition } from "./editions.server";
 
 const RUN_LIMIT = 1000;
+
+/** A sequence is due from its date until two days after it, and never again.
+ *  Before this, a past-due sequence was reconsidered every single day, which
+ *  turned one invisible ledger row into a daily repeat. */
+const DUE_WINDOW_DAYS = 2;
 
 export type SequenceOutcome = {
   sequenceKey: string;
@@ -13,6 +19,9 @@ export type SequenceOutcome = {
   sent: number;
   failed: number;
   skips: DispatchSkips | null;
+  /** Exactly what happened to each recipient on a real run. */
+  counts: CampaignOutcomeCounts | null;
+  errors: string[];
   refusalReason: string | null;
   error: string | null;
 };
@@ -71,6 +80,8 @@ async function recordAttempt(o: SequenceOutcome & { runDate: string }) {
       sent: o.sent,
       failed: o.failed,
       skips: o.skips,
+      counts: o.counts,
+      errors: o.errors,
       refusalReason: o.refusalReason,
       error: o.error,
       targetDate: o.targetDate,
@@ -116,6 +127,7 @@ export async function runDripCronTick(): Promise<CronTickResult> {
   for (const seq of sequences) {
     const targetDate = addDays(eventDate, seq.offset_days);
     if (runDate < targetDate) continue;
+    if (runDate > addDays(targetDate, DUE_WINDOW_DAYS)) continue;
 
     const outcome: SequenceOutcome = {
       sequenceKey: seq.key,
@@ -125,6 +137,8 @@ export async function runDripCronTick(): Promise<CronTickResult> {
       sent: 0,
       failed: 0,
       skips: null,
+      counts: null,
+      errors: [],
       refusalReason: null,
       error: null,
     };
@@ -144,6 +158,8 @@ export async function runDripCronTick(): Promise<CronTickResult> {
       outcome.sent = result.sent;
       outcome.failed = result.failed;
       outcome.skips = result.skips;
+      outcome.counts = result.outcomes;
+      outcome.errors = result.errors;
       outcome.refusalReason = result.ok ? null : result.reason;
     } catch (err) {
       outcome.error = err instanceof Error ? err.message : String(err);

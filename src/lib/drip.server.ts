@@ -1,6 +1,18 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-import { dedupeAddresses, normalizeEmail } from "./drip-dedupe";
+import { normalizeEmail } from "./drip-dedupe";
+import {
+  CAMPAIGN_CAP_PER_EDITION,
+  emptyClaimState,
+  emptyOutcomeCounts,
+  fetchAllRows,
+  previewClaim,
+  recordPreviewClaim,
+  runClaimedQueue,
+  type CampaignOutcomeCounts,
+  type ClaimOutcome,
+} from "./campaign-guards";
+
 import { loadCurrentEdition } from "./editions.server";
 import { editionDateRange } from "./edition-format";
 import { partySizeLink } from "./party-token.server";
@@ -105,7 +117,7 @@ export async function resolveAudience(sequenceKey: string): Promise<Recipient[]>
   const states = seq.audience_states ?? [];
   const edition = await loadCurrentEdition();
 
-  const [peopleRes, identRes, rsvpRes, supRes, historyRes] = await Promise.all([
+  const [peopleRes, identRes, rsvpRes, supRes, historyRows] = await Promise.all([
     supabaseAdmin
       .from("people")
       .select("id, first_name, last_name, deceased, archived, is_anchor, show_on_board")
@@ -114,8 +126,19 @@ export async function resolveAudience(sequenceKey: string): Promise<Recipient[]>
     supabaseAdmin.from("identities").select("person_id, email, is_primary, verified_at"),
     supabaseAdmin.from("rsvps").select("person_id, status").eq("event_year", edition.event_year),
     supabaseAdmin.from("suppressions").select("email"),
-    supabaseAdmin.from("sends").select("person_id, bounced, bounce_type, complained"),
+    // Targeted and paginated. An unpaginated read of this table is what hid a
+    // recorded send past row one thousand and caused the duplicate campaign.
+    fetchAllRows<{ person_id: string | null; bounced: boolean; bounce_type: string | null; complained: boolean }>(
+      (from, to) =>
+        supabaseAdmin
+          .from("sends")
+          .select("person_id, bounced, bounce_type, complained")
+          .or("complained.eq.true,bounced.eq.true")
+          .order("created_at", { ascending: true })
+          .range(from, to),
+    ),
   ]);
+
 
   const verified = new Set<string>();
   const addresses = new Map<string, { email: string; primary: boolean; verified: boolean }[]>();
@@ -140,7 +163,7 @@ export async function resolveAudience(sequenceKey: string): Promise<Recipient[]>
 
   // A hard bounce or a complaint on any past send retires the person for good.
   const burned = new Set<string>();
-  for (const row of historyRes.data ?? []) {
+  for (const row of historyRows) {
     const pid = row.person_id as string | null;
     if (!pid) continue;
     if (row.complained || (row.bounced && row.bounce_type === "hard")) burned.add(pid);
@@ -309,6 +332,8 @@ export type DispatchSkips = {
   /** Two people sharing one address, or one address already written to for
    *  this campaign. The mailbox, not the record, is what receives the mail. */
   duplicate_email: number;
+  /** Already had seven automated campaign emails this edition. */
+  over_cap: number;
 };
 
 export type DispatchResult = {
@@ -325,7 +350,23 @@ export type DispatchResult = {
   sample: { subject: string; text: string; html: string } | null;
   sent: number;
   failed: number;
+  /** The precise story of a real run: what was reserved, delivered, refused
+   *  before the provider, refused by the provider, or delivered but unlogged. */
+  outcomes: CampaignOutcomeCounts;
+  /** Anything an organizer needs to look at by hand. */
+  errors: string[];
 };
+
+function emptySkips(): DispatchSkips {
+  return {
+    already_sent: 0,
+    recent_send: 0,
+    no_body: 0,
+    over_limit: 0,
+    duplicate_email: 0,
+    over_cap: 0,
+  };
+}
 
 function empty(sequenceKey: string, dryRun: boolean, reason: string): DispatchResult {
   return {
@@ -337,12 +378,15 @@ function empty(sequenceKey: string, dryRun: boolean, reason: string): DispatchRe
     audience: 0,
     sequenceActive: false,
     wouldSend: [],
-    skips: { already_sent: 0, recent_send: 0, no_body: 0, over_limit: 0, duplicate_email: 0 },
+    skips: emptySkips(),
     sample: null,
     sent: 0,
     failed: 0,
+    outcomes: emptyOutcomeCounts(),
+    errors: [],
   };
 }
+
 
 /** One sequence, one run, by hand. Dry run is the default and writes nothing. */
 export async function dispatchSequence(opts: {
@@ -380,57 +424,72 @@ export async function dispatchSequence(opts: {
   const edition = await loadCurrentEdition();
   const audience = await resolveAudience(key);
 
-  const { data: sendRows } = await supabaseAdmin
-    .from("sends")
-    .select("person_id, sequence_id, outcome, created_at, to_email");
+  // Two targeted, fully paginated reads replace the old whole-table select.
+  // Everything this campaign has already claimed or sent...
+  const claimRows = await fetchAllRows<{ person_id: string | null; to_email: string | null; outcome: string }>(
+    (from, to) =>
+      supabaseAdmin
+        .from("sends")
+        .select("person_id, to_email, outcome")
+        .eq("sequence_id", seq.id)
+        .in("outcome", ["sent", "claimed"])
+        .order("created_at", { ascending: true })
+        .range(from, to),
+  );
+  // ...and how much campaign mail each person has had this edition.
+  const countRows = await fetchAllRows<{
+    person_id: string | null;
+    campaign_sends: number | null;
+    last_campaign_at: string | null;
+  }>((from, to) =>
+    supabaseAdmin
+      .from("campaign_send_counts")
+      .select("person_id, campaign_sends, last_campaign_at")
+      .eq("event_year", edition.event_year)
+      .order("person_id", { ascending: true })
+      .range(from, to),
+  );
 
-  const alreadySent = new Set<string>();
-  const recentlySent = new Set<string>();
-  // Addresses this campaign has already written to. Two records can share a
-  // mailbox, and a resumed run must not write to it twice.
-  const alreadyEmailed = new Set<string>();
-  const cutoff = Date.now() - RECENT_SEND_DAYS * 86400000;
-  for (const row of sendRows ?? []) {
-    if (row.outcome !== "sent") continue;
-    const seqId = row.sequence_id as string | null;
-    const address = normalizeEmail(row.to_email as string | null);
-    if (seqId === seq.id && address) alreadyEmailed.add(address);
-    const pid = row.person_id as string | null;
-    if (!pid || !seqId) continue;
-    if (seqId === seq.id) alreadySent.add(pid);
-    const at = Date.parse(String(row.created_at ?? ""));
-    if (Number.isFinite(at) && at >= cutoff) recentlySent.add(pid);
+  const state = emptyClaimState();
+  for (const row of claimRows) {
+    if (row.person_id) state.claimedPersons.add(row.person_id);
+    const address = normalizeEmail(row.to_email);
+    if (address) state.claimedMailboxes.add(address);
+  }
+  for (const row of countRows) {
+    if (!row.person_id) continue;
+    state.campaignSends.set(row.person_id, row.campaign_sends ?? 0);
+    const at = Date.parse(String(row.last_campaign_at ?? ""));
+    if (Number.isFinite(at)) state.lastCampaignAt.set(row.person_id, at);
   }
 
-  const skips: DispatchSkips = {
-    already_sent: 0,
-    recent_send: 0,
-    no_body: 0,
-    over_limit: 0,
-    duplicate_email: 0,
-  };
-  const queue = audience.filter((r) => {
-    if (alreadySent.has(r.personId)) {
-      skips.already_sent++;
-      return false;
-    }
-    // The locked schedule email has an approved date, so the ten day quiet
-    // period does not get to move it. Nothing else is relaxed: suppression,
-    // memorial and archived checks, the audience and the once-per-campaign
-    // rule above all still apply.
-    if (recentlySent.has(r.personId) && key !== LOCKED_SCHEDULE_KEY) {
-      skips.recent_send++;
-      return false;
-    }
-    return true;
-  });
+  // The locked schedule email has an approved date, so the ten day quiet
+  // period does not get to move it. Nothing else is relaxed: suppression,
+  // memorial and archived checks, the audience, the cap and the
+  // once-per-campaign and one-mailbox rules all still apply.
+  const skipCooldown = key === LOCKED_SCHEDULE_KEY;
+  const now = Date.now();
 
-  // One mailbox, one copy: across this run and across everything this campaign
-  // has already sent.
-  const deduped = dedupeAddresses(queue, alreadyEmailed);
-  skips.duplicate_email = deduped.skipped;
-  queue.length = 0;
-  queue.push(...deduped.keep);
+  const skips = emptySkips();
+  const queue: Recipient[] = [];
+  for (const r of audience) {
+    const verdict = previewClaim(r, state, {
+      cooldownDays: RECENT_SEND_DAYS,
+      skipCooldown,
+      now,
+    });
+    if (verdict === "claimed") {
+      // Reserve it inside this run too, so a shared mailbox or a repeated
+      // record cannot slip a second copy through the same pass.
+      recordPreviewClaim(r, state, now);
+      queue.push(r);
+      continue;
+    }
+    if (verdict === "already_sent") skips.already_sent++;
+    else if (verdict === "cooldown") skips.recent_send++;
+    else if (verdict === "over_cap") skips.over_cap++;
+    else skips.duplicate_email++;
+  }
 
   if (opts.anchorsFirst) queue.sort((a, b) => Number(b.isAnchor) - Number(a.isAnchor));
 
@@ -443,12 +502,12 @@ export async function dispatchSequence(opts: {
     pendingEvents: EVENT_RSVP_PROMPT_KEYS.has(key) ? await loadPendingEvents() : new Map(),
   };
 
-
   const wouldSend: DispatchResult["wouldSend"] = [];
   let sample: DispatchResult["sample"] = null;
-  let sent = 0;
-  let failed = 0;
 
+  // Bodies first: a person with nothing to say to them is not claimed.
+  type Ready = Recipient & { body: { subject: string; text: string; html: string } };
+  const ready: Ready[] = [];
   for (const r of queue) {
     if (wouldSend.length >= limit) {
       skips.over_limit++;
@@ -462,22 +521,65 @@ export async function dispatchSequence(opts: {
     }
     if (!sample) sample = built;
     wouldSend.push({ personId: r.personId, email: r.email, firstName: r.firstName, isAnchor: r.isAnchor });
+    ready.push({ ...r, body: built });
+  }
 
-    if (dryRun) continue;
+  const outcomes = emptyOutcomeCounts();
+  const errors: string[] = [];
+  let sent = 0;
+  let failed = 0;
 
-    const result = await sendPlainEmail({
-      authorization: opts.authorization ?? null,
-      to: r.email,
-      personId: r.personId,
-      kind: `drip:${key}`,
-      subject: built.subject,
-      text: built.text,
-      html: built.html,
-      sequenceId: seq.id,
+  if (!dryRun) {
+    const run = await runClaimedQueue<Ready>({
+      queue: ready,
+      limit,
+      pauseMs: SEND_INTERVAL_MS,
+      // The database decides, not the snapshot above: the claim is one
+      // statement and it happens before the provider is ever called.
+      claim: async (item) => {
+        const { data, error } = await supabaseAdmin.rpc("claim_campaign_send", {
+          _person_id: item.personId,
+          _sequence_id: seq.id,
+          _to_email: item.email,
+          _kind: `drip:${key}`,
+          _event_year: edition.event_year,
+          _cap: CAMPAIGN_CAP_PER_EDITION,
+          _cooldown_days: RECENT_SEND_DAYS,
+          _skip_cooldown: skipCooldown,
+        } as never);
+        if (error) throw new Error(error.message);
+        const row = (Array.isArray(data) ? data[0] : data) as
+          | { outcome: ClaimOutcome; send_id: string | null }
+          | undefined;
+        if (!row) throw new Error("claim returned no row");
+        return { outcome: row.outcome, sendId: row.send_id };
+      },
+      deliver: async (item, sendId) => {
+        const result = await sendPlainEmail({
+          authorization: opts.authorization ?? null,
+          to: item.email,
+          personId: item.personId,
+          kind: `drip:${key}`,
+          subject: item.body.subject,
+          text: item.body.text,
+          html: item.body.html,
+          sequenceId: seq.id,
+          claimSendId: sendId,
+        });
+        return { sent: result.sent, reason: result.reason, logged: result.logged };
+      },
     });
-    if (result.sent) sent++;
-    else failed++;
-    await new Promise((res) => setTimeout(res, SEND_INTERVAL_MS));
+
+    Object.assign(outcomes, run.counts);
+    errors.push(...run.errors);
+    skips.already_sent += run.counts.already_sent;
+    skips.recent_send += run.counts.cooldown;
+    skips.over_cap += run.counts.over_cap;
+    skips.duplicate_email += run.counts.duplicate_mailbox;
+    skips.over_limit += run.counts.over_limit;
+    sent = run.counts.sent;
+    failed =
+      run.counts.provider_failed + run.counts.failed_before_provider + run.counts.log_failed;
   }
 
   return {
@@ -493,5 +595,8 @@ export async function dispatchSequence(opts: {
     sample,
     sent,
     failed,
+    outcomes,
+    errors,
   };
 }
+
