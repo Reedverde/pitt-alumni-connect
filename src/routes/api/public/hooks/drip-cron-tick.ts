@@ -1,29 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 /**
- * Daily drip tick. Called by pg_cron with the shared secret in an
- * x-drip-cron-secret header. Any unauthenticated write that can trigger email
- * is an open relay, so a missing or wrong secret gets a flat 401.
+ * Retired. The daily drip no longer exists as a pathway: the production cron
+ * job is switched off and this hook fails closed. It stays mounted only so an
+ * accidental call gets a clear, harmless answer instead of reaching a
+ * dispatcher. It never imports one, so it cannot send under any circumstances.
  */
 export const Route = createFileRoute("/api/public/hooks/drip-cron-tick")({
   server: {
     handlers: {
-      POST: async ({ request }) => {
-        const expected = process.env["DRIP_CRON_SECRET"];
-        const presented =
-          request.headers.get("x-drip-cron-secret") ?? request.headers.get("X-Drip-Cron-Secret");
-        if (!expected || !presented || presented !== expected) {
-          return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { "content-type": "application/json" },
-          });
-        }
-        const { runDripCronTick } = await import("@/lib/drip-cron.server");
-        const result = await runDripCronTick();
-        return new Response(JSON.stringify(result), {
-          headers: { "content-type": "application/json" },
-        });
-      },
+      POST: async () =>
+        new Response(
+          JSON.stringify({
+            ok: false,
+            retired: true,
+            sent: 0,
+            reason:
+              "the daily drip is retired; only an approved dated campaign or a person-initiated sign-in link may send",
+          }),
+          { status: 410, headers: { "content-type": "application/json" } },
+        ),
     },
   },
 });

@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
 import { adminCancelScheduledCampaign, adminScheduledCampaigns } from "@/lib/admin.functions";
+import { REMAINING_2026_CAMPAIGNS } from "@/lib/email-policy";
 import { Empty, Section, hairline, mono, secondaryButton } from "./ui";
 
 type Row = {
@@ -44,9 +45,28 @@ export function ScheduledCampaignPanel() {
   return (
     <Section eyebrow="One time sends" title="Scheduled campaigns">
       <p className="mb-4" style={{ fontSize: 13, color: "var(--sterling)" }}>
-        A campaign here goes out once, at the time shown, and switches itself off again. Cancel it
-        any time before that moment and nothing leaves the building.
+        This is the only way email goes out. A campaign here goes out once, in the exact minute
+        shown, and switches itself off again. If that minute passes without it sending, it is marked
+        missed and <strong>will not be sent late</strong>. Cancel any time beforehand and nothing
+        leaves the building.
       </p>
+
+      <div className="mb-4" style={{ border: hairline, padding: "12px 14px", fontSize: 13 }}>
+        <strong>Remaining 2026 campaigns</strong> — all 9:00 a.m. Eastern, seven per year maximum,
+        two already sent.
+        <ul style={{ marginTop: 6, color: "var(--sterling)" }}>
+          {REMAINING_2026_CAMPAIGNS.map((c) => (
+            <li key={c.key}>
+              {new Intl.DateTimeFormat("en-US", {
+                timeZone: "UTC",
+                dateStyle: "medium",
+              }).format(new Date(`${c.easternDate}T12:00:00Z`))}{" "}
+              · {c.label}
+            </li>
+          ))}
+        </ul>
+      </div>
+
 
       {isLoading ? (
         <p style={{ fontSize: 13, color: "var(--sterling)" }}>Checking…</p>

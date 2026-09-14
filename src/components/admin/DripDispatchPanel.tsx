@@ -49,44 +49,30 @@ export function DripDispatchPanel() {
   const canSend = previewed && eligible > 0 && busy === null;
 
   return (
-    <Section eyebrow="Drip dispatcher" title="Run the sequences">
+    <Section eyebrow="Sequence preview" title="What a sequence would reach">
       <p className="mb-4" style={{ fontSize: 13, color: "var(--sterling)" }}>
-        Nothing is scheduled. A sequence only goes out when someone presses Send on this page, and
-        only inside its window: the due date through two days after it. A person is never sent the
-        same sequence twice, and never any drip within ten days of their last delivered message.
+        There is no daily drip any more, and nothing on this page sends. The only email that goes
+        out is an approved campaign on its own dated schedule, or a sign-in link someone asks for.
+        This page is for looking: it shows who a sequence would reach and why anyone is left out.
       </p>
 
-      {report?.outboundPaused !== false ? (
-        <p
-          className="mb-4"
-          style={{ border: hairline, padding: "12px 14px", fontSize: 13, color: "var(--steel-ink)" }}
-        >
-          <strong>Outbound mail is paused.</strong> While the mode is transactional only, no drip
-          will leave the building. Previews still run in full. Change the mode above when you
-          actually mean to send.
-        </p>
-      ) : null}
+      <p
+        className="mb-4"
+        style={{ border: hairline, padding: "12px 14px", fontSize: 13, color: "var(--steel-ink)" }}
+      >
+        <strong>The daily send is retired.</strong> Outbound mail stays on sign-in links only, and
+        that does not change. A campaign that misses its scheduled minute is not sent late.
+      </p>
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <button type="button" style={primaryButton} disabled={busy !== null} onClick={preview}>
           {busy === "preview" ? "Checking" : "Preview"}
         </button>
-        <button
-          type="button"
-          style={{ ...secondaryButton, opacity: canSend ? 1 : 0.4 }}
-          disabled={!canSend}
-          onClick={send}
-        >
-          {busy === "send"
-            ? "Sending"
-            : eligible > 0
-              ? `Send to ${eligible} ${eligible === 1 ? "person" : "people"}`
-              : "Send"}
-        </button>
         <span style={{ fontSize: 12, color: "var(--sterling)" }}>
-          {previewed ? "Preview is current." : "Run a preview before sending."}
+          {previewed ? "Preview is current." : "Nothing has been checked yet."}
         </span>
       </div>
+
 
       {report === null ? (
         <Empty>No preview yet.</Empty>

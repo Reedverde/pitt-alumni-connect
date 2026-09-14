@@ -10,4 +10,4 @@ A campaign recipient is claimed in the database before the provider is called; n
 ## Memories
 - [Automation timing rules](mem://features/automation-timing) — exact 9:00 launch minute, DST-safe cron, missed-not-late, scoped send authorization; T-10 = event RSVP reminder, headcount sequence disabled
 - [Campaign send safety rules](mem://features/campaign-send-safety) — claim before send, 7 per edition cap, 10-day cooldown, one mailbox one copy, paginated history reads
-
+- [Email program rule](mem://features/email-program-rule.md) — no daily drip or catch-up, dated one-time campaigns only, RSVP confirmations retired, transactional_only permanent
