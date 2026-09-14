@@ -1,15 +1,6 @@
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
-
 import type { CampaignOutcomeCounts } from "./campaign-guards";
-import { dispatchSequence, type DispatchSkips } from "./drip.server";
+import type { DispatchSkips } from "./drip.server";
 import { loadCurrentEdition } from "./editions.server";
-
-const RUN_LIMIT = 1000;
-
-/** A sequence is due from its date until two days after it, and never again.
- *  Before this, a past-due sequence was reconsidered every single day, which
- *  turned one invisible ledger row into a daily repeat. */
-const DUE_WINDOW_DAYS = 2;
 
 export type SequenceOutcome = {
   sequenceKey: string;
@@ -36,12 +27,6 @@ export type CronTickResult = {
   outcomes: SequenceOutcome[];
 };
 
-function addDays(isoDate: string, days: number): string {
-  const d = new Date(`${isoDate}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
 /** Today in America/New_York, as a plain date. The schedule is a local one. */
 export function easternToday(now: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -52,28 +37,6 @@ export function easternToday(now: Date = new Date()): string {
   }).format(now);
 }
 
-
-async function recordAttempt(o: SequenceOutcome & { runDate: string }) {
-  await supabaseAdmin.from("audit_log").insert({
-    actor_person_id: null,
-    action: "drip_cron_tick",
-    table_name: "sequences",
-    record_id: o.sequenceId,
-    before: null as never,
-    after: {
-      sequenceKey: o.sequenceKey,
-      sent: o.sent,
-      failed: o.failed,
-      skips: o.skips,
-      counts: o.counts,
-      errors: o.errors,
-      refusalReason: o.refusalReason,
-      error: o.error,
-      targetDate: o.targetDate,
-      runDate: o.runDate,
-    } as never,
-  });
-}
 
 /** One daily tick. Nothing happens unless outbound_email_mode reads
  *  "drip_enabled". When it does, every active sequence whose target date has
