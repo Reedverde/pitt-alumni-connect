@@ -939,9 +939,18 @@ Copy correction
 
 **Tests.** `src/lib/__tests__/campaign-guards.test.ts` — the row past 1,000 the incident hid, a failed page read throwing, cooldown, cap, mailbox and same-run dedupe, overlapping ticks sending one copy each, ledger failure before the provider (no send), provider refusal without retry, delivered-but-unlogged never counted as sent, run limit.
 
-**Safe re-enable checklist.**
-1. `select count(*) from sends where outcome = 'claimed' and status = 'claimed';` must be 0 (no stranded claims).
-2. Dry-run the intended sequence and read `outcomes`/`skips`; confirm `over_cap` and `cooldown` look right.
-3. Confirm only the intended sequence has `active = true` and a due target date within two days.
-4. Set `outbound_email_mode = 'drip_enabled'` for the run window only, then return it to `transactional_only`.
-5. After the run, check `sends` for `claimed` leftovers and the `drip_cron_tick` audit row's counts.
+**Permanent rule (2026-09-14, Reed).** There is no rolling daily drip, no automatic catch-up and no reconsideration of a past-due sequence. The only outbound email is (a) an explicitly dated one-time campaign approved in `sequences`, sent in its approved minute or not at all, and (b) a sign-in/access link a person asked for themselves. Automatic RSVP confirmations are retired. `outbound_email_mode` stays `transactional_only` permanently — there is no "re-enable the drip" step and none should ever be written.
+
+- Production cron `drip-daily-2000-et` is `active = false` (row preserved for history). `/api/public/hooks/drip-cron-tick` returns 410 and never imports a dispatcher; `runDripCronTick()` is a named no-op that always refuses.
+- `mail.server.ts` allows only `magic_link` while paused; `rsvp_confirmation` is refused at the choke point and `rsvp.server.ts` only records the refusal.
+- The hourly scheduled-campaign tick remains: it is now the sole campaign pathway. A missed minute is stamped `missed_at` and never sent late.
+- Remaining approved 2026 campaigns, all 9:00 a.m. America/New_York, one-time rows, existing IDs unchanged: `t_minus_14` 09-18, `event_rsvp_prompt_t10_2026_09_22` 09-22, `t_minus_7` 09-25, `locked_schedule_2026_09_30` 09-30, `t_plus_3` 10-05. Completed: `t_minus_45`, `t_minus_21`. Two plus five = the seven-per-edition maximum. Every other sequence is `active = false`.
+- Unchanged and still required: seven-per-edition cap with the per-person/edition advisory lock in `claim_campaign_send`, 10-day quiet period (narrow documented per-campaign exception only), suppression, bounce and complaint handling, memorial exclusion, audience rules, mailbox dedupe, claim-before-send, fail-closed ledger.
+- `src/lib/email-policy.ts` holds the rule in pure form; `src/lib/__tests__/email-policy.test.ts` proves the daily endpoint and automatic confirmation cannot send, sign-in links can, a campaign sends only in its minute, a missed minute never catches up, and the plan stays at seven.
+
+**Before each approved campaign date.**
+1. `select count(*) from sends where outcome = 'claimed' and status = 'claimed';` must be 0.
+2. Preview the campaign in Scheduled campaigns and read the audience and skips.
+3. Confirm its `scheduled_at` is the approved minute and no other sequence is active.
+4. Leave `outbound_email_mode` at `transactional_only`. The dated campaign carries its own scoped permission; the global switch is never widened.
+5. After the minute, check `dispatched_at`, the `scheduled_campaign_dispatch` audit row and any `missed_at`.
