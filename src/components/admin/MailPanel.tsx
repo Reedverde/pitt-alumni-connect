@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
-import { adminMailStatus, adminSetOutboundEmailMode, adminTestSend } from "@/lib/admin.functions";
+import { adminMailStatus, adminTestSend } from "@/lib/admin.functions";
 import { Section, hairline, inputStyle, mono, primaryButton } from "./ui";
 
 type TestResult = { ok: boolean; messageId: string | null; provider: string; detail: string };
@@ -10,7 +10,6 @@ type TestResult = { ok: boolean; messageId: string | null; provider: string; det
 export function MailPanel() {
   const fetchStatus = useServerFn(adminMailStatus);
   const testSend = useServerFn(adminTestSend);
-  const setMode = useServerFn(adminSetOutboundEmailMode);
   const { data: status, isLoading, refetch } = useQuery({
     queryKey: ["admin-mail-status"],
     queryFn: () => fetchStatus({}),
@@ -18,7 +17,6 @@ export function MailPanel() {
 
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
-  const [modeBusy, setModeBusy] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
 
   async function send() {
@@ -43,7 +41,7 @@ export function MailPanel() {
             <span style={{ display: "block", fontSize: 12, fontWeight: 400, color: "var(--sterling)" }}>
               {status.outboundMode === "all"
                 ? "Reminders, the organizer digest and test sends can all go out."
-                : "Every reminder, the organizer digest, the headcount link and test sends are refused and recorded."}
+                : "Only sign-in links people ask for go out. Approved campaigns send on their own dates; everything else is refused and recorded."}
             </span>
           </p>
           <span style={{ fontSize: 12, color: "var(--sterling)", maxWidth: 320 }}>
