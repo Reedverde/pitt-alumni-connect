@@ -918,11 +918,11 @@ Copy correction
 - `block_current_season_playing_stint` stays intact: current-season (`now()` year) playing stints still require `source = 'roster_import'`. 2026 restorations kept that source; 2027 rows are `source = 'admin'` and fall outside the trigger.
 - Totals after the 2026-09-06 view correction (2027-stint rule only): 57 Current people, 56 of them placed on the board; the only Current people under an older year are Will Litchholt (2025 placement, 2027 coach) and Tyler Weinberger (2026 placement, 2027 coach). 2026 going: 65 people / 80 heads — 41 alumni / 56 heads, 24 current / 24 heads. No email-only Current people remain in any year. `sends`, suppressions, News and Discord untouched.
 
-## Duplicate campaign email incident and repair (2026-09-06)
+## Duplicate campaign email incident and repair (2026-09-14)
 
 **What happened.** `dispatchSequence` read the whole `sends` table with one unpaginated select. PostgREST caps that at 1,000 rows, and the table had grown to 1,023. David Vatz's `t_minus_21` row sits at position 1,018, so the dispatcher could not see it. The daily cron reconsidered every active past-due sequence every day, and the send path called Resend *before* inserting the ledger row, so the `UNIQUE(person_id, sequence_id)` constraint rejected the duplicate row afterwards and `logSend` only printed the error. Result: repeat emails with no ledger trace (audit shows 31 sends on Sep 11, then 21 on Sep 12 and 21 on Sep 14). `outbound_email_mode` was set to `transactional_only` and stays there.
 
-**Database (migration 2026-09-06).**
+**Database (migration 2026-09-14).**
 - `sends.event_year`, backfilled to the current edition for every campaign-shaped row; indexes on `(person_id, event_year)` and `(person_id, created_at)` where `sequence_id is not null`.
 - New `claimed` outcome, plus `UNIQUE (sequence_id, lower(btrim(to_email))) WHERE sequence_id IS NOT NULL AND outcome IN ('sent','claimed')` — one mailbox, one copy, enforced by the database rather than by a snapshot.
 - `claim_campaign_send(person, sequence, email, kind, event_year, cap, cooldown_days, skip_cooldown)`: one statement that refuses `already_sent`, `over_cap`, `cooldown`, `duplicate_mailbox` or `invalid`, otherwise inserts a `claimed` row and returns its id. Security definer, execute granted to `service_role` only.
