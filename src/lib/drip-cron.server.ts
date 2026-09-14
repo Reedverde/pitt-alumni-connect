@@ -52,21 +52,6 @@ export function easternToday(now: Date = new Date()): string {
   }).format(now);
 }
 
-/** The arming switch. The drip runs only while this reads exactly
- *  "drip_enabled", a value only a human sets. Anything else, including an
- *  unreadable row, means no sends at all. */
-const ARMED_MODE = "drip_enabled";
-
-async function readOutboundMode(): Promise<string | null> {
-  const { data } = await supabaseAdmin
-    .from("app_settings")
-    .select("value")
-    .eq("key", "outbound_email_mode")
-    .maybeSingle();
-  const value = (data as { value?: string } | null)?.value;
-  return typeof value === "string" ? value : null;
-}
-
 
 async function recordAttempt(o: SequenceOutcome & { runDate: string }) {
   await supabaseAdmin.from("audit_log").insert({
@@ -96,89 +81,25 @@ async function recordAttempt(o: SequenceOutcome & { runDate: string }) {
  *  sequence's kind. The stored setting is only ever read here, never written,
  *  so nothing else can observe a moment of unrestricted sending. */
 export async function runDripCronTick(): Promise<CronTickResult> {
+  // Retired permanently. There is no rolling drip, no catch-up and no
+  // reconsideration of a past-due sequence. The production cron job is off and
+  // this function fails closed even if something reaches it: it dispatches
+  // nothing, whatever outbound_email_mode says.
   const runDate = easternToday();
-  const edition = await loadCurrentEdition();
-  const eventDate = edition.starts_on;
-
-  const mode = await readOutboundMode();
-  if (mode !== ARMED_MODE) {
-    return {
-      ok: false,
-      reason: `outbound_email_mode is "${mode ?? "unset"}", not "${ARMED_MODE}"; no sends`,
-      runDate,
-      eventDate,
-      considered: 0,
-      eligible: 0,
-      outcomes: [],
-    };
+  let eventDate = runDate;
+  try {
+    eventDate = (await loadCurrentEdition()).starts_on;
+  } catch {
+    /* the answer is "no sends" either way */
   }
-
-  const { data: rows } = await supabaseAdmin
-    .from("sequences")
-    .select("id, key, offset_days, active")
-    .eq("active", true)
-    // One-time campaigns belong to their own scheduler and its approved moment.
-    .eq("one_time", false)
-    .order("offset_days", { ascending: true });
-
-  const sequences = (rows ?? []) as { id: string; key: string; offset_days: number }[];
-  const outcomes: SequenceOutcome[] = [];
-
-  for (const seq of sequences) {
-    const targetDate = addDays(eventDate, seq.offset_days);
-    if (runDate < targetDate) continue;
-    if (runDate > addDays(targetDate, DUE_WINDOW_DAYS)) continue;
-
-    const outcome: SequenceOutcome = {
-      sequenceKey: seq.key,
-      sequenceId: seq.id,
-      offsetDays: seq.offset_days,
-      targetDate,
-      sent: 0,
-      failed: 0,
-      skips: null,
-      counts: null,
-      errors: [],
-      refusalReason: null,
-      error: null,
-    };
-
-    try {
-      const result = await dispatchSequence({
-        sequenceKey: seq.key,
-        limit: RUN_LIMIT,
-        anchorsFirst: false,
-        dryRun: false,
-        // Scoped to this sequence only, for the length of this dispatch.
-        authorization: {
-          kind: `drip:${seq.key}`,
-          reason: `daily drip armed by outbound_email_mode="${ARMED_MODE}"; sequence "${seq.key}" due on ${targetDate}`,
-        },
-      });
-      outcome.sent = result.sent;
-      outcome.failed = result.failed;
-      outcome.skips = result.skips;
-      outcome.counts = result.outcomes;
-      outcome.errors = result.errors;
-      outcome.refusalReason = result.ok ? null : result.reason;
-    } catch (err) {
-      outcome.error = err instanceof Error ? err.message : String(err);
-    }
-
-    outcomes.push(outcome);
-    try {
-      await recordAttempt({ ...outcome, runDate });
-    } catch (err) {
-      console.error("[drip-cron] audit write failed", err);
-    }
-  }
-
   return {
-    ok: true,
+    ok: false,
+    reason:
+      "the daily drip is retired; only an approved dated one-time campaign or a person-initiated sign-in link may send",
     runDate,
     eventDate,
-    considered: sequences.length,
-    eligible: outcomes.length,
-    outcomes,
+    considered: 0,
+    eligible: 0,
+    outcomes: [],
   };
 }
