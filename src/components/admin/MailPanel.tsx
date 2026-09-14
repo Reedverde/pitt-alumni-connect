@@ -46,24 +46,10 @@ export function MailPanel() {
                 : "Every reminder, the organizer digest, the headcount link and test sends are refused and recorded."}
             </span>
           </p>
-          <button
-            type="button"
-            style={primaryButton}
-            disabled={modeBusy}
-            onClick={async () => {
-              setModeBusy(true);
-              try {
-                await setMode({
-                  data: { mode: status.outboundMode === "all" ? "transactional_only" : "all" },
-                });
-                void refetch();
-              } finally {
-                setModeBusy(false);
-              }
-            }}
-          >
-            {status.outboundMode === "all" ? "Pause everything but sign-in links" : "Turn all outbound email on"}
-          </button>
+          <span style={{ fontSize: 12, color: "var(--sterling)", maxWidth: 320 }}>
+            Sign-in links only, permanently. Campaigns go out on their own approved dates; there is
+            no daily send to turn on.
+          </span>
         </div>
       ) : null}
       {isLoading || !status ? (
