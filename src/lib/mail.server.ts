@@ -403,6 +403,10 @@ type LogInput = {
   error: string | null;
   /** Set only by the drip dispatcher. Ordinary transactional sends have none. */
   sequenceId?: string | null;
+  /** A campaign row claimed in the database before the provider was called.
+   *  When present the claim is completed rather than a second row inserted:
+   *  inserting here is what let a duplicate send lose its ledger entry. */
+  claimSendId?: string | null;
 };
 
 /** status is the fine grained provider story; outcome is the four way split
@@ -415,9 +419,27 @@ function outcomeFor(status: string): "sent" | "blocked" | "failed" | "suppressed
 }
 
 /** Every outbound message lands here, delivered or not, so a failure shows up
- *  on a screen instead of in a log nobody reads. */
-export async function logSend(input: LogInput) {
+ *  on a screen instead of in a log nobody reads. Returns whether the ledger
+ *  actually recorded it; a caller that delivered mail must never report
+ *  success on the strength of an unwritten row. */
+export async function logSend(input: LogInput): Promise<{ ok: boolean; error: string | null }> {
   const outcome = outcomeFor(input.status);
+
+  if (input.claimSendId) {
+    const { error } = await supabaseAdmin.rpc("finalize_campaign_send", {
+      _send_id: input.claimSendId,
+      _status: input.status,
+      _provider: input.provider,
+      _message_id: input.providerMessageId,
+      _error: input.error,
+    } as never);
+    if (error) {
+      console.error(`[mail] claim finalize failed for ${input.toEmail}: ${error.message}`);
+      return { ok: false, error: error.message };
+    }
+    return { ok: true, error: null };
+  }
+
   // A dropped log row makes a real send invisible, so a failure here is
   // reported loudly rather than swallowed by the ignored error object.
   const { error } = await supabaseAdmin.from("sends").insert({
@@ -435,8 +457,11 @@ export async function logSend(input: LogInput) {
   } as never);
   if (error) {
     console.error(`[mail] send log write failed for ${input.toEmail}: ${error.message}`);
+    return { ok: false, error: error.message };
   }
+  return { ok: true, error: null };
 }
+
 
 
 /** Asks the auth admin API for a one-time sign-in link so we can carry it in
@@ -1537,7 +1562,10 @@ export async function sendMagicLinkEmail(opts: {
 }
 
 /** A plain transactional message with no sign-in link. Shares the suppression
- *  check and the send log with the magic link path. Never throws. */
+ *  check and the send log with the magic link path. Never throws.
+ *
+ *  When claimSendId is set the recipient was already reserved in the database,
+ *  so every outcome completes that one row instead of inserting another. */
 export async function sendPlainEmail(opts: {
   to: string;
   personId: string | null;
@@ -1547,56 +1575,62 @@ export async function sendPlainEmail(opts: {
   html: string;
   /** Only the drip dispatcher sets this; it lands on the sends row. */
   sequenceId?: string | null;
+  /** The campaign claim this delivery belongs to. */
+  claimSendId?: string | null;
   /** Scoped permission for one approved campaign kind while sending is paused.
    *  Never widens anything else and never writes a global setting. */
   authorization?: ScopedSendAuthorization | null;
-}): Promise<MagicLinkResult> {
+}): Promise<MagicLinkResult & { logged: boolean }> {
   const to = opts.to.trim().toLowerCase();
   const { apiKey, fromAddress } = mailConfig();
+  const claimSendId = opts.claimSendId ?? null;
 
   try {
     if (await isSuppressed(to)) {
-      await logSend({
+      const log = await logSend({
         personId: opts.personId,
         kind: opts.kind,
         sequenceId: opts.sequenceId ?? null,
+        claimSendId,
         toEmail: to,
         provider: "none",
         providerMessageId: null,
         status: "suppressed",
         error: "address is suppressed",
       });
-      return { sent: false, provider: "none", messageId: null, reason: "suppressed" };
+      return { sent: false, provider: "none", messageId: null, reason: "suppressed", logged: log.ok };
     }
 
     if (!apiKey || !fromAddress) {
-      await logSend({
+      const log = await logSend({
         personId: opts.personId,
         kind: opts.kind,
         sequenceId: opts.sequenceId ?? null,
+        claimSendId,
         toEmail: to,
         provider: "none",
         providerMessageId: null,
         status: "failed",
         error: "mail sender is not configured",
       });
-      return { sent: false, provider: "none", messageId: null, reason: "not configured" };
+      return { sent: false, provider: "none", messageId: null, reason: "not configured", logged: log.ok };
     }
 
     const domainCheck = await checkSendingDomain();
     if (!domainCheck.ok) {
       console.error(`[mail] refusing to send from an unverified domain: ${domainCheck.detail}`);
-      await logSend({
+      const log = await logSend({
         personId: opts.personId,
         kind: opts.kind,
         sequenceId: opts.sequenceId ?? null,
+        claimSendId,
         toEmail: to,
         provider: "none",
         providerMessageId: null,
         status: "failed",
         error: domainCheck.detail,
       });
-      return { sent: false, provider: "none", messageId: null, reason: domainCheck.detail };
+      return { sent: false, provider: "none", messageId: null, reason: domainCheck.detail, logged: log.ok };
     }
 
     const delivery = await resendDeliver({
@@ -1611,43 +1645,57 @@ export async function sendPlainEmail(opts: {
 
     if (!delivery.ok) {
       const message = delivery.error ?? "the send did not go out";
-      if (!delivery.blocked) {
-        await logSend({
+      let logged = true;
+      // A blocked send writes its own row, except on the claimed path where the
+      // reserved row is the only row there will ever be.
+      if (!delivery.blocked || claimSendId) {
+        const log = await logSend({
           personId: opts.personId,
           kind: opts.kind,
-        sequenceId: opts.sequenceId ?? null,
+          sequenceId: opts.sequenceId ?? null,
+          claimSendId,
           toEmail: to,
-          provider: "resend",
+          provider: delivery.blocked ? "none" : "resend",
           providerMessageId: null,
-          status: "failed",
+          status: delivery.blocked ? "blocked" : "failed",
           error: message,
         });
+        logged = log.ok;
       }
       return {
         sent: false,
         provider: delivery.blocked ? "none" : "resend",
         messageId: null,
         reason: message,
+        logged,
       };
     }
 
-    await logSend({
+    const log = await logSend({
       personId: opts.personId,
       kind: opts.kind,
       sequenceId: opts.sequenceId ?? null,
+      claimSendId,
       toEmail: to,
       provider: "resend",
       providerMessageId: delivery.messageId,
       status: "sent",
       error: null,
     });
-    return { sent: true, provider: "resend", messageId: delivery.messageId, reason: null };
+    return {
+      sent: true,
+      provider: "resend",
+      messageId: delivery.messageId,
+      reason: null,
+      logged: log.ok,
+    };
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown error";
     console.error(`[mail] plain send threw: ${message}`);
-    return { sent: false, provider: "resend", messageId: null, reason: message };
+    return { sent: false, provider: "resend", messageId: null, reason: message, logged: false };
   }
 }
+
 
 /** The pre-existing path: the built-in mailer. Kept only as a fallback. */
 async function fallbackOtp(to: string) {

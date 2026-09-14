@@ -917,3 +917,31 @@ Copy correction
 - Every removal, restoration and addition has an `audit_log` row with the person's name and the source evidence (`roster_stint_added_2027`, `roster_stint_restored_2026_mens_b`, `roster_stint_removed_2026_mens_b_coach`, and the earlier 2026 rows).
 - `block_current_season_playing_stint` stays intact: current-season (`now()` year) playing stints still require `source = 'roster_import'`. 2026 restorations kept that source; 2027 rows are `source = 'admin'` and fall outside the trigger.
 - Totals after the 2026-09-06 view correction (2027-stint rule only): 57 Current people, 56 of them placed on the board; the only Current people under an older year are Will Litchholt (2025 placement, 2027 coach) and Tyler Weinberger (2026 placement, 2027 coach). 2026 going: 65 people / 80 heads — 41 alumni / 56 heads, 24 current / 24 heads. No email-only Current people remain in any year. `sends`, suppressions, News and Discord untouched.
+
+## Duplicate campaign email incident and repair (2026-09-06)
+
+**What happened.** `dispatchSequence` read the whole `sends` table with one unpaginated select. PostgREST caps that at 1,000 rows, and the table had grown to 1,023. David Vatz's `t_minus_21` row sits at position 1,018, so the dispatcher could not see it. The daily cron reconsidered every active past-due sequence every day, and the send path called Resend *before* inserting the ledger row, so the `UNIQUE(person_id, sequence_id)` constraint rejected the duplicate row afterwards and `logSend` only printed the error. Result: repeat emails with no ledger trace (audit shows 31 sends on Sep 11, then 21 on Sep 12 and 21 on Sep 14). `outbound_email_mode` was set to `transactional_only` and stays there.
+
+**Database (migration 2026-09-06).**
+- `sends.event_year`, backfilled to the current edition for every campaign-shaped row; indexes on `(person_id, event_year)` and `(person_id, created_at)` where `sequence_id is not null`.
+- New `claimed` outcome, plus `UNIQUE (sequence_id, lower(btrim(to_email))) WHERE sequence_id IS NOT NULL AND outcome IN ('sent','claimed')` — one mailbox, one copy, enforced by the database rather than by a snapshot.
+- `claim_campaign_send(person, sequence, email, kind, event_year, cap, cooldown_days, skip_cooldown)`: one statement that refuses `already_sent`, `over_cap`, `cooldown`, `duplicate_mailbox` or `invalid`, otherwise inserts a `claimed` row and returns its id. Security definer, execute granted to `service_role` only.
+- `finalize_campaign_send(send_id, status, provider, message_id, error)`: completes that one row. Never inserts.
+- `campaign_send_counts` view (`security_invoker`, service role only): per person per edition campaign count and last campaign time, so no run reads the whole table to answer "how many have they had".
+
+**Code.**
+- `src/lib/campaign-guards.ts` (new): `fetchAllRows` (paginated, throws on a failed page instead of returning a short list), `previewClaim`/`recordPreviewClaim` mirroring the SQL rules for previews, `runClaimedQueue` (claim, then send — a claim that throws or refuses never reaches the provider), `CAMPAIGN_CAP_PER_EDITION = 7`, `CAMPAIGN_COOLDOWN_DAYS = 10`, transactional kinds excluded from the cap.
+- `src/lib/drip.server.ts`: whole-table read replaced by two targeted paginated reads (this campaign's claims; this edition's per-person counts). Real runs claim through the RPC before every send. `DispatchSkips` gains `over_cap`; `DispatchResult` gains `outcomes` (claimed / sent / failed_before_provider / provider_failed / log_failed / already_sent / cooldown / over_cap / duplicate_mailbox / no_body / over_limit) and `errors`.
+- `src/lib/mail.server.ts`: `logSend` returns `{ ok }` and, when a claim id is present, finalizes that row instead of inserting. `sendPlainEmail` takes `claimSendId` and returns `logged`; a delivery whose ledger write fails is never reported as sent.
+- `src/lib/dispatcher.server.ts` (the older admin runner): same pagination and the same claim-before-send.
+- `src/lib/drip-cron.server.ts`: a due sequence now runs only within two days of its target date instead of forever, and records the full outcome counts in `audit_log`.
+- Cap: seven automated campaign emails per person per edition. Magic links and RSVP confirmations are transactional and never count.
+
+**Tests.** `src/lib/__tests__/campaign-guards.test.ts` — the row past 1,000 the incident hid, a failed page read throwing, cooldown, cap, mailbox and same-run dedupe, overlapping ticks sending one copy each, ledger failure before the provider (no send), provider refusal without retry, delivered-but-unlogged never counted as sent, run limit.
+
+**Safe re-enable checklist.**
+1. `select count(*) from sends where outcome = 'claimed' and status = 'claimed';` must be 0 (no stranded claims).
+2. Dry-run the intended sequence and read `outcomes`/`skips`; confirm `over_cap` and `cooldown` look right.
+3. Confirm only the intended sequence has `active = true` and a due target date within two days.
+4. Set `outbound_email_mode = 'drip_enabled'` for the run window only, then return it to `transactional_only`.
+5. After the run, check `sends` for `claimed` leftovers and the `drip_cron_tick` audit row's counts.
