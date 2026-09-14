@@ -201,13 +201,10 @@ export type SubmitInput = {
 };
 
 
-/** The RSVP confirmation. It carries a sign-in link, but it is NOT the sign-in
- *  magic link: it is triggered by answering, not by asking to sign in, so it is
- *  refused at the choke point while outbound email is paused.
- *
- *  Guarded to one confirmation per person, per edition, per status change. The
- *  guard row is claimed before the send so two concurrent submissions cannot
- *  both get through, and released again if the send never left the building. */
+/** Retired. Answering an RSVP no longer triggers any email: the only outbound
+ *  messages are an approved dated campaign and a sign-in link the person asked
+ *  for themselves. The refusal is recorded so the ledger still shows the
+ *  decision, and no provider is ever reached. */
 async function sendRsvpConfirmation(opts: {
   to: string;
   personId: string;
@@ -216,34 +213,19 @@ async function sendRsvpConfirmation(opts: {
   origin: string | null | undefined;
   eventYear: number;
 }) {
-  const guardStatus = opts.status ?? "claimed";
-  const { error: claimError } = await supabaseAdmin.from("confirmation_sends").insert({
-    person_id: opts.personId,
-    event_year: opts.eventYear,
-    status: guardStatus,
-  });
-  // Unique violation: this person already had a confirmation for this answer in
-  // this edition. Nothing changed, so nothing is sent.
-  if (claimError) return;
-
-  const { sendMagicLinkEmail } = await import("./mail.server");
-  const result = await sendMagicLinkEmail({
-    to: opts.to,
+  void opts.firstName;
+  void opts.origin;
+  void opts.eventYear;
+  const { logSend } = await import("./mail.server");
+  await logSend({
     personId: opts.personId,
-    firstName: opts.firstName,
-    status: guardStatus,
-    origin: opts.origin,
     kind: "rsvp_confirmation",
+    toEmail: opts.to,
+    provider: "none",
+    providerMessageId: null,
+    status: "blocked",
+    error: "not sent: automatic RSVP confirmations are retired",
   });
-
-  if (!result.sent) {
-    await supabaseAdmin
-      .from("confirmation_sends")
-      .delete()
-      .eq("person_id", opts.personId)
-      .eq("event_year", opts.eventYear)
-      .eq("status", guardStatus);
-  }
 }
 
 function normalizedName(first: string, last: string | null) {
