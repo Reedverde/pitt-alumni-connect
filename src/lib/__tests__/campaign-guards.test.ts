@@ -202,3 +202,78 @@ describe("claim before send", () => {
     });
   });
 });
+
+/**
+ * A model of `claim_campaign_send` as the database now runs it: every claim
+ * for one person within one edition takes the same advisory transaction lock
+ * before it counts rows, so two different sequences cannot both read six and
+ * both insert. `lock` off reproduces the reviewed hole.
+ */
+function makeDbClaim(opts: { existing: number; cap?: number; lock: boolean }) {
+  const cap = opts.cap ?? CAMPAIGN_CAP_PER_EDITION;
+  const rows: { personId: string; sequenceId: string }[] = Array.from(
+    { length: opts.existing },
+    (_, i) => ({ personId: "p1", sequenceId: `old-${i}` }),
+  );
+  const held = new Set<string>();
+  const waiters: (() => void)[] = [];
+
+  async function withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    if (!opts.lock) return fn();
+    while (held.has(key)) await new Promise<void>((r) => waiters.push(r));
+    held.add(key);
+    try {
+      return await fn();
+    } finally {
+      held.delete(key);
+      waiters.shift()?.();
+    }
+  }
+
+  return {
+    rows,
+    claim: (personId: string, sequenceId: string, eventYear: number) =>
+      withLock(`${personId}:${eventYear}`, async () => {
+        // the yield a real transaction gets between statements
+        await new Promise<void>((r) => setTimeout(r, 0));
+        if (rows.some((r) => r.personId === personId && r.sequenceId === sequenceId)) {
+          return "already_sent" as const;
+        }
+        const used = rows.filter((r) => r.personId === personId).length;
+        await new Promise<void>((r) => setTimeout(r, 0));
+        if (used >= cap) return "over_cap" as const;
+        rows.push({ personId, sequenceId });
+        return "claimed" as const;
+      }),
+  };
+}
+
+describe("the per person and edition claim lock", () => {
+  it("lets at most one of two racing sequences take the seventh slot", async () => {
+    const db = makeDbClaim({ existing: CAMPAIGN_CAP_PER_EDITION - 1, lock: true });
+    const results = await Promise.all([
+      db.claim("p1", "seq-a", 2026),
+      db.claim("p1", "seq-b", 2026),
+    ]);
+    expect(results.filter((r) => r === "claimed")).toHaveLength(1);
+    expect(results.filter((r) => r === "over_cap")).toHaveLength(1);
+    expect(db.rows.filter((r) => r.personId === "p1")).toHaveLength(CAMPAIGN_CAP_PER_EDITION);
+  });
+
+  it("holds the cap when several sequences pile on at once", async () => {
+    const db = makeDbClaim({ existing: CAMPAIGN_CAP_PER_EDITION - 1, lock: true });
+    const outcomes = await Promise.all(
+      ["a", "b", "c", "d"].map((s) => db.claim("p1", `seq-${s}`, 2026)),
+    );
+    expect(outcomes.filter((o) => o === "claimed")).toHaveLength(1);
+    expect(db.rows.filter((r) => r.personId === "p1").length).toBeLessThanOrEqual(
+      CAMPAIGN_CAP_PER_EDITION,
+    );
+  });
+
+  it("without the lock the same race overshoots, which is the bug being fixed", async () => {
+    const db = makeDbClaim({ existing: CAMPAIGN_CAP_PER_EDITION - 1, lock: false });
+    await Promise.all([db.claim("p1", "seq-a", 2026), db.claim("p1", "seq-b", 2026)]);
+    expect(db.rows.filter((r) => r.personId === "p1").length).toBe(CAMPAIGN_CAP_PER_EDITION + 1);
+  });
+});
