@@ -1,5 +1,10 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+import {
+  CAMPAIGN_CAP_PER_EDITION,
+  fetchAllRows,
+  type ClaimOutcome,
+} from "./campaign-guards";
 import { loadCurrentEdition } from "./editions.server";
 import { pickDeliverable } from "./drip.server";
 import { editionDateRange, todayInNewYork } from "./edition-format";
@@ -152,7 +157,7 @@ export async function runDrip(opts: { dryRun: boolean }): Promise<DripRunReport>
   const today = todayInNewYork();
   const mode = await outboundEmailMode();
 
-  const [seqRes, peopleRes, identRes, rsvpRes, supRes, sendRes] = await Promise.all([
+  const [seqRes, peopleRes, identRes, rsvpRes, supRes, sendRows] = await Promise.all([
     supabaseAdmin
       .from("sequences")
       .select("id, key, offset_days, audience_states, anchors_only, active")
@@ -167,7 +172,22 @@ export async function runDrip(opts: { dryRun: boolean }): Promise<DripRunReport>
       .select("person_id, status")
       .eq("event_year", edition.event_year),
     supabaseAdmin.from("suppressions").select("email"),
-    supabaseAdmin.from("sends").select("person_id, sequence_id, outcome, created_at"),
+    // Paginated on purpose: a short read here is what let a recorded send
+    // disappear and the same person be mailed twice.
+    fetchAllRows<{
+      person_id: string | null;
+      sequence_id: string | null;
+      outcome: string;
+      created_at: string | null;
+    }>((from, to) =>
+      supabaseAdmin
+        .from("sends")
+        .select("person_id, sequence_id, outcome, created_at")
+        .not("sequence_id", "is", null)
+        .in("outcome", ["sent", "claimed"])
+        .order("created_at", { ascending: true })
+        .range(from, to),
+    ),
   ]);
 
   const sequences = ((seqRes.data ?? []) as SequenceRow[]).filter((s) => s.active);
@@ -197,7 +217,7 @@ export async function runDrip(opts: { dryRun: boolean }): Promise<DripRunReport>
   const sentBySequence = new Map<string, Set<string>>();
   const recentlySent = new Set<string>();
   const recentCutoff = Date.now() - RECENT_SEND_DAYS * 86400000;
-  for (const row of sendRes.data ?? []) {
+  for (const row of sendRows) {
     const pid = row.person_id as string | null;
     if (!pid) continue;
     const seqId = row.sequence_id as string | null;
@@ -206,7 +226,7 @@ export async function runDrip(opts: { dryRun: boolean }): Promise<DripRunReport>
       set.add(pid);
       sentBySequence.set(seqId, set);
     }
-    if (row.outcome === "sent") {
+    if (row.outcome === "sent" || row.outcome === "claimed") {
       const at = Date.parse(String(row.created_at ?? ""));
       if (Number.isFinite(at) && at >= recentCutoff) recentlySent.add(pid);
     }
@@ -326,6 +346,36 @@ export async function runDrip(opts: { dryRun: boolean }): Promise<DripRunReport>
 
       if (dryRun) continue;
 
+      // Reserve the recipient in the database before the provider is called.
+      // Anything other than a fresh claim means this person is not mailed.
+      let claimId: string | null = null;
+      try {
+        const { data: claimData, error: claimError } = await supabaseAdmin.rpc(
+          "claim_campaign_send",
+          {
+            _person_id: person.id,
+            _sequence_id: seq.id,
+            _to_email: email,
+            _kind: `drip:${seq.key}`,
+            _event_year: edition.event_year,
+            _cap: CAMPAIGN_CAP_PER_EDITION,
+            _cooldown_days: RECENT_SEND_DAYS,
+            _skip_cooldown: false,
+          } as never,
+        );
+        if (claimError) throw new Error(claimError.message);
+        const claimRow = (Array.isArray(claimData) ? claimData[0] : claimData) as
+          | { outcome: ClaimOutcome; send_id: string | null }
+          | undefined;
+        if (claimRow?.outcome === "claimed" && claimRow.send_id) claimId = claimRow.send_id;
+      } catch (err) {
+        console.error("[drip] claim failed", err);
+      }
+      if (!claimId) {
+        excluded.already_sent++;
+        continue;
+      }
+
       const result = await sendPlainEmail({
         to: email,
         personId: person.id,
@@ -334,9 +384,10 @@ export async function runDrip(opts: { dryRun: boolean }): Promise<DripRunReport>
         text: built.text,
         html: built.html,
         sequenceId: seq.id,
+        claimSendId: claimId,
       });
 
-      if (result.sent) {
+      if (result.sent && result.logged) {
         sent++;
         totalSent++;
         consecutiveFailures = 0;
