@@ -26,11 +26,12 @@ const RESEND_ENDPOINT = "https://api.resend.com/emails";
 export const SENDING_DOMAIN = "alumni.pittultimate.org";
 const DEFAULT_FROM_ADDRESS = `weekend@${SENDING_DOMAIN}`;
 
-/** The kinds allowed out while outbound email is paused. The allow list is by
- *  message kind, not by calling function: a test send or a party-size link is
- *  not a sign-in link even though it shares the code path. RSVP confirmations
- *  are allowed, but only forward: see rsvpConfirmationAllowed(). */
-const TRANSACTIONAL_KINDS = new Set(["magic_link", "rsvp_confirmation"]);
+/** The only kind allowed out while outbound email is paused, which is now
+ *  permanent: an access link the person asked for themselves. The allow list is
+ *  by message kind, not by calling function: a test send or a party-size link
+ *  is not a sign-in link even though it shares the code path. Automatic RSVP
+ *  confirmations are retired and are refused below. */
+const TRANSACTIONAL_KINDS = new Set(["magic_link"]);
 
 /** Forward-only cutoff for RSVP confirmations. Written once at migration time
  *  and never moved. An RSVP recorded before this instant is never confirmed by
@@ -1334,12 +1335,11 @@ export async function sendMagicLinkEmail(opts: {
       return { sent: false, provider: "none", messageId: null, reason };
     }
 
-    // Forward only. A confirmation exists to acknowledge an answer that was
-    // just written, so an answer older than the cutoff is never confirmed.
+    // Retired. An RSVP never triggers email, forward or otherwise.
     if (kind === "rsvp_confirmation") {
-      const gate = await rsvpConfirmationAllowed(opts.personId);
-      if (!gate.ok) {
-        const reason = `rsvp confirmation refused: ${gate.reason}`;
+      {
+        const reason =
+          "rsvp confirmation refused: automatic RSVP confirmations are retired";
         await logSend({
           personId: opts.personId,
           kind,

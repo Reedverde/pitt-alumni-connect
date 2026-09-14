@@ -38,11 +38,8 @@ export function easternToday(now: Date = new Date()): string {
 }
 
 
-/** One daily tick. Nothing happens unless outbound_email_mode reads
- *  "drip_enabled". When it does, every active sequence whose target date has
- *  arrived runs one at a time, each carrying a permission scoped to that one
- *  sequence's kind. The stored setting is only ever read here, never written,
- *  so nothing else can observe a moment of unrestricted sending. */
+/** Retired. Kept as a named no-op so anything still wired to it fails closed
+ *  and says why, rather than finding a dispatcher. */
 export async function runDripCronTick(): Promise<CronTickResult> {
   // Retired permanently. There is no rolling drip, no catch-up and no
   // reconsideration of a past-due sequence. The production cron job is off and
