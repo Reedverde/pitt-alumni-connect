@@ -441,3 +441,13 @@ export const adminCampaignKeys = createServerFn({ method: "POST" })
     const targeted = await import("./targeted-resend.server");
     return targeted.listCampaignKeys();
   });
+
+export const adminExportDirectoryCsv = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { emailOnly: boolean }) => ({ emailOnly: Boolean(input?.emailOnly) }))
+  .handler(async ({ data, context }): Promise<{ filename: string; csv: string; rows: number } | null> => {
+    const mod = await import("./admin.server");
+    const actor = await mod.adminActor(context.supabase);
+    if (!actor) return null;
+    return mod.exportDirectoryCsv(actor, data);
+  });

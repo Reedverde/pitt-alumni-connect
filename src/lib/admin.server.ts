@@ -3195,3 +3195,44 @@ export async function cancelScheduledCampaignForAdmin(actor: string | null, key:
   await audit(actor, "scheduled_campaign_cancel", "sequences", null, null, { key, ok });
   return { ok };
 }
+
+/** The directory export: names paired with each person's primary email, one
+ *  row a person, sorted by name. Admin only and audited like the planning one.
+ *  Memorial and merged records are left out. */
+export async function exportDirectoryCsv(actor: string | null, opts: { emailOnly: boolean }) {
+  const { data: people } = await supabaseAdmin
+    .from("people")
+    .select("id, first_name, last_name, played_as, grad_year, seed_division, deceased, archived, merged_into_person_id")
+    .eq("deceased", false)
+    .is("merged_into_person_id", null)
+    .limit(5000);
+  const { data: identities } = await supabaseAdmin
+    .from("identities")
+    .select("person_id, email, is_primary")
+    .order("is_primary", { ascending: false });
+  const primary = new Map<string, string>();
+  for (const row of identities ?? [])
+    if (!primary.has(row.person_id as string)) primary.set(row.person_id as string, row.email as string);
+  const eventYear = (await loadCurrentEdition()).event_year;
+  const { data: rsvps } = await supabaseAdmin.from("rsvps").select("person_id, status").eq("event_year", eventYear);
+  const rsvp = new Map((rsvps ?? []).map((r) => [r.person_id as string, r.status as string]));
+
+  const rows = (people ?? [])
+    .filter((p) => !opts.emailOnly || primary.has(p.id as string))
+    .sort((a, b) =>
+      `${a.last_name ?? ""} ${a.first_name}`.localeCompare(`${b.last_name ?? ""} ${b.first_name}`),
+    );
+  const esc = (v: unknown) => {
+    const s = v === null || v === undefined ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const header = ["first_name", "last_name", "played_as", "grad_year", "division", "email", `rsvp_${eventYear}`];
+  const body = rows.map((p) =>
+    [p.first_name, p.last_name, p.played_as, p.grad_year, p.seed_division, primary.get(p.id as string) ?? "", rsvp.get(p.id as string) ?? "no_response"]
+      .map(esc)
+      .join(","),
+  );
+  const date = new Date().toISOString().slice(0, 10);
+  await audit(actor, "admin_directory_export", "people", null, null, { rows: rows.length, date, email_only: opts.emailOnly });
+  return { filename: `pitt-alumni-directory-${date}.csv`, csv: [header.join(","), ...body].join("\n"), rows: rows.length };
+}

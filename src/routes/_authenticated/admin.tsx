@@ -60,6 +60,7 @@ const TABS = [
   { key: "roster", label: "Roster import" },
   { key: "editions", label: "Editions" },
   { key: "schedule", label: "Schedule" },
+  { key: "export", label: "Export" },
   { key: "photos", label: "Photos" },
   { key: "mail", label: "Mail" },
   { key: "news", label: "News" },
@@ -138,7 +139,7 @@ function AdminInner() {
           Organizer tools
         </h1>
         <p className="mt-2" style={{ fontSize: 13, color: "var(--sterling)" }}>
-          Seven people share this page. Every write is logged with your name.{" "}
+          Organizers share this page. Every write is logged with your name.{" "}
           <Link to="/" style={{ color: "var(--pitt-royal)" }}>
             Back to the board
           </Link>
@@ -223,9 +224,9 @@ function AdminInner() {
           </Section>
           <DigestPanel cohorts={data.digest} />
           <DripPanel drip={data.drip} />
-          <ExportPanel />
         </>
       ) : null}
+      {active === "export" ? <ExportPanel /> : null}
       {active === "photos" ? <PhotosPanel /> : null}
       {active === "mail" ? (
         <>

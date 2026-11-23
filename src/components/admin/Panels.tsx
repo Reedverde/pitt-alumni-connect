@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 
-import { adminExportCsv, adminSetDivisionVisible, adminUpdateTeamName } from "@/lib/admin.functions";
+import { adminExportCsv, adminExportDirectoryCsv, adminSetDivisionVisible, adminUpdateTeamName } from "@/lib/admin.functions";
 import {
   FOUNDATION_DONATE_URL,
   PAYPAL_DONATE_URL,
@@ -440,40 +440,68 @@ export function DripPanel({ drip }: { drip: DripData }) {
   );
 }
 
+function download(result: { csv: string; filename: string }) {
+  const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = result.filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
+}
+
 export function ExportPanel() {
   const exportCsv = useServerFn(adminExportCsv);
-  const [busy, setBusy] = useState(false);
+  const exportDirectory = useServerFn(adminExportDirectoryCsv);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [emailOnly, setEmailOnly] = useState(true);
 
-  const run = async () => {
-    setBusy(true);
+  const run = async (key: string, fn: () => Promise<{ csv: string; filename: string; rows: number } | null>) => {
+    setBusy(key);
     try {
-      const result = await exportCsv({});
+      const result = await fn();
       if (!result) return;
-      const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = result.filename;
-      link.click();
-      URL.revokeObjectURL(url);
+      download(result);
       toast.success(`Exported ${result.rows} records. Logged.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Export failed.");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
   return (
-    <Section eyebrow="Export" title="CSV">
-      <p className="mb-4" style={{ fontSize: 13, color: "var(--sterling)" }}>
-        Board year, division, team label, state, anchor, needs review, and the primary email where
-        one exists. This is the only place an email leaves the database, and every export is logged
-        with your name.
-      </p>
-      <button type="button" style={primaryButton} disabled={busy} onClick={run}>
-        Download CSV
-      </button>
-    </Section>
+    <>
+      <Section eyebrow="Export" title="Names and emails">
+        <p className="mb-4" style={{ fontSize: 13, color: "var(--sterling)" }}>
+          A spreadsheet of every alum by name: grad year, division, primary email and this year&apos;s
+          RSVP. Opens in Excel, Numbers or Google Sheets. Memorial records are never included, and every
+          download is logged with your name.
+        </p>
+        <label className="mb-4 flex items-center gap-2" style={{ fontSize: 13, color: "var(--steel-ink)" }}>
+          <input type="checkbox" checked={emailOnly} onChange={(e) => setEmailOnly(e.target.checked)} />
+          Only people with an email address
+        </label>
+        <button
+          type="button"
+          style={primaryButton}
+          disabled={busy !== null}
+          onClick={() => run("dir", () => exportDirectory({ data: { emailOnly } }))}
+        >
+          {busy === "dir" ? "Preparing…" : "Download names + emails"}
+        </button>
+      </Section>
+      <Section eyebrow="Export" title="Full planning spreadsheet">
+        <p className="mb-4" style={{ fontSize: 13, color: "var(--sterling)" }}>
+          Board year, division, team label, state, primary email, this year&apos;s answer and heads, plus
+          a column for every event that asks. Logged with your name.
+        </p>
+        <button type="button" style={secondaryButton} disabled={busy !== null} onClick={() => run("plan", () => exportCsv({}))}>
+          {busy === "plan" ? "Preparing…" : "Download planning CSV"}
+        </button>
+      </Section>
+    </>
   );
 }
