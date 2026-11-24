@@ -145,11 +145,16 @@ function KaimanaPage() {
 
   return (
     <PageShell>
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Team X · Keep it secret</p>
-      <h1 className="mt-3 text-4xl font-black uppercase leading-none tracking-tight text-foreground md:text-6xl">Kaimana 2027</h1>
-      <p className="mt-4 max-w-2xl text-lg text-foreground">
-        Thirty years of Pitt Ultimate and Brody's 50th. Oahu, Hawaii · Presidents' Day weekend, Saturday Feb 13 – Monday Feb 15, 2027.
-      </p>
+      <header className="relative overflow-hidden" style={{ clipPath: "polygon(0 0, calc(100% - 40px) 0, 100% 40px, 100% 100%, 40px 100%, 0 calc(100% - 40px))" }}>
+        <img src={diamondHead} alt="Diamond Head rising behind the grass fields of Kapiolani Park in Honolulu" width={1600} height={608} className="h-[300px] w-full object-cover md:h-[520px]" />
+        <div className="relative -mt-16 mx-4 max-w-2xl bg-background p-6 md:absolute md:mx-0 md:mt-0 md:inset-x-auto md:bottom-10 md:left-10 md:p-8" style={{ clipPath: "polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))" }}>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Team X · Keep it secret</p>
+          <h1 className="mt-3 text-4xl font-black uppercase leading-none tracking-tight text-foreground md:text-6xl">Kaimana 2027</h1>
+          <p className="mt-4 text-lg text-foreground">
+            Thirty years of Pitt Ultimate and Brody's 50th. Oahu, Hawaii · Presidents' Day weekend, Saturday Feb 13 – Monday Feb 15, 2027.
+          </p>
+        </div>
+      </header>
       <figure className="mt-8 max-w-xs">
         <img src={brodyPhoto.url} alt="Brody Brotman in his early Pitt days, wearing a bandana and smiling over his shoulder" className="w-full object-cover" style={{ clipPath: "polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px))" }} />
         <figcaption className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">The man of the hour · Brody, early days</figcaption>
@@ -162,7 +167,6 @@ function KaimanaPage() {
 
       <section className="mt-12 max-w-3xl">
         <h2 className="text-xl font-black uppercase tracking-tight text-foreground">The tournament</h2>
-        <img src={diamondHead} alt="Diamond Head rising behind the grass fields of Kapiolani Park in Honolulu" width={1600} height={608} loading="lazy" className="mt-4 aspect-[8/3] w-full object-cover" style={{ clipPath: "polygon(0 0, calc(100% - 32px) 0, 100% 32px, 100% 100%, 32px 100%, 0 calc(100% - 32px))" }} />
         <div className="mt-4 space-y-3 text-muted-foreground">
           <p>Kaimana Klassik is Hawaii's biggest ultimate tournament, run every Presidents' Day weekend by Hawaii Ultimate. Games are at Kapiʻolani Park in Honolulu, under Diamond Head (Lēʻahi), next to Waikīkī and Kaimana Beach.</p>
           <p>Play starts Saturday morning and finals are Monday afternoon. The tournament hosts parties in town Friday, Saturday and Sunday nights, with breakfast each morning and dinner Saturday and Sunday. Players must be 21+ for evening events, and there's no alcohol at the fields.</p>
