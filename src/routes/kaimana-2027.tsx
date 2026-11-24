@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { PageShell } from "@/components/layout/PageShell";
 import { supabase } from "@/integrations/supabase/client";
+import brodyPhoto from "@/assets/brody-early-days.png.asset.json";
 
 export const Route = createFileRoute("/kaimana-2027")({
   head: () => ({
@@ -147,6 +148,10 @@ function KaimanaPage() {
       <p className="mt-4 max-w-2xl text-lg text-foreground">
         Thirty years of Pitt Ultimate and Brody's 50th. Oahu, Hawaii · Presidents' Day weekend, Saturday Feb 13 – Monday Feb 15, 2027.
       </p>
+      <figure className="mt-8 max-w-xs">
+        <img src={brodyPhoto.url} alt="Brody Brotman in his early Pitt days, wearing a bandana and smiling over his shoulder" className="w-full object-cover" style={{ clipPath: "polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px))" }} />
+        <figcaption className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">The man of the hour · Brody, early days</figcaption>
+      </figure>
       <div className="mt-6 max-w-2xl space-y-3 text-muted-foreground">
         <p>We got a bid. Play every point under Diamond Head or hold a megaphone on the sideline — three decades of Pitt alumni, together.</p>
         <p><strong className="text-foreground">This is a surprise for Brody.</strong> He's signed up with the UCLA alumni team he used to coach. Even the Kaimana TD is helping. Don't mention it anywhere he might see.</p>
