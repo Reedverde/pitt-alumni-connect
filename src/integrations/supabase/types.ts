@@ -879,6 +879,7 @@ export type Database = {
           display_name: string
           id: string
           note: string | null
+          person_id: string | null
           status: string
           updated_at: string
         }
@@ -888,6 +889,7 @@ export type Database = {
           display_name: string
           id?: string
           note?: string | null
+          person_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -897,10 +899,47 @@ export type Database = {
           display_name?: string
           id?: string
           note?: string | null
+          person_id?: string | null
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "kaimana_roster_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kaimana_roster_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "board_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kaimana_roster_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kaimana_roster_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_board_placement"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "kaimana_roster_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person_reachability"
+            referencedColumns: ["person_id"]
+          },
+        ]
       }
       magic_link_issues: {
         Row: {
@@ -2687,6 +2726,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       kaimana_blocked: { Args: never; Returns: boolean }
       kaimana_can_access: { Args: never; Returns: boolean }
+      kaimana_is_brody: { Args: never; Returns: boolean }
       kaimana_is_coordinator: { Args: never; Returns: boolean }
       promote_verified_primary: {
         Args: { _identity_id: string }

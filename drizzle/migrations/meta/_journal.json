@@ -8,6 +8,13 @@
       "when": 1795551249846,
       "tag": "0000_kaimana_private_portal",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795554647389,
+      "tag": "0001_kaimana_public_view_and_person_links",
+      "breakpoints": true
     }
   ]
 }
