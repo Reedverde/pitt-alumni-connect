@@ -10,10 +10,10 @@ export const Route = createFileRoute("/kaimana")({
   head: () => ({
     meta: [
       { title: "Kaimana 2027 · Pitt Club Ultimate" },
-      { name: "description", content: "Pitt alumni at Kaimana Klassik, Honolulu, Feb 12–15, 2027." },
+      { name: "description", content: "Thirty years of Pitt Ultimate and Brody's 50th. Oahu, Hawaii, Presidents' Day weekend, Feb 12 to 15, 2027." },
       { name: "robots", content: "noindex, nofollow, noarchive" },
       { property: "og:title", content: "Kaimana 2027 · Pitt Club Ultimate" },
-      { property: "og:description", content: "Pitt alumni at Kaimana Klassik, Honolulu, Feb 12–15, 2027." },
+      { property: "og:description", content: "Thirty years of Pitt Ultimate and Brody's 50th. Oahu, Hawaii, Presidents' Day weekend, Feb 12 to 15, 2027." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -151,15 +151,17 @@ function KaimanaPage() {
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Team X · Keep it secret</p>
           <h1 className="mt-3 text-4xl font-black uppercase leading-none tracking-tight text-foreground md:text-6xl">Kaimana 2027</h1>
           <p className="mt-4 text-lg text-foreground">
-            Thirty years of Pitt Ultimate and Brody's 50th. Oahu, Hawaii · Presidents' Day weekend, Friday night Feb 12 – Monday Feb 15, 2027.
+            Thirty years of Pitt Ultimate and Brody's 50th. Oahu, Hawaii · Presidents' Day weekend, Friday night Feb 12 to Monday Feb 15, 2027.
           </p>
         </div>
       </header>
       <div className="mt-10 grid items-start gap-8 md:grid-cols-2">
         <div className="space-y-3 text-lg text-muted-foreground">
-        <p>We got a bid. Play every point under Diamond Head or hold a megaphone on the sideline — three decades of Pitt alumni, together.</p>
-        <p><strong className="text-foreground">This is a surprise for Brody.</strong> He's signed up with the UCLA alumni team he used to coach. Even the Kaimana TD is helping. Don't mention it anywhere he might see.</p>
-        <p>The goal is 40+ people in Hawaii. If money is what's keeping you home, tell Trent or Kin-Ling — they'll work it out with you.</p>
+        <p className="font-bold uppercase tracking-wide text-foreground">To the Pitt Family,</p>
+        <p>We got a bid to Kaimana 2027: IT'S HAPPENING! This is a once-in-a-lifetime reunion, bringing together brothers, all connected through The Pitt Program. THIS IS A COMPLETE SURPRISE FOR BRODY! So please keep it a secret... even the Kaimana TD is helping us keep it under wraps.</p>
+        <p>Whether you are ready to play every point under Diamond Head crater or just want to hold a megaphone and heckle from the sidelines, we want three decades of Pitt Ultimate alumni in Hawaii to celebrate 30 years of the brotherhood as well as Brody's 50th birthday.</p>
+        <p>The UCLA alumni team (who Brody used to coach) has also been awarded a bid, and he is currently signed up to play with them. Ideally, we keep him in the dark right up until the tournament itself.</p>
+        <p>Our goal is 40+ people out in Hawaii. If money is the barrier keeping you home, reach out to Trent Dillon or Kin-Ling Sham directly. They planned ahead to help people overcome financial hurdles and will problem-solve with you so you can make the trip.</p>
       </div>
         <img src={brodyPhoto.url} alt="Brody Brotman in his early Pitt days, wearing a bandana and smiling over his shoulder" className="order-first mx-auto w-full max-w-[280px] object-cover md:order-none" style={{ clipPath: "polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px))" }} />
       </div>
