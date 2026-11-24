@@ -830,6 +830,78 @@ export type Database = {
         }
         Relationships: []
       }
+      kaimana_access: {
+        Row: {
+          created_at: string
+          email: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          role?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          role?: string
+        }
+        Relationships: []
+      }
+      kaimana_posts: {
+        Row: {
+          auth_user_id: string
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          auth_user_id?: string
+          author_name: string
+          body: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          auth_user_id?: string
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      kaimana_roster: {
+        Row: {
+          auth_user_id: string | null
+          created_at: string
+          display_name: string
+          id: string
+          note: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          auth_user_id?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          note?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          auth_user_id?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          note?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       magic_link_issues: {
         Row: {
           email: string
@@ -2613,6 +2685,9 @@ export type Database = {
         Returns: string
       }
       is_admin: { Args: never; Returns: boolean }
+      kaimana_blocked: { Args: never; Returns: boolean }
+      kaimana_can_access: { Args: never; Returns: boolean }
+      kaimana_is_coordinator: { Args: never; Returns: boolean }
       promote_verified_primary: {
         Args: { _identity_id: string }
         Returns: boolean

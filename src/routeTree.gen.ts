@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AlumniRouteImport } from './routes/alumni'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DonateRouteImport } from './routes/donate'
+import { Route as Kaimana2027RouteImport } from './routes/kaimana-2027'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as NewsDotxmlRouteImport } from './routes/news[.]xml'
 import { Route as QrRouteImport } from './routes/qr'
@@ -59,6 +60,11 @@ const AuthRoute = AuthRouteImport.update({
 const DonateRoute = DonateRouteImport.update({
   id: '/donate',
   path: '/donate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Kaimana2027Route = Kaimana2027RouteImport.update({
+  id: '/kaimana-2027',
+  path: '/kaimana-2027',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewsRoute = NewsRouteImport.update({
@@ -179,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
   '/donate': typeof DonateRoute
+  '/kaimana-2027': typeof Kaimana2027Route
   '/news': typeof NewsRoute
   '/news.xml': typeof NewsDotxmlRoute
   '/qr': typeof QrRoute
@@ -207,6 +214,7 @@ export interface FileRoutesByTo {
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
   '/donate': typeof DonateRoute
+  '/kaimana-2027': typeof Kaimana2027Route
   '/news': typeof NewsRoute
   '/news.xml': typeof NewsDotxmlRoute
   '/qr': typeof QrRoute
@@ -237,6 +245,7 @@ export interface FileRoutesById {
   '/alumni': typeof AlumniRoute
   '/auth': typeof AuthRoute
   '/donate': typeof DonateRoute
+  '/kaimana-2027': typeof Kaimana2027Route
   '/news': typeof NewsRoute
   '/news.xml': typeof NewsDotxmlRoute
   '/qr': typeof QrRoute
@@ -267,6 +276,7 @@ export interface FileRouteTypes {
     | '/alumni'
     | '/auth'
     | '/donate'
+    | '/kaimana-2027'
     | '/news'
     | '/news.xml'
     | '/qr'
@@ -295,6 +305,7 @@ export interface FileRouteTypes {
     | '/alumni'
     | '/auth'
     | '/donate'
+    | '/kaimana-2027'
     | '/news'
     | '/news.xml'
     | '/qr'
@@ -324,6 +335,7 @@ export interface FileRouteTypes {
     | '/alumni'
     | '/auth'
     | '/donate'
+    | '/kaimana-2027'
     | '/news'
     | '/news.xml'
     | '/qr'
@@ -354,6 +366,7 @@ export interface RootRouteChildren {
   AlumniRoute: typeof AlumniRoute
   AuthRoute: typeof AuthRoute
   DonateRoute: typeof DonateRoute
+  Kaimana2027Route: typeof Kaimana2027Route
   NewsRoute: typeof NewsRoute
   NewsDotxmlRoute: typeof NewsDotxmlRoute
   QrRoute: typeof QrRoute
@@ -411,6 +424,13 @@ declare module '@tanstack/react-router' {
       path: '/donate'
       fullPath: '/donate'
       preLoaderRoute: typeof DonateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kaimana-2027': {
+      id: '/kaimana-2027'
+      path: '/kaimana-2027'
+      fullPath: '/kaimana-2027'
+      preLoaderRoute: typeof Kaimana2027RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/news': {
@@ -589,6 +609,7 @@ const rootRouteChildren: RootRouteChildren = {
   AlumniRoute: AlumniRoute,
   AuthRoute: AuthRoute,
   DonateRoute: DonateRoute,
+  Kaimana2027Route: Kaimana2027Route,
   NewsRoute: NewsRoute,
   NewsDotxmlRoute: NewsDotxmlRoute,
   QrRoute: QrRoute,
