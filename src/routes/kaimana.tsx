@@ -177,6 +177,18 @@ function KaimanaPage() {
         </div>
       </section>
 
+      <section className="mt-12">
+        <h2 className="text-xl font-black uppercase tracking-tight text-foreground">Questions? Reach the organizers</h2>
+        {canAct ? (
+          <ul className="mt-3 space-y-1 text-foreground">
+            <li><strong>Trent Dillon</strong> · <a className="text-primary underline" href="mailto:tmaxdillon@gmail.com">tmaxdillon@gmail.com</a></li>
+            <li><strong>Kin-Ling Sham</strong> · <a className="text-primary underline" href="mailto:kinlingsham@gmail.com">kinlingsham@gmail.com</a></li>
+          </ul>
+        ) : (
+          <p className="mt-2 text-muted-foreground">Sign in to see how to reach Trent and Kin-Ling.</p>
+        )}
+      </section>
+
       <section className="mt-12 border border-border bg-card p-6">
         <h2 className="text-xl font-black uppercase tracking-tight text-foreground">Your answer</h2>
         {!userId ? (<><p className="mt-2 text-muted-foreground">Sign in to say if you're playing, on the sideline, a maybe, or can't make it.</p><button onClick={signIn} className="mt-4 bg-primary px-6 py-3 font-bold uppercase tracking-wide text-primary-foreground">Sign in</button></>) : !canAct ? (<p className="mt-2 text-muted-foreground">Your account isn't linked to a Pitt alumni record yet. Tell Trent or Kin-Ling.</p>) : (<>
