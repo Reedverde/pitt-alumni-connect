@@ -155,14 +155,13 @@ function KaimanaPage() {
           </p>
         </div>
       </header>
-      <figure className="mt-8 max-w-xs">
-        <img src={brodyPhoto.url} alt="Brody Brotman in his early Pitt days, wearing a bandana and smiling over his shoulder" className="w-full object-cover" style={{ clipPath: "polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px))" }} />
-        <figcaption className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">The man of the hour · Brody, early days</figcaption>
-      </figure>
-      <div className="mt-6 max-w-2xl space-y-3 text-muted-foreground">
+      <div className="mt-10 grid items-start gap-8 md:grid-cols-[1fr_280px]">
+        <div className="space-y-3 text-lg text-muted-foreground">
         <p>We got a bid. Play every point under Diamond Head or hold a megaphone on the sideline — three decades of Pitt alumni, together.</p>
         <p><strong className="text-foreground">This is a surprise for Brody.</strong> He's signed up with the UCLA alumni team he used to coach. Even the Kaimana TD is helping. Don't mention it anywhere he might see.</p>
         <p>The goal is 40+ people in Hawaii. If money is what's keeping you home, tell Trent or Kin-Ling — they'll work it out with you.</p>
+      </div>
+        <img src={brodyPhoto.url} alt="Brody Brotman in his early Pitt days, wearing a bandana and smiling over his shoulder" className="order-first w-full max-w-xs object-cover md:order-none" style={{ clipPath: "polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px))" }} />
       </div>
 
       <section className="mt-12 max-w-3xl">
