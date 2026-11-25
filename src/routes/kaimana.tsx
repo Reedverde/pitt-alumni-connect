@@ -162,10 +162,12 @@ function KaimanaPage() {
       <div className="mt-10 grid items-start gap-8 md:grid-cols-2">
         <div className="space-y-3 text-lg text-muted-foreground">
         <p className="font-bold uppercase tracking-wide text-foreground">To the Pitt Family,</p>
-        <p>We got a bid to Kaimana 2027: IT'S HAPPENING! This is a once-in-a-lifetime reunion, bringing together brothers, all connected through The Pitt Program. THIS IS A COMPLETE SURPRISE FOR BRODY! So please keep it a secret... even the Kaimana TD is helping us keep it under wraps.</p>
-        <p>Whether you are ready to play every point under Diamond Head crater or just want to hold a megaphone and heckle from the sidelines, we want three decades of Pitt Ultimate alumni in Hawaii to celebrate 30 years of the brotherhood as well as Brody's 50th birthday.</p>
-        <p>The UCLA alumni team (who Brody used to coach) has also been awarded a bid, and he is currently signed up to play with them. Ideally, we keep him in the dark right up until the tournament itself.</p>
-        <p>Our goal is 40+ people out in Hawaii.</p>
+        <p>We got a bid to Kaimana 2027 - IT'S HAPPENING! This is a once-in-a-lifetime reunion, bringing together brothers - all connected through The Pitt Program.</p>
+        <p>THIS IS A SURPRISE FOR BRODY! So please keep it a secret...even the Kaimana TD is helping us keep it a secret.</p>
+        <p>Whether you are ready to play every point under Diamond Head crater or just want to hold a megaphone and heckle from the sidelines, we want three decades of Pitt Ultimate Alumni in Hawaii to celebrate 30 years of the brotherhood as well as Brody's 50th birthday (11/26/27).</p>
+        <p>Kaimana 2027 is held in Oahu, HI on President's Day weekend, 2/13/27-2/15/27 (Saturday, Sunday and Monday).</p>
+        <p>We're currently trying to keep this a COMPLETE SURPRISE FROM BRODY for as long as possible. The UCLA alumni team (who Brody used to coach) have also been awarded a bid and he is currently signed up to play with them. Ideally, we want to keep him in the dark right up until the event itself.</p>
+        <p>Cheers,<br />Kin-Ling (We can't wait to see you in a few months!)</p>
       </div>
         <img src={brodyPhoto.url} alt="Brody Brotman in his early Pitt days, wearing a bandana and smiling over his shoulder" className="order-first mx-auto w-full max-w-[280px] object-cover md:order-none" style={{ clipPath: "polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px))" }} />
       </div>
