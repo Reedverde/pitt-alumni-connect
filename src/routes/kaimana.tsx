@@ -165,7 +165,7 @@ function KaimanaPage() {
         <p>We got a bid to Kaimana 2027: IT'S HAPPENING! This is a once-in-a-lifetime reunion, bringing together brothers, all connected through The Pitt Program. THIS IS A COMPLETE SURPRISE FOR BRODY! So please keep it a secret... even the Kaimana TD is helping us keep it under wraps.</p>
         <p>Whether you are ready to play every point under Diamond Head crater or just want to hold a megaphone and heckle from the sidelines, we want three decades of Pitt Ultimate alumni in Hawaii to celebrate 30 years of the brotherhood as well as Brody's 50th birthday.</p>
         <p>The UCLA alumni team (who Brody used to coach) has also been awarded a bid, and he is currently signed up to play with them. Ideally, we keep him in the dark right up until the tournament itself.</p>
-        <p>Our goal is 40+ people out in Hawaii. If money is the barrier keeping you home, reach out to Trent Dillon or Kin-Ling Sham directly. They planned ahead to help people overcome financial hurdles and will problem-solve with you so you can make the trip.</p>
+        <p>Our goal is 40+ people out in Hawaii.</p>
       </div>
         <img src={brodyPhoto.url} alt="Brody Brotman in his early Pitt days, wearing a bandana and smiling over his shoulder" className="order-first mx-auto w-full max-w-[280px] object-cover md:order-none" style={{ clipPath: "polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px))" }} />
       </div>
