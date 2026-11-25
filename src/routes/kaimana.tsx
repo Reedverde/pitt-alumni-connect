@@ -177,6 +177,7 @@ function KaimanaPage() {
         <div className="mt-4 space-y-3 text-muted-foreground">
           <p>Kaimana Klassik is Hawaii's biggest ultimate tournament, run every Presidents' Day weekend by Hawaii Ultimate. Games are at Kapiʻolani Park in Honolulu, under Diamond Head (Lēʻahi), next to Waikīkī and Kaimana Beach.</p>
           <p>Play starts Saturday morning and finals are Monday afternoon. The tournament hosts parties in town Friday, Saturday and Sunday nights, with breakfast each morning and dinner Saturday and Sunday. Players must be 21+ for evening events, and there's no alcohol at the fields.</p>
+          <p className="font-bold text-foreground">Entry is $175 per player through December 9, 2026, then $200 per player.</p>
           <p className="flex flex-wrap gap-4 font-bold">
             <a className="text-primary underline" href="https://hawaii.ultimatecentral.com/kaimana-klassik" target="_blank" rel="noreferrer">Kaimana Klassik site</a>
             <a className="text-primary underline" href="https://ultimatecentral.com/en_us/e/kaimana-klassik-37" target="_blank" rel="noreferrer">Last year's event page</a>
